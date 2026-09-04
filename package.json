@@ -44,7 +44,8 @@
   },
   "devDependencies": {
     "@mercurjs/docs": "2.3.3",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "railway": "3.11.0"
   },
   "engines": {
     "node": ">=20.9.0"
