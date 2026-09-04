@@ -19,7 +19,7 @@ const dmSerif = DM_Serif_Display({
 
 export const metadata: Metadata = {
   title: { default: "Portal vendedor", template: "%s · Portal vendedor" },
-  description: "Interfaz de demostración para la operación de vendedores.",
+  description: "Portal seguro para la operación de miembros vendedores.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -11,9 +11,11 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:smoke",
-    "test:smoke": "node --test tests/admin-smoke.test.mjs"
+    "test:smoke": "tsx --test tests/admin-smoke.test.mjs tests/admin-auth.test.ts"
   },
   "dependencies": {
+    "@medusajs/js-sdk": "2.18.0",
+    "@medusajs/types": "2.18.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.40.0",
@@ -31,6 +33,7 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
     "typescript": "5.9.3"
   },
   "engines": {
