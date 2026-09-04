@@ -11,8 +11,11 @@ import {
   Settings2,
   ShoppingBag,
   Store,
+  LogOut,
+  Repeat2,
 } from "lucide-react";
 
+import { logoutVendorAction } from "@/app/seller/auth-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -27,6 +30,21 @@ import {
 import { cn } from "@/lib/utils";
 import { vendorRoutes, type VendorRouteId } from "@/lib/vendor-routes";
 
+type VendorIdentity = {
+  memberName: string;
+  memberEmail: string;
+  sellerName: string;
+  roleId: string;
+};
+
+const roleLabels: Record<string, string> = {
+  role_seller_administration: "Administración",
+  role_seller_inventory_management: "Inventario",
+  role_seller_order_management: "Pedidos",
+  role_seller_accounting: "Contabilidad",
+  role_seller_support: "Soporte",
+};
+
 const routeIcons = {
   dashboard: LayoutDashboard,
   catalog: PackageSearch,
@@ -39,7 +57,7 @@ function Brand() {
   return (
     <Link
       href="/seller"
-      className="flex items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+      className="flex min-h-11 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
     >
       <span className="grid size-9 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
         <Store className="size-[18px]" aria-hidden="true" />
@@ -58,11 +76,18 @@ function Brand() {
 
 function SidebarContent({
   pathname,
+  identity,
   mobile,
 }: {
   pathname: string;
+  identity: VendorIdentity;
   mobile?: boolean;
 }) {
+  const initials = identity.memberName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "MV";
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="px-5 py-5">
@@ -116,12 +141,12 @@ function SidebarContent({
         <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/45 p-3">
           <div className="flex items-center gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
-              TD
+              {initials}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">Tienda Demo Sur</p>
+              <p className="truncate text-sm font-semibold">{identity.sellerName}</p>
               <p className="truncate text-xs text-sidebar-foreground/55">
-                Cuenta ficticia
+                {identity.memberName} · {roleLabels[identity.roleId] ?? identity.roleId}
               </p>
             </div>
           </div>
@@ -131,7 +156,7 @@ function SidebarContent({
   );
 }
 
-export function VendorShell({ children }: { children: ReactNode }) {
+export function VendorShell({ children, identity, canSwitchSeller }: { children: ReactNode; identity: VendorIdentity; canSwitchSeller: boolean }) {
   const pathname = usePathname();
   const currentRoute = vendorRoutes.find((route) =>
     route.href === "/seller"
@@ -148,7 +173,7 @@ export function VendorShell({ children }: { children: ReactNode }) {
         Saltar al contenido
       </a>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-sidebar-border md:block">
-        <SidebarContent pathname={pathname} />
+        <SidebarContent pathname={pathname} identity={identity} />
       </aside>
       <div className="min-h-screen md:pl-64">
         <header className="sticky top-0 z-30 flex h-16 items-center border-b border-border/75 bg-background/88 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
@@ -157,7 +182,7 @@ export function VendorShell({ children }: { children: ReactNode }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-3 md:hidden"
+                className="mr-3 size-11 md:hidden"
                 aria-label="Abrir navegación"
               >
                 <Menu aria-hidden="true" />
@@ -171,26 +196,33 @@ export function VendorShell({ children }: { children: ReactNode }) {
                 Navegación del vendedor
               </SheetTitle>
               <SheetDescription className="sr-only">
-                Enlaces principales del portal de demostración.
+                Enlaces principales del portal de vendedor.
               </SheetDescription>
-              <SidebarContent pathname={pathname} mobile />
+              <SidebarContent pathname={pathname} identity={identity} mobile />
             </SheetContent>
           </Sheet>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-muted-foreground">
-              Tienda Demo Sur
+              {identity.sellerName}
             </p>
             <p className="truncate text-sm font-bold">
               {currentRoute?.label ?? "Portal vendedor"}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:inline-flex">
-              Demo UI
+            <Badge variant="outline" className="hidden max-w-48 truncate sm:inline-flex">
+              {roleLabels[identity.roleId] ?? identity.roleId}
             </Badge>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/seller/login">Ver acceso</Link>
-            </Button>
+            {canSwitchSeller ? (
+              <Button asChild variant="outline" size="sm" className="h-11">
+                <Link href="/seller/select-seller"><Repeat2 aria-hidden="true" /> Cambiar tienda</Link>
+              </Button>
+            ) : null}
+            <form action={logoutVendorAction}>
+              <Button type="submit" variant="ghost" size="icon" className="size-11" aria-label={`Cerrar sesión de ${identity.memberEmail}`}>
+                <LogOut aria-hidden="true" />
+              </Button>
+            </form>
           </div>
         </header>
         <main

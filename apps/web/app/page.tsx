@@ -2,6 +2,7 @@ import { CatalogSection } from "@/components/catalog-section"
 import { Hero } from "@/components/hero"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
+import { getCurrentCustomer } from "@/lib/auth-sdk"
 import { getStorefrontCatalog } from "@/lib/medusa"
 
 export const dynamic = "force-dynamic"
@@ -17,9 +18,10 @@ export default async function Home({ searchParams }: HomeProps) {
   const activeCategoryId = Array.isArray(parameters.category_id)
     ? parameters.category_id[0]
     : parameters.category_id
-  const catalog = await getStorefrontCatalog({
-    categoryId: activeCategoryId,
-  })
+  const [catalog, customer] = await Promise.all([
+    getStorefrontCatalog({ categoryId: activeCategoryId }),
+    getCurrentCustomer(),
+  ])
   const categories =
     catalog.status === "products" || catalog.status === "empty"
       ? catalog.categories
@@ -30,6 +32,7 @@ export default async function Home({ searchParams }: HomeProps) {
       <SiteHeader
         categories={categories}
         activeCategoryId={activeCategoryId}
+        customer={customer}
       />
       <main>
         <Hero

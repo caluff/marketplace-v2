@@ -16,14 +16,28 @@ test("pins the requested Next.js version and exposes workspace scripts", async (
   assert.equal(packageJson.scripts.dev, "next dev --port 7000");
 });
 
-test("ships the dashboard and non-functional login routes", async () => {
+test("ships the dashboard and functional operator login routes", async () => {
   const dashboard = await read("src/app/dashboard/page.tsx");
   const login = await read("src/app/login/page.tsx");
+  const layout = await read("src/app/dashboard/layout.tsx");
+  const actions = await read("src/app/auth-actions.ts");
 
   assert.match(dashboard, /Panorama del marketplace/);
   assert.match(dashboard, /DEMO_SOURCE_LABEL/);
-  assert.match(login, /autenticación final no\s+está conectada/);
-  assert.match(login, /disabled/);
+  assert.match(login, /AdminLoginForm/);
+  assert.match(layout, /getCurrentAdmin/);
+  assert.match(layout, /redirect\("\/login\?reason=expired/);
+  assert.match(actions, /sdk\.auth\.login\("user", "emailpass"/);
+  assert.match(actions, /authenticated\.admin\.user\.me\(\)/);
+  assert.doesNotMatch(login, /autenticación final no\s+está conectada/i);
+});
+
+test("does not expose public operator registration", async () => {
+  const actions = await read("src/app/auth-actions.ts");
+  const login = await read("src/app/login/page.tsx");
+
+  assert.doesNotMatch(actions, /auth\.register/);
+  assert.doesNotMatch(login, /href=["']\/register/);
 });
 
 test("marks synthetic records with DEMO identifiers", async () => {

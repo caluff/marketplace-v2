@@ -20,7 +20,7 @@ export function MobileNavigation() {
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="size-11 lg:hidden"
           data-testid="mobile-navigation-open"
           aria-label="Abrir navegación"
         >
