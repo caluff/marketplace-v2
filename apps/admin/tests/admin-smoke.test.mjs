@@ -16,6 +16,20 @@ test("pins the requested Next.js version and exposes workspace scripts", async (
   assert.equal(packageJson.scripts.dev, "next dev --port 7000");
 });
 
+test("allows only configured Server Action origins behind Railway", async () => {
+  const nextConfig = await read("next.config.ts");
+  const railway = await read("../../.railway/railway.ts");
+
+  assert.match(nextConfig, /serverActions/);
+  assert.match(nextConfig, /RAILWAY_PUBLIC_DOMAIN/);
+  assert.match(nextConfig, /SERVER_ACTIONS_ALLOWED_ORIGINS/);
+  assert.doesNotMatch(nextConfig, /allowedOrigins:\s*\[\s*["']\*["']/);
+  assert.match(
+    railway,
+    /service\("@marketplace-v2\/admin"[\s\S]*NEXT_PUBLIC_MEDUSA_BACKEND_URL/,
+  );
+});
+
 test("ships the dashboard and functional operator login routes", async () => {
   const dashboard = await read("src/app/dashboard/page.tsx");
   const login = await read("src/app/login/page.tsx");

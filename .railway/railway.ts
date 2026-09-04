@@ -137,6 +137,8 @@ export default defineRailway((ctx) => {
     },
     env: {
       NODE_ENV: "production",
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL:
+        "https://api-production-ed23.up.railway.app",
     },
   });
 
@@ -168,6 +170,8 @@ export default defineRailway((ctx) => {
     },
     env: {
       NODE_ENV: "production",
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL:
+        "https://api-production-ed23.up.railway.app",
     },
   });
 
