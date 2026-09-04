@@ -74,7 +74,7 @@ export default defineRailway((ctx) => {
     },
   });
 
-  const web = service("@marketplace-v2/web", {
+  const web = service("UI Store", {
     source: source(),
     rootDirectory: "/",
     build: {
@@ -109,7 +109,7 @@ export default defineRailway((ctx) => {
     },
   });
 
-  const admin = service("@marketplace-v2/admin", {
+  const admin = service("UI Admin", {
     source: source(),
     rootDirectory: "/",
     build: {
@@ -142,7 +142,7 @@ export default defineRailway((ctx) => {
     },
   });
 
-  const vendor = service("@marketplace-v2/vendor", {
+  const vendor = service("UI Vendor", {
     source: source(),
     rootDirectory: "/",
     build: {
