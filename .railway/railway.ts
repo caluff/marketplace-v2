@@ -127,7 +127,7 @@ export default defineRailway((ctx) => {
     },
     deploy: {
       startCommand: "pnpm start:admin",
-      healthcheckPath: "/dashboard",
+      healthcheckPath: "/login",
     },
     networking: {
       privateNetworkEndpoint: "marketplace-v2admin",
@@ -160,7 +160,7 @@ export default defineRailway((ctx) => {
     },
     deploy: {
       startCommand: "pnpm start:vendor",
-      healthcheckPath: "/seller",
+      healthcheckPath: "/seller/login",
     },
     networking: {
       privateNetworkEndpoint: "marketplace-v2vendor",

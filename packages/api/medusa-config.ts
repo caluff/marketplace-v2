@@ -137,6 +137,11 @@ module.exports = withMercur({
       connection: {
         ssl: { rejectUnauthorized: false },
       },
+      pool: {
+        min: 0,
+        max: 4,
+        idleTimeoutMillis: 30_000,
+      },
     },
     redisUrl,
     workerMode,
