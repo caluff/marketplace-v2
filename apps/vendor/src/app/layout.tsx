@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { DM_Serif_Display, Manrope } from "next/font/google";
+import { Geist_Mono, Public_Sans } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+const publicSans = Public_Sans({
+  variable: "--font-public-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const dmSerif = DM_Serif_Display({
-  variable: "--font-dm-serif",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  weight: "400",
   display: "swap",
 });
 
@@ -28,7 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="es"
-      className={`${manrope.variable} ${dmSerif.variable}`}
+      className={`${publicSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
       <body>

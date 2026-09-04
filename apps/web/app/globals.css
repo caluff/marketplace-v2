@@ -185,10 +185,10 @@
   --color-project-status-live: var(--project-status-live);
   --color-github-heatmap-empty: var(--github-heatmap-empty);
   --color-github-heatmap-active: var(--github-heatmap-active);
-  --font-serif: Georgia, "Times New Roman", serif;
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
-  --font-heading: Georgia, "Times New Roman", serif;
+  --font-serif: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
   --radius-xs: var(--radius);
   --radius-sm: var(--radius);
   --radius-md: var(--radius);
@@ -210,7 +210,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
   text-rendering: optimizeLegibility;
 }
 

@@ -137,12 +137,10 @@
 }
 
 @theme inline {
-  --font-sans:
-    "Manrope", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-display:
-    "DM Serif Display", "DM Serif Display Fallback", Georgia, serif;
-  --font-heading: Georgia, "Times New Roman", serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
   --color-background: var(--background);
@@ -239,8 +237,7 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
   text-rendering: optimizeLegibility;
 }
 
@@ -255,7 +252,7 @@ input {
 }
 
 .font-display {
-  font-family: var(--font-dm-serif), "DM Serif Display", Georgia, serif;
+  font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .vendor-canvas {

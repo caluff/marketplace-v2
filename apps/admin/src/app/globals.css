@@ -3,9 +3,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
-  --font-heading: Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
 
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
@@ -284,8 +284,7 @@
     min-height: 100dvh;
     background: var(--background);
     color: var(--foreground);
-    font-family:
-      "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
     text-rendering: optimizeLegibility;
   }
 
