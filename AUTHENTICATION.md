@@ -33,6 +33,13 @@ el backend: `verification_required` abre la verificación de correo,
 - `ADMIN_CORS`
 - `VENDOR_CORS`
 - `AUTH_CORS`
+- `SERVER_ACTIONS_ALLOWED_ORIGINS` (opcional, lista separada por comas para
+  dominios públicos adicionales o dominios personalizados)
+
+En Railway, los builds de Next incluyen automáticamente el dominio exacto de
+`RAILWAY_PUBLIC_DOMAIN` en `serverActions.allowedOrigins`. Esto permite que la
+protección CSRF de Server Actions reconozca el origen público aunque el reverse
+proxy use otro `x-forwarded-host`; no se aceptan comodines globales.
 
 ## Correo de autenticación
 
