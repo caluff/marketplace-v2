@@ -123,7 +123,7 @@ export function CatalogSection({
       <div className="mx-auto w-full max-w-[90rem] px-4 py-14 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
         <div className="mb-10 grid gap-5 border-b border-foreground pb-6 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
-            <p className="font-sans text-xs font-bold tracking-[0.16em] text-accent uppercase">
+            <p className="font-sans text-xs font-bold tracking-[0.16em] text-brand-accent uppercase">
               Edición actual
             </p>
             <h2
@@ -162,7 +162,7 @@ export function CatalogSection({
             <CardHeader className="items-center px-6 py-12 sm:px-12 sm:py-16">
               <PackageOpen
                 aria-hidden="true"
-                className="size-12 text-accent"
+                className="size-12 text-brand-accent"
                 strokeWidth={1.25}
               />
               <CardTitle className="mt-3 text-3xl">
@@ -195,7 +195,7 @@ export function CatalogSection({
                   <>
                     <Icon
                       aria-hidden="true"
-                      className="size-11 text-accent"
+                      className="size-11 text-brand-accent"
                       strokeWidth={1.25}
                     />
                     <CardTitle className="mt-3 text-3xl">

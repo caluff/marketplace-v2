@@ -4,6 +4,7 @@ import { ArrowLeft, LockKeyhole, Store } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   Card,
   CardContent,
@@ -18,7 +19,8 @@ export const metadata: Metadata = { title: "Acceso de demostración" };
 
 export default function SellerLoginPage() {
   return (
-    <main className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
+    <main className="relative grid min-h-screen bg-background lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
+      <ModeToggle className="absolute right-4 top-4 z-10 bg-background" />
       <section className="relative hidden overflow-hidden bg-sidebar p-12 text-sidebar-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_20%_20%,color-mix(in_oklab,var(--sidebar-primary)_28%,transparent),transparent_28rem)]" />
         <div className="relative flex items-center gap-3">

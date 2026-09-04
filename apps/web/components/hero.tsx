@@ -30,7 +30,7 @@ export function Hero({ productCount }: HeroProps) {
           >
             Elegir menos.
             <br />
-            <span className="text-accent italic">Elegir mejor.</span>
+            <span className="text-brand-accent italic">Elegir mejor.</span>
           </h1>
         </div>
 

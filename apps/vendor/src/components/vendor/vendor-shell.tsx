@@ -15,6 +15,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -185,6 +186,7 @@ export function VendorShell({ children }: { children: ReactNode }) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <ModeToggle />
             <Badge variant="outline" className="hidden sm:inline-flex">
               Demo UI
             </Badge>

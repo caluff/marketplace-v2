@@ -4,6 +4,7 @@ import { ArrowLeft, Boxes, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   Card,
   CardContent,
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-sidebar px-4 py-10 text-sidebar-foreground">
+      <ModeToggle className="absolute right-4 top-4 z-10 bg-background text-foreground" />
       <div
         className="pointer-events-none absolute inset-0 opacity-60"
         aria-hidden="true"

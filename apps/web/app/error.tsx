@@ -17,7 +17,7 @@ export default function Error({ retry }: { retry: () => void }) {
         <CardHeader className="px-6 py-10 sm:px-10 sm:py-12">
           <CircleAlert
             aria-hidden="true"
-            className="size-12 text-accent"
+            className="size-12 text-brand-accent"
             strokeWidth={1.25}
           />
           <CardTitle className="mt-3 text-3xl">

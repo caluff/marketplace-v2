@@ -1,6 +1,7 @@
 import { Bell, Search } from "lucide-react";
 
 import { MobileNavigation } from "@/components/admin/mobile-navigation";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -32,6 +33,7 @@ export function AdminHeader() {
             className="h-8 bg-card pl-8 text-xs"
           />
         </div>
+        <ModeToggle />
         <Button
           variant="ghost"
           size="icon"
