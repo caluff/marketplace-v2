@@ -2,7 +2,7 @@ import { defineRailway, github, project, service } from "railway/iac";
 
 const source = () =>
   github("caluff/marketplace-v2", {
-    branch: "main",
+    branch: "develop",
   });
 
 export default defineRailway((ctx) => {
