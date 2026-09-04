@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 
 import { logoutAdminAction } from "@/app/auth-actions";
 import { MobileNavigation } from "@/components/admin/mobile-navigation";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 
 export function AdminHeader({ user }: { user: HttpTypes.AdminUser }) {
@@ -21,6 +22,7 @@ export function AdminHeader({ user }: { user: HttpTypes.AdminUser }) {
       </div>
 
       <div className="flex items-center gap-2">
+        <ModeToggle />
         <span className="hidden max-w-48 truncate text-xs font-medium text-muted-foreground sm:block">
           {user.email}
         </span>

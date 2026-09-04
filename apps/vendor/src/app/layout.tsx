@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DM_Serif_Display, Manrope } from "next/font/google";
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 import "./globals.css";
 
 const manrope = Manrope({
@@ -24,8 +26,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" className={`${manrope.variable} ${dmSerif.variable}`}>
-      <body>{children}</body>
+    <html
+      lang="es"
+      className={`${manrope.variable} ${dmSerif.variable}`}
+      suppressHydrationWarning
+    >
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          storageKey="marketplace-v2-theme"
+        >
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

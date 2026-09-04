@@ -27,7 +27,7 @@ export function SiteFooter({ categories }: SiteFooterProps) {
             <li>
               <Link
                 href="/#catalog"
-                className="flex min-h-11 items-center gap-2 font-sans text-sm font-semibold outline-none hover:text-accent focus-visible:ring-3 focus-visible:ring-accent/60"
+                className="flex min-h-11 items-center gap-2 font-sans text-sm font-semibold outline-none hover:text-cover-accent-cyan focus-visible:ring-3 focus-visible:ring-cover-accent-cyan/60"
               >
                 Todo el catálogo
                 <ArrowUpRight aria-hidden="true" className="size-4" />
@@ -37,7 +37,7 @@ export function SiteFooter({ categories }: SiteFooterProps) {
               <li key={category.id}>
                 <Link
                   href={`/?category_id=${encodeURIComponent(category.id)}#catalog`}
-                  className="flex min-h-11 items-center font-sans text-sm font-semibold outline-none hover:text-accent focus-visible:ring-3 focus-visible:ring-accent/60"
+                  className="flex min-h-11 items-center font-sans text-sm font-semibold outline-none hover:text-cover-accent-cyan focus-visible:ring-3 focus-visible:ring-cover-accent-cyan/60"
                 >
                   {category.name}
                 </Link>

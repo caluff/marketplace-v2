@@ -18,6 +18,7 @@ import {
 import { logoutVendorAction } from "@/app/seller/auth-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -210,6 +211,7 @@ export function VendorShell({ children, identity, canSwitchSeller }: { children:
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <ModeToggle />
             <Badge variant="outline" className="hidden max-w-48 truncate sm:inline-flex">
               {roleLabels[identity.roleId] ?? identity.roleId}
             </Badge>

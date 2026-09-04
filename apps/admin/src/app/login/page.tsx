@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AdminLoginForm } from "@/components/admin/admin-auth-forms";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   Card,
   CardContent,
@@ -29,6 +30,7 @@ export default async function LoginPage({
 
   return (
     <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-sidebar px-4 py-10 text-sidebar-foreground">
+      <ModeToggle className="absolute right-4 top-4 z-10 bg-background text-foreground" />
       <div
         className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(circle_at_18%_14%,oklch(0.71_0.13_151/0.18),transparent_28%),radial-gradient(circle_at_86%_88%,oklch(0.58_0.12_246/0.16),transparent_26%)]"
         aria-hidden="true"

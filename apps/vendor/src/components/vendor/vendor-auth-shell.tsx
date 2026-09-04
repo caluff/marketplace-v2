@@ -2,11 +2,13 @@ import { Store } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { ModeToggle } from "@/components/mode-toggle";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function VendorAuthShell({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <main className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
+    <main className="relative grid min-h-screen bg-background lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
+      <ModeToggle className="absolute right-4 top-4 z-10 bg-background" />
       <section className="relative hidden overflow-hidden bg-sidebar p-12 text-sidebar-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_20%_20%,color-mix(in_oklab,var(--sidebar-primary)_28%,transparent),transparent_28rem)]" aria-hidden="true" />
         <Link href="/seller/login" className="relative flex min-h-11 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"><span className="grid size-10 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground"><Store className="size-5" aria-hidden="true" /></span><span><span className="block font-display text-xl">Mercado Sur</span><span className="block text-xs font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/55">Portal vendedor</span></span></Link>
