@@ -1,0 +1,8 @@
+{
+  "$schema": "https://registry.mercurjs.com/registry.json",
+  "aliases": {
+    "api": "packages/api/src",
+    "web": "apps/web"
+  },
+  "registries": {}
+}

@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-demo: var(--demo);
+  --color-demo-foreground: var(--demo-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: calc(var(--radius) * 0.875);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.35);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.977 0.004 95);
+  --foreground: oklch(0.22 0.018 78);
+  --card: oklch(0.995 0.002 95);
+  --card-foreground: oklch(0.22 0.018 78);
+  --primary: oklch(0.51 0.12 154);
+  --primary-foreground: oklch(0.99 0.004 150);
+  --secondary: oklch(0.944 0.012 91);
+  --secondary-foreground: oklch(0.31 0.024 78);
+  --muted: oklch(0.95 0.007 91);
+  --muted-foreground: oklch(0.53 0.018 78);
+  --accent: oklch(0.934 0.018 91);
+  --accent-foreground: oklch(0.25 0.024 78);
+  --border: oklch(0.893 0.009 91);
+  --input: oklch(0.87 0.012 91);
+  --ring: oklch(0.56 0.105 154);
+  --success: oklch(0.64 0.13 151);
+  --success-foreground: oklch(0.38 0.1 151);
+  --warning: oklch(0.75 0.15 75);
+  --warning-foreground: oklch(0.43 0.1 67);
+  --demo: oklch(0.58 0.12 246);
+  --demo-foreground: oklch(0.38 0.12 248);
+  --sidebar: oklch(0.205 0.018 72);
+  --sidebar-foreground: oklch(0.96 0.007 85);
+  --sidebar-muted: oklch(0.71 0.014 80);
+  --sidebar-accent: oklch(0.27 0.02 72);
+  --sidebar-border: oklch(0.34 0.018 72 / 0.65);
+  --sidebar-primary: oklch(0.71 0.13 151);
+  --sidebar-primary-foreground: oklch(0.18 0.025 151);
+  --sidebar-ring: oklch(0.71 0.13 151);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sheet-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--background);
+    color: var(--foreground);
+    font-family:
+      "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: oklch(0.71 0.13 151 / 0.25);
+  }
+}

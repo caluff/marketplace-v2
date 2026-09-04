@@ -1,0 +1,53 @@
+{
+  "name": "marketplace-v2",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --stream --filter @marketplace-v2/api --filter @marketplace-v2/web --filter @marketplace-v2/admin --filter @marketplace-v2/vendor run dev",
+    "dev:api": "pnpm --filter @marketplace-v2/api run dev",
+    "dev:web": "pnpm --filter @marketplace-v2/web run dev",
+    "dev:admin": "pnpm --filter @marketplace-v2/admin run dev",
+    "dev:vendor": "pnpm --filter @marketplace-v2/vendor run dev",
+    "build": "pnpm build:web && pnpm build:admin && pnpm build:vendor && pnpm build:api",
+    "build:web": "pnpm --filter @marketplace-v2/web run build",
+    "build:admin": "pnpm --filter @marketplace-v2/admin run build",
+    "build:vendor": "pnpm --filter @marketplace-v2/vendor run build",
+    "build:api": "pnpm --filter @marketplace-v2/api run build",
+    "build:worker": "pnpm build:api",
+    "build:api:deploy": "pnpm --filter @marketplace-v2/api run build:deploy",
+    "build:worker:deploy": "pnpm build:api:deploy",
+    "start:web": "pnpm --filter @marketplace-v2/web run start",
+    "start:admin": "pnpm --filter @marketplace-v2/admin run start",
+    "start:vendor": "pnpm --filter @marketplace-v2/vendor run start",
+    "start:api": "pnpm --dir packages/api/.medusa/server --ignore-workspace run start:api",
+    "start:worker": "pnpm --dir packages/api/.medusa/server --ignore-workspace run start:worker",
+    "lint": "pnpm lint:web && pnpm lint:admin && pnpm lint:vendor && pnpm lint:api",
+    "lint:web": "pnpm --filter @marketplace-v2/web run lint",
+    "lint:admin": "pnpm --filter @marketplace-v2/admin run lint",
+    "lint:vendor": "pnpm --filter @marketplace-v2/vendor run lint",
+    "lint:api": "pnpm --filter @marketplace-v2/api run lint",
+    "typecheck": "pnpm typecheck:web && pnpm typecheck:admin && pnpm typecheck:vendor && pnpm typecheck:api",
+    "typecheck:web": "pnpm --filter @marketplace-v2/web run typecheck",
+    "typecheck:admin": "pnpm --filter @marketplace-v2/admin run typecheck",
+    "typecheck:vendor": "pnpm --filter @marketplace-v2/vendor run typecheck",
+    "typecheck:api": "pnpm --filter @marketplace-v2/api run typecheck",
+    "test": "pnpm test:web && pnpm test:admin && pnpm test:vendor && pnpm test:api",
+    "test:web": "pnpm --filter @marketplace-v2/web run test",
+    "test:admin": "pnpm --filter @marketplace-v2/admin run test",
+    "test:vendor": "pnpm --filter @marketplace-v2/vendor run test",
+    "test:api": "pnpm --filter @marketplace-v2/api run test",
+    "test:smoke": "pnpm test:admin && pnpm test:api:integration:http",
+    "test:api:integration:http": "pnpm --filter @marketplace-v2/api run test:integration:http",
+    "test:api:integration:modules": "pnpm --filter @marketplace-v2/api run test:integration:modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:migrate": "pnpm --filter @marketplace-v2/api run db:migrate",
+    "peers": "pnpm peers check"
+  },
+  "devDependencies": {
+    "@mercurjs/docs": "2.3.3",
+    "prettier": "^3.7.4"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "packageManager": "pnpm@12.0.0"
+}
