@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
 import { getStorefrontCatalog } from "@/lib/medusa"
+import { getFavoriteProductIds } from "@/features/account/favorites"
 
 export const dynamic = "force-dynamic"
 
@@ -36,11 +37,15 @@ export default async function Home({ searchParams }: HomeProps) {
       />
       <main>
         <Hero
-          productCount={catalog.status === "products" ? catalog.count : undefined}
+          productCount={
+            catalog.status === "products" ? catalog.count : undefined
+          }
         />
         <CatalogSection
           result={catalog}
           activeCategoryId={activeCategoryId}
+          authenticated={Boolean(customer)}
+          favoriteProductIds={getFavoriteProductIds(customer?.metadata)}
         />
       </main>
       <SiteFooter categories={categories} />

@@ -4,10 +4,13 @@ import Image from "next/image"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { FavoriteButton } from "@/features/account/components/favorite-button"
 
 type ProductCardProps = {
   product: HttpTypes.StoreProduct
   index: number
+  isFavorite?: boolean
+  authenticated?: boolean
 }
 
 type ProductPrice = {
@@ -16,9 +19,7 @@ type ProductPrice = {
   currencyCode: string
 }
 
-function getProductPrice(
-  product: HttpTypes.StoreProduct,
-): ProductPrice | null {
+function getProductPrice(product: HttpTypes.StoreProduct): ProductPrice | null {
   const prices =
     product.variants?.flatMap((variant) => {
       const price = variant.calculated_price
@@ -103,7 +104,12 @@ function getProductImage(product: HttpTypes.StoreProduct) {
   }
 }
 
-export function ProductCard({ product, index }: ProductCardProps) {
+export function ProductCard({
+  product,
+  index,
+  isFavorite = false,
+  authenticated = false,
+}: ProductCardProps) {
   const image = getProductImage(product)
   const price = getProductPrice(product)
   const category = product.categories?.[0]
@@ -128,7 +134,11 @@ export function ProductCard({ product, index }: ProductCardProps) {
             />
           ) : (
             <div className="grid h-full place-items-center text-muted-foreground">
-              <ImageIcon aria-hidden="true" className="size-10" strokeWidth={1.25} />
+              <ImageIcon
+                aria-hidden="true"
+                className="size-10"
+                strokeWidth={1.25}
+              />
               <span className="sr-only">Este producto no tiene imagen</span>
             </div>
           )}
@@ -137,10 +147,18 @@ export function ProductCard({ product, index }: ProductCardProps) {
             {String(index + 1).padStart(2, "0")}
           </span>
           {isSale ? (
-            <Badge variant="accent" className="absolute top-3 right-3">
+            <Badge variant="accent" className="absolute bottom-3 left-3">
               Oferta
             </Badge>
           ) : null}
+          <div className="absolute top-3 right-3">
+            <FavoriteButton
+              productId={product.id}
+              saved={isFavorite}
+              authenticated={authenticated}
+              compact
+            />
+          </div>
         </div>
 
         <CardContent className="flex flex-1 flex-col px-4 py-5 sm:px-5">

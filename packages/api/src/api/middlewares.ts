@@ -5,6 +5,8 @@ import {
   type MedusaResponse,
 } from "@medusajs/framework/http";
 import { FeatureFlag, MedusaError } from "@medusajs/framework/utils";
+import { customerAccountMiddlewares } from "./store/customer-account/middlewares";
+import { favoriteMiddlewares } from "./store/customers/me/favorites/middlewares";
 
 const requireSellerRegistrationFlag = (
   _req: MedusaRequest,
@@ -23,6 +25,8 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
+    ...customerAccountMiddlewares,
+    ...favoriteMiddlewares,
     {
       matcher: "/vendor/sellers",
       method: "POST",

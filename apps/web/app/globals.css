@@ -218,3 +218,89 @@ body {
   background: var(--accent);
   color: var(--accent-foreground);
 }
+
+.hero-gradient {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 95% 10%, #ffb87580, transparent 60%),
+    radial-gradient(ellipse at 80% 45%, #ee91c980, transparent 60%),
+    radial-gradient(ellipse at 65% 0%, #a4baff70, transparent 55%);
+}
+
+.hero-gradient-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 800ms ease;
+  filter: saturate(1.08);
+}
+
+.hero-gradient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    var(--background),
+    color-mix(in srgb, var(--background) 80%, transparent) 28%,
+    color-mix(in srgb, var(--background) 24%, transparent) 58%,
+    transparent 90%
+  );
+}
+
+.hero-gradient:has([data-ready="true"]) {
+  background: none;
+}
+
+.hero-gradient-canvas[data-ready="true"] {
+  opacity: 0.9;
+}
+
+.hero-gradient:not(:has([data-ready="true"])) + .hero-motion-control {
+  visibility: hidden;
+}
+
+.hero-title-accent {
+  color: color-mix(in srgb, var(--brand-accent) 80%, var(--foreground));
+}
+
+.dark .hero-gradient {
+  background:
+    radial-gradient(ellipse at 100% 10%, #a8572c35, transparent 60%),
+    radial-gradient(ellipse at 85% 50%, #a64d8330, transparent 60%),
+    radial-gradient(ellipse at 65% 0%, #6354a930, transparent 55%);
+}
+
+.dark .hero-gradient:has([data-ready="true"]) {
+  background: none;
+}
+
+.dark .hero-gradient-canvas[data-ready="true"] {
+  opacity: 0.95;
+}
+
+.dark .hero-title-accent {
+  color: color-mix(in srgb, var(--brand-accent) 48%, var(--foreground));
+}
+
+@media (max-width: 639px) {
+  .hero-gradient {
+    background-size: 180% 75%;
+    background-position: top right;
+    background-repeat: no-repeat;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-gradient-canvas {
+    transition: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}

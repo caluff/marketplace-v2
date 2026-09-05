@@ -576,6 +576,7 @@ export type Routes = {
                 addresses: typeof import("@medusajs/medusa/api/store/customers/me/addresses/route") & {
                     $addressId: typeof import("@medusajs/medusa/api/store/customers/me/addresses/[address_id]/route");
                 };
+                favorites: typeof import("../src/api/store/customers/me/favorites/route");
             };
         };
         locales: typeof import("@medusajs/medusa/api/store/locales/route");

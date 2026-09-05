@@ -23,6 +23,8 @@ import type { StorefrontCatalogResult } from "@/lib/medusa"
 type CatalogSectionProps = {
   result: StorefrontCatalogResult
   activeCategoryId?: string
+  favoriteProductIds?: string[]
+  authenticated?: boolean
 }
 
 type ErrorStatus = Exclude<
@@ -105,7 +107,10 @@ function RetryButton({ activeCategoryId }: { activeCategoryId?: string }) {
 export function CatalogSection({
   result,
   activeCategoryId,
+  favoriteProductIds = [],
+  authenticated = false,
 }: CatalogSectionProps) {
+  const favorites = new Set(favoriteProductIds)
   const categories =
     result.status === "products" || result.status === "empty"
       ? result.categories
@@ -151,7 +156,13 @@ export function CatalogSection({
             ) : null}
             <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {result.products.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  index={index}
+                  isFavorite={favorites.has(product.id)}
+                  authenticated={authenticated}
+                />
               ))}
             </div>
           </>

@@ -1,10 +1,10 @@
 import type { HttpTypes } from "@medusajs/types"
-import { LogOut, Menu, UserRound } from "lucide-react"
+import { Menu, UserRound } from "lucide-react"
 import Link from "next/link"
 
-import { logoutCustomerAction } from "@/app/auth-actions"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button"
+import { CustomerMenu } from "@/features/account/components/customer-menu"
 import { cn } from "@/lib/utils"
 
 type SiteHeaderProps = {
@@ -25,8 +25,8 @@ export function SiteHeader({
   const visibleCategories = categories.slice(0, 5)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
-      <div className="mx-auto flex min-h-16 w-full max-w-[90rem] items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
+    <header className="sticky top-0 z-40 border-b border-foreground/10 bg-background/55 backdrop-blur-xl backdrop-saturate-150">
+      <div className="mx-auto flex min-h-16 w-full max-w-[90rem] items-center justify-between gap-2 px-4 sm:gap-6 sm:px-6 lg:px-10">
         <Link
           href="/"
           className="inline-flex min-h-11 items-center font-sans text-sm font-black tracking-[0.18em] uppercase outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
@@ -69,31 +69,24 @@ export function SiteHeader({
 
         <div className="flex items-center gap-1">
           <ModeToggle />
-          <div className="hidden items-center gap-1 lg:flex">
-            <Link
-              href={customer ? "/account" : "/login"}
-              className="inline-flex min-h-11 items-center gap-2 px-3 font-sans text-xs font-bold tracking-[0.08em] uppercase outline-none transition-colors hover:text-brand-accent focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              <UserRound className="size-4" aria-hidden="true" />
-              {customer?.first_name || (customer ? "Mi cuenta" : "Ingresar")}
-            </Link>
-            {customer ? (
-              <form action={logoutCustomerAction}>
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Cerrar sesión"
-                >
-                  <LogOut className="size-4" aria-hidden="true" />
-                </Button>
-              </form>
-            ) : null}
-          </div>
+          {customer ? (
+            <CustomerMenu
+              first_name={customer.first_name}
+              last_name={customer.last_name}
+              email={customer.email}
+            />
+          ) : (
+            <Button asChild variant="ghost" className="hidden lg:inline-flex">
+              <Link href="/login">
+                <UserRound className="size-4" aria-hidden="true" />
+                Ingresar
+              </Link>
+            </Button>
+          )}
           <details className="group relative lg:hidden">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-2 font-sans text-xs font-bold tracking-[0.1em] uppercase outline-none [&::-webkit-details-marker]:hidden focus-visible:ring-3 focus-visible:ring-ring/40">
+            <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center gap-2 px-2 font-sans text-xs font-bold tracking-[0.1em] uppercase outline-none [&::-webkit-details-marker]:hidden focus-visible:ring-3 focus-visible:ring-ring/40">
               <Menu aria-hidden="true" className="size-5" strokeWidth={1.75} />
-              Menú
+              <span className="sr-only sm:not-sr-only">Menú</span>
             </summary>
             <nav
               aria-label="Navegación móvil"
@@ -133,17 +126,6 @@ export function SiteHeader({
                 <UserRound className="size-4" aria-hidden="true" />
                 {customer ? "Mi cuenta" : "Iniciar sesión"}
               </Link>
-              {customer ? (
-                <form action={logoutCustomerAction}>
-                  <button
-                    type="submit"
-                    className="flex min-h-11 w-full items-center gap-2 px-3 font-sans text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-                  >
-                    <LogOut className="size-4" aria-hidden="true" />
-                    Cerrar sesión
-                  </button>
-                </form>
-              ) : null}
             </nav>
           </details>
         </div>

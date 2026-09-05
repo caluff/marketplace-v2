@@ -30,6 +30,30 @@ const INVALID_CREDENTIALS =
 const REGISTRATION_ERROR =
   "No pudimos completar el registro. Revisa los datos o recupera tu contraseña."
 
+function customerLoginError(
+  error: unknown,
+  stage: "credentials" | "profile",
+): AuthActionState {
+  const status = error instanceof FetchError ? error.status : undefined
+
+  console.error("Customer login failed", JSON.stringify({
+    stage,
+    status,
+    errorType: error instanceof Error ? error.name : "UnknownError",
+  }))
+
+  if (status === 401 || status === 403) {
+    return { status: "error", message: INVALID_CREDENTIALS }
+  }
+
+  return {
+    status: "error",
+    message: status === 429
+      ? "Demasiados intentos de acceso. Espera unos minutos y vuelve a intentarlo."
+      : "No pudimos conectar con el servicio de acceso o cargar tu perfil. Inténtalo de nuevo en unos minutos.",
+  }
+}
+
 function configurationError(): AuthActionState {
   return {
     status: "error",
@@ -49,8 +73,8 @@ async function completeCustomerLogin(
 
     try {
       await authenticatedSdk.store.customer.retrieve()
-    } catch {
-      return { status: "error", message: INVALID_CREDENTIALS }
+    } catch (error) {
+      return customerLoginError(error, "profile")
     }
 
     await setCustomerSession(result)
@@ -117,8 +141,8 @@ export async function loginCustomerAction(
       password,
     })
     return completeCustomerLogin(result, email, next)
-  } catch {
-    return { status: "error", message: INVALID_CREDENTIALS }
+  } catch (error) {
+    return customerLoginError(error, "credentials")
   }
 }
 

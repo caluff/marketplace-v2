@@ -4,6 +4,19 @@ packages:
 overrides:
   vite: 5.4.21
   fdir@6.1.1>picomatch: 3.0.1
+packageExtensions:
+  next-themes@0.4.6:
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  react-phone-number-input@3.4.18:
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 allowBuilds:
   '@medusajs/telemetry': true
   '@swc/core': true
