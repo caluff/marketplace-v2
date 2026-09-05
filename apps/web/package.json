@@ -7,10 +7,11 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
-    "test": "tsx --test lib/storefront.test.ts features/account/*.test.ts",
+    "test": "tsx --test lib/storefront.test.ts features/account/*.test.ts features/vendor-onboarding/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@marketplace-v2/theme-sync": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
     "class-variance-authority": "0.7.1",
@@ -23,9 +24,11 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-phone-number-input": "^3.4.18",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "24.13.3",
     "@types/react": "^19",

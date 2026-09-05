@@ -1,6 +1,6 @@
 "use server";
 
-import type { AuthLoginResponse } from "@medusajs/js-sdk";
+import { FetchError, type AuthLoginResponse } from "@medusajs/js-sdk";
 import { redirect } from "next/navigation";
 
 import {
@@ -48,6 +48,10 @@ async function finishVendorToken(token: string, next: string): Promise<VendorAut
 
   const membership = memberships[0];
   if (!membership) redirect("/seller/no-access");
+  if (membership.seller.status !== "open") {
+    await setVendorSeller(membership.seller.id);
+    redirect("/seller/status");
+  }
   let current;
   try {
     current = await selectAndRetrieveVendor(token, membership.seller.id);
@@ -92,8 +96,14 @@ export async function loginVendorAction(_previous: VendorAuthActionState, formDa
   if (!sdk) return configurationError();
   try {
     return completeVendorLogin(await sdk.auth.login("member", "emailpass", { email, password }), email, next);
-  } catch {
-    return { status: "error", message: INVALID_CREDENTIALS };
+  } catch (error) {
+    const isDenied = error instanceof FetchError && (error.status === 401 || error.status === 403);
+    return {
+      status: "error",
+      message: isDenied
+        ? INVALID_CREDENTIALS
+        : "No pudimos conectar con el servicio de acceso. Intenta nuevamente en unos momentos.",
+    };
   }
 }
 
@@ -124,9 +134,13 @@ export async function selectVendorSellerAction(_previous: VendorAuthActionState,
     const selected = memberships.find((entry) => entry.seller.id === sellerId);
     if (!selected) return { status: "error", message: "La tienda seleccionada ya no está disponible.", fieldErrors: { seller: "Selecciona una tienda válida." } };
     if (!selected.member?.is_active) return { status: "error", message: "Tu membresía está inactiva." };
-    const current = await selectAndRetrieveVendor(token, sellerId);
-    if (!current.member?.is_active || current.seller.id !== sellerId) return { status: "error", message: "No tienes acceso a esa tienda." };
-    await setVendorSeller(sellerId);
+    if (selected.seller.status !== "open") {
+      await setVendorSeller(sellerId);
+    } else {
+      const current = await selectAndRetrieveVendor(token, sellerId);
+      if (!current.member?.is_active || current.seller.id !== sellerId) return { status: "error", message: "No tienes acceso a esa tienda." };
+      await setVendorSeller(sellerId);
+    }
   } catch {
     return { status: "error", message: "No pudimos seleccionar la tienda. Tu acceso puede haber cambiado." };
   }

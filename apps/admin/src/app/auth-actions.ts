@@ -3,6 +3,7 @@
 import type { AuthLoginResponse } from "@medusajs/js-sdk";
 import { redirect } from "next/navigation";
 
+import { adminLoginErrorMessage } from "@/lib/auth-service";
 import {
   clearAdminReset,
   clearAdminSession,
@@ -24,14 +25,11 @@ import {
   validateCredentials,
 } from "@/lib/auth-utils";
 
-const INVALID_CREDENTIALS =
-  "No pudimos iniciar sesión con esos datos. Revisa el correo y la contraseña.";
-
 function configurationError(): AuthActionState {
   return {
     status: "error",
     message:
-      "La autenticación no está configurada. Revisa NEXT_PUBLIC_MEDUSA_BACKEND_URL.",
+      "El servicio de acceso no está disponible. Intenta más tarde o contacta al soporte.",
   };
 }
 
@@ -45,8 +43,8 @@ async function completeAdminLogin(
     if (!authenticated) return configurationError();
     try {
       await authenticated.admin.user.me();
-    } catch {
-      return { status: "error", message: INVALID_CREDENTIALS };
+    } catch (error) {
+      return { status: "error", message: adminLoginErrorMessage(error) };
     }
     await setAdminSession(result);
     redirect(safeRedirectPath(next, "/dashboard"));
@@ -108,8 +106,8 @@ export async function loginAdminAction(
       email,
       next,
     );
-  } catch {
-    return { status: "error", message: INVALID_CREDENTIALS };
+  } catch (error) {
+    return { status: "error", message: adminLoginErrorMessage(error) };
   }
 }
 

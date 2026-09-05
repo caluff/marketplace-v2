@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useActionState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { FeedbackToast } from "@/components/feedback-toast"
 import { setFavoriteAction } from "@/features/account/actions"
 import { INITIAL_ACCOUNT_STATE } from "@/features/account/types"
 import { cn } from "@/lib/utils"
@@ -61,17 +62,7 @@ export function FavoriteButton({
         )}
         {compact ? null : label}
       </Button>
-      <p
-        role="status"
-        className={cn(
-          state.status === "error" ? "text-xs text-destructive" : "sr-only",
-          compact &&
-            state.status === "error" &&
-            "absolute top-full right-0 z-10 mt-2 w-52 border border-border bg-background p-3 shadow-sm",
-        )}
-      >
-        {state.message}
-      </p>
+      <FeedbackToast feedback={state} />
     </form>
   )
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import {
   BadgePercent,
@@ -11,10 +13,12 @@ import {
   Store,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { SheetClose } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { PendingApplicationsIndicator } from "@/features/vendor-applications/components/pending-applications-provider";
 
 type NavigationItem = {
   label: string;
@@ -34,15 +38,14 @@ const navigationGroups: ReadonlyArray<{
         label: "Resumen",
         icon: LayoutDashboard,
         href: "/dashboard",
-        current: true,
       },
       {
         label: "Solicitudes",
         icon: ClipboardCheck,
-        href: "/dashboard#requests",
+        href: "/dashboard/vendor-applications",
       },
       { label: "Tiendas", icon: Store, href: "/dashboard#stores" },
-      { label: "Catálogo", icon: Package, href: "/dashboard#catalog" },
+      { label: "Catálogo", icon: Package, href: "/dashboard/product-review" },
     ],
   },
   {
@@ -102,6 +105,9 @@ function NavigationLink({
         aria-hidden="true"
       />
       <span>{item.label}</span>
+      {item.href === "/dashboard/vendor-applications" ? (
+        <PendingApplicationsIndicator />
+      ) : null}
     </Link>
   );
 
@@ -109,8 +115,9 @@ function NavigationLink({
 }
 
 export function NavigationContent({ mobile = false }: { mobile?: boolean }) {
+  const pathname = usePathname();
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <nav aria-label="Navegación principal" className="flex-1 px-3 py-5">
         <div className="space-y-6">
           {navigationGroups.map((group) => (
@@ -122,7 +129,17 @@ export function NavigationContent({ mobile = false }: { mobile?: boolean }) {
                 {group.items.map((item) => (
                   <NavigationLink
                     key={item.label}
-                    item={item}
+                    item={{
+                      ...item,
+                      current:
+                        item.href === "/dashboard"
+                          ? pathname === "/dashboard"
+                          : Boolean(
+                              item.href &&
+                              !item.href.includes("#") &&
+                              pathname.startsWith(item.href),
+                            ),
+                    }}
                     mobile={mobile}
                   />
                 ))}
@@ -135,13 +152,14 @@ export function NavigationContent({ mobile = false }: { mobile?: boolean }) {
       <div className="px-3 pb-3">
         <div className="mb-3 rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold">Entorno visual</span>
+            <span className="text-xs font-semibold">Conexión por módulo</span>
             <Badge className="border-white/10 bg-white/8 text-[10px] text-sidebar-foreground">
-              Demo
+              Mercur
             </Badge>
           </div>
           <p className="text-xs leading-4 text-sidebar-muted">
-            Datos estáticos. No hay acciones administrativas conectadas.
+            Solicitudes y revisión del catálogo conectadas a Mercur. El resumen
+            y las demás secciones conservan sus datos de demostración.
           </p>
         </div>
 

@@ -107,7 +107,7 @@ test("wires customer registration, restoration, reset, verification and logout",
   assert.match(actions, /auth\.updateProvider\(/)
   assert.match(actions, /auth\.verification\.confirm\(/)
   assert.match(actions, /finally[\s\S]*await clearCustomerSession\(\)/)
-  assert.match(sdk, /sdk\.store\.customer\.retrieve\(\)/)
+  assert.match(sdk, /retrieveCustomerSession\(sdk\?\.store\.customer\)/)
   assert.match(proxy, /pathname\.startsWith\("\/account"\)/)
 })
 
@@ -122,7 +122,12 @@ test("uses generic credential and recovery responses", async () => {
 test("keeps customer forms accessible and pending-safe", async () => {
   const forms = await readFile(new URL("../components/auth/auth-forms.tsx", import.meta.url), "utf8")
 
-  assert.match(forms, /aria-live="polite"/)
+  assert.match(forms, /<FeedbackToast feedback={state}/)
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8")
+  const toaster = await readFile(new URL("../components/ui/sonner.tsx", import.meta.url), "utf8")
+  assert.match(layout, /<Toaster/)
+  assert.match(toaster, /containerAriaLabel="Notificaciones"/)
+  assert.match(toaster, /Cerrar notificación/)
   assert.match(forms, /aria-label={visible \? "Ocultar contraseña" : "Mostrar contraseña"}/)
   assert.match(forms, /autoComplete="current-password"/)
   assert.match(forms, /autoComplete="new-password"/)

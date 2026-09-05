@@ -6,7 +6,7 @@ import { AuthShell } from "@/components/auth/auth-shell"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
 import { safeRedirectPath } from "@/lib/auth-utils"
 
-export const metadata: Metadata = { title: "Iniciar sesión | mercado / v2" }
+export const metadata: Metadata = { title: "Iniciar sesión | Marketplace V2" }
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reason?: string }> }) {
   const params = await searchParams

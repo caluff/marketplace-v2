@@ -11,6 +11,8 @@ export default async function VendorWorkspaceLayout({
 }) {
   const context = await getVendorContext();
 
+  if (context.status === "seller_unavailable") redirect("/seller/status");
+
   if (context.status === "unauthenticated") {
     redirect("/seller/login?reason=expired&next=%2Fseller");
   }
@@ -41,9 +43,10 @@ export default async function VendorWorkspaceLayout({
   }
 
   const { membership } = context;
-  const memberName = [membership.member.first_name, membership.member.last_name]
-    .filter(Boolean)
-    .join(" ") || membership.member.email;
+  const memberName =
+    [membership.member.first_name, membership.member.last_name]
+      .filter(Boolean)
+      .join(" ") || membership.member.email;
 
   return (
     <VendorShell

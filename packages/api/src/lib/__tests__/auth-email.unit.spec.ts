@@ -10,6 +10,12 @@ import authVerificationRequestedHandler, {
   config as verificationConfig,
 } from "../../subscribers/auth-verification-requested";
 
+const notificationContainer = (createNotifications: jest.Mock) => ({
+  resolve: jest.fn((module: string) => module === "locking"
+    ? { execute: jest.fn((_key: string, job: () => Promise<unknown>) => job()) }
+    : { createNotifications, listNotifications: jest.fn().mockResolvedValue([]) }),
+});
+
 describe("auth email contracts", () => {
   const environment = {
     STOREFRONT_URL: "https://shop.example.com",
@@ -89,7 +95,7 @@ describe("auth email contracts", () => {
   });
 
   it("maps password reset events to the notification contract", async () => {
-    const createNotifications = jest.fn().mockResolvedValue({});
+    const createNotifications = jest.fn().mockResolvedValue({ status: "success" });
     const environment = {
       AUTH_EMAIL_ENABLED: process.env.AUTH_EMAIL_ENABLED,
       AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
@@ -108,7 +114,7 @@ describe("auth email contracts", () => {
             actor_type: "customer",
           },
         },
-        container: { resolve: jest.fn(() => ({ createNotifications })) },
+        container: notificationContainer(createNotifications),
       } as never);
     } finally {
       for (const [key, value] of Object.entries(environment)) {
@@ -132,7 +138,7 @@ describe("auth email contracts", () => {
   });
 
   it("routes verification events using actor metadata", async () => {
-    const createNotifications = jest.fn().mockResolvedValue({});
+    const createNotifications = jest.fn().mockResolvedValue({ status: "success" });
     const environment = {
       AUTH_EMAIL_ENABLED: process.env.AUTH_EMAIL_ENABLED,
       AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
@@ -153,7 +159,7 @@ describe("auth email contracts", () => {
             metadata: { actor_type: "member" },
           },
         },
-        container: { resolve: jest.fn(() => ({ createNotifications })) },
+        container: notificationContainer(createNotifications),
       } as never);
     } finally {
       for (const [key, value] of Object.entries(environment)) {

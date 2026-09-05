@@ -1,32 +1,54 @@
 import type { Metadata } from "next";
-import { ShoppingBag } from "lucide-react";
-
-import { DemoNotice } from "@/components/vendor/demo-notice";
-import { EmptyState } from "@/components/vendor/empty-state";
+import type { HttpTypes } from "@mercurjs/types";
+import { Card } from "@/components/ui/card";
+import { RecentOrders } from "@/components/vendor/recent-orders";
+import {
+  DataError,
+  PageHeading,
+  Pagination,
+  SearchForm,
+} from "@/features/workspace/components";
+import { ORDER_LIST_FIELDS, resultOf, workspace } from "@/features/workspace/data";
+import { listInput } from "@/features/workspace/presentation";
 
 export const metadata: Metadata = { title: "Pedidos" };
-
-export default function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const { client } = await workspace();
+  const input = listInput(await searchParams);
+  const result = await resultOf(
+    client.get<HttpTypes.VendorOrderListResponse>("/vendor/orders", {
+      q: input.q || undefined,
+      offset: input.offset,
+      limit: input.limit,
+      order: "-created_at",
+      fields: ORDER_LIST_FIELDS,
+    }),
+  );
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-          Pedidos
-        </p>
-        <h1 className="mt-2 font-display text-3xl tracking-tight">
-          Cola de preparación
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Contenedor visual sin acciones de cumplimiento ni conexión al backend.
-        </p>
-      </div>
-      <DemoNotice />
-      <EmptyState
-        eyebrow="Estado vacío de muestra"
-        title="No hay pedidos conectados"
-        description="La tabla del inicio usa fixtures explícitos para revisar densidad y estados. Esta ruta no carga pedidos reales ni ofrece acciones operativas."
-        icon={ShoppingBag}
+      <PageHeading
+        eyebrow="Pedidos"
+        title="Pedidos de la tienda"
+        description="Consulta los artículos, importes y estados de tus pedidos. La gestión de envíos, cancelaciones y reembolsos estará disponible cuando se configure la operación."
       />
+      <SearchForm q={input.q} label="Buscar pedidos" />
+      {result.data ? (
+        <Card>
+          <RecentOrders orders={result.data.orders} />
+          <Pagination
+            path="/seller/orders"
+            page={input.page}
+            count={result.data.count}
+            q={input.q}
+          />
+        </Card>
+      ) : (
+        <DataError message={result.error} />
+      )}
     </div>
   );
 }

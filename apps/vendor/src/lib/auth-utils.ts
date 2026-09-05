@@ -48,6 +48,7 @@ export function safeRedirectPath(value: FormDataEntryValue | string | null | und
       "/seller/verify-email",
       "/seller/no-access",
       "/seller/select-seller",
+      "/seller/status",
     ];
     return candidate.origin === base.origin &&
       !authenticationRoutes.some((route) => candidate.pathname === route || candidate.pathname.startsWith(`${route}/`))

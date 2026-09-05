@@ -1,0 +1,20 @@
+{
+  "name": "@marketplace-v2/theme-sync",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./theme-sync.tsx"
+  },
+  "scripts": {
+    "test": "tsx --test *.test.ts"
+  },
+  "peerDependencies": {
+    "next-themes": "0.4.6",
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "tsx": "4.23.13"
+  }
+}

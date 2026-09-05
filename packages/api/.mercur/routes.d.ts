@@ -509,6 +509,11 @@ export type Routes = {
                 subscribe: typeof import("@medusajs/medusa/api/admin/workflows-executions/[workflow_id]/subscribe/route");
             };
         };
+        vendorApplications: typeof import("../src/api/admin/vendor-applications/route") & {
+            $id: typeof import("../src/api/admin/vendor-applications/[id]/route") & {
+                review: typeof import("../src/api/admin/vendor-applications/[id]/review/route");
+            };
+        };
     };
     auth: {
         $actorType: {
@@ -637,6 +642,14 @@ export type Routes = {
             $id: {
                 calculate: typeof import("@medusajs/medusa/api/store/shipping-options/[id]/calculate/route");
             };
+        };
+        vendorApplication: typeof import("../src/api/store/vendor-application/route") & {
+            notifications: typeof import("../src/api/store/vendor-application/notifications/route") & {
+                read: typeof import("../src/api/store/vendor-application/notifications/read/route");
+            };
+            options: typeof import("../src/api/store/vendor-application/options/route");
+            submit: typeof import("../src/api/store/vendor-application/submit/route");
+            verification: typeof import("../src/api/store/vendor-application/verification/route");
         };
     };
     vendor: {
@@ -924,5 +937,7 @@ export type Routes = {
         };
         stores: typeof import("@mercurjs/core/api/vendor/stores/route");
         uploads: typeof import("@mercurjs/core/api/vendor/uploads/route");
+        inventoryAdjustments: typeof import("../src/api/vendor/inventory-adjustments/route");
+        onboarding: typeof import("../src/api/vendor/onboarding/route");
     };
 };

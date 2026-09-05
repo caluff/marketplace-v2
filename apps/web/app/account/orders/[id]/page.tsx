@@ -25,7 +25,7 @@ import {
 } from "@/features/account/order-format"
 
 export const metadata: Metadata = {
-  title: "Detalle de la orden | mercado / v2",
+  title: "Detalle de la orden | Marketplace V2",
 }
 
 function OrderAddress({

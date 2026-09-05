@@ -127,12 +127,15 @@ importers:
 
   apps/admin:
     dependencies:
+      '@marketplace-v2/theme-sync':
+        specifier: workspace:*
+        version: link:../../packages/theme-sync
       '@medusajs/js-sdk':
         specifier: 2.18.0
         version: 2.18.0
       '@medusajs/types':
         specifier: 2.18.0
-        version: 2.18.0(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+        version: 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -157,10 +160,19 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
+      sonner:
+        specifier: 2.0.8
+        version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0
     devDependencies:
+      '@marketplace-v2/vendor-onboarding-contracts':
+        specifier: workspace:*
+        version: link:../../packages/vendor-onboarding-contracts
+      '@mercurjs/types':
+        specifier: 2.3.3
+        version: 2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
       '@tailwindcss/postcss':
         specifier: 4.3.3
         version: 4.3.3
@@ -191,15 +203,18 @@ importers:
 
   apps/vendor:
     dependencies:
+      '@marketplace-v2/theme-sync':
+        specifier: workspace:*
+        version: link:../../packages/theme-sync
       '@medusajs/js-sdk':
         specifier: 2.18.0
         version: 2.18.0
       '@medusajs/types':
         specifier: 2.18.0
-        version: 2.18.0(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+        version: 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
       '@mercurjs/types':
         specifier: 2.3.3
-        version: 2.3.3(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+        version: 2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -224,10 +239,16 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
+      sonner:
+        specifier: 2.0.8
+        version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0
     devDependencies:
+      '@marketplace-v2/vendor-onboarding-contracts':
+        specifier: workspace:*
+        version: link:../../packages/vendor-onboarding-contracts
       '@tailwindcss/postcss':
         specifier: 4.3.3
         version: 4.3.3
@@ -258,12 +279,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@marketplace-v2/theme-sync':
+        specifier: workspace:*
+        version: link:../../packages/theme-sync
       '@medusajs/js-sdk':
         specifier: 2.18.0
         version: 2.18.0
       '@medusajs/types':
         specifier: 2.18.0
-        version: 2.18.0(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+        version: 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -294,10 +318,16 @@ importers:
       react-phone-number-input:
         specifier: ^3.4.18
         version: 3.4.18(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      sonner:
+        specifier: ^2.0.8
+        version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.6.0
     devDependencies:
+      '@marketplace-v2/vendor-onboarding-contracts':
+        specifier: workspace:*
+        version: link:../../packages/vendor-onboarding-contracts
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -343,6 +373,9 @@ importers:
       '@medusajs/framework':
         specifier: 2.18.0
         version: 2.18.0(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3)
+      '@medusajs/inventory':
+        specifier: 2.18.0
+        version: 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))
       '@medusajs/medusa':
         specifier: 2.18.0
         version: 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/test-utils@2.18.0)(@swc/core@1.16.1(@swc/helpers@0.5.23))(@types/node@24.13.3)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(awilix@8.0.1)(debug@4.4.3(supports-color@8.1.1))(lightningcss@1.32.0)(posthog-node@5.51.6(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@8.1.1)(typescript@5.9.3)(yalc@1.0.0-pre.53)
@@ -351,7 +384,7 @@ importers:
         version: 2.3.3(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/medusa@2.18.0)(@medusajs/test-utils@2.18.0)(express@4.22.2(supports-color@8.1.1))
       '@mercurjs/types':
         specifier: 2.3.3
-        version: 2.3.3(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+        version: 2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
       cross-env:
         specifier: 10.1.0
         version: 10.1.0
@@ -361,6 +394,9 @@ importers:
       libphonenumber-js:
         specifier: ^1.13.12
         version: 1.13.12
+      resend:
+        specifier: 6.26.0
+        version: 6.26.0
     devDependencies:
       '@medusajs/eslint-plugin':
         specifier: 2.18.0
@@ -416,6 +452,31 @@ importers:
       yalc:
         specifier: ^1.0.0-pre.53
         version: 1.0.0-pre.53
+
+  packages/theme-sync:
+    dependencies:
+      next-themes:
+        specifier: 0.4.6
+        version: 0.4.6(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.18
+        version: 19.2.18
+      tsx:
+        specifier: 4.23.13
+        version: 4.23.13
+
+  packages/vendor-onboarding-contracts:
+    dependencies:
+      '@medusajs/types':
+        specifier: 2.18.0
+        version: 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+      '@mercurjs/types':
+        specifier: 2.3.3
+        version: 2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
 
 packages:
 
@@ -4183,6 +4244,9 @@ packages:
   '@so-ric/colorspace@1.1.6':
     resolution: {integrity: sha512-/KiKkpHNOBgkFJwu9sh48LkHSMYGyuTcSFK/qMBdnOAlrRJzRSXAOFB5qwzaVQuDl8wAvHVMkaASQDReTahxuw==}
 
+  '@stablelib/base64@1.0.1':
+    resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
+
   '@swc/core-darwin-arm64@1.16.1':
     resolution: {integrity: sha512-zlJblJ8ncErD43lKdxjbUaUskJQf+LxiPXYcWXD8/8ZMV+7uuAT+CwjciLXpyZBd5Pq/S726bMpeeAwSeL1hhg==}
     engines: {node: '>=10'}
@@ -5815,6 +5879,9 @@ packages:
   fast-levenshtein@2.0.6:
     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
 
+  fast-sha256@1.3.0:
+    resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
+
   fastq@1.20.3:
     resolution: {integrity: sha512-XKv5nnLs6nLF71NgiKJLIZFLkPyIEuOselLG7ujZnGrRfQK8HpvY+WqKhAJUAdLomwVHErVS4LfxFlPq0/FTAw==}
 
@@ -7414,6 +7481,9 @@ packages:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
     engines: {node: '>= 0.4'}
 
+  postal-mime@2.7.5:
+    resolution: {integrity: sha512-GNEXKvWFQnbgO5NlrGzVa0FmWzBZ24PersAWErttSg1Hjpf0ATxTwS5DOMGaOpTG6bUh5cTr7xi0jAD942wCJA==}
+
   postcss-import@15.1.0:
     resolution: {integrity: sha512-hpr+J05B2FVYUAXHeK1YyI267J/dDDhMU6B6civm8hSY1jYJnBXxzKDKDswzJmtLHryrjhnDjqqp/49t8FALew==}
     engines: {node: '>=14.0.0'}
@@ -7824,6 +7894,15 @@ packages:
   requires-port@1.0.0:
     resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
 
+  resend@6.26.0:
+    resolution: {integrity: sha512-vkrULozV5nGF8o7tyun/t0+qFgtPpn+cyRhVqeorhOsPUNDiSc/9p/pn8AprdHqJpYaTvftpnQgWurW++FkCdw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@react-email/render': '*'
+    peerDependenciesMeta:
+      '@react-email/render':
+        optional: true
+
   resolve-cwd@3.0.0:
     resolution: {integrity: sha512-OrZaX2Mb+rJCpH/6CpSqt9xFVpN++x01XnN2ie9g6P5/3xelLAkXWVADpdz1IHD/KFfEXyE6V0U01OQ3UO2rEg==}
     engines: {node: '>=8'}
@@ -8024,6 +8103,16 @@ packages:
       react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
 
+  sonner@2.0.8:
+    resolution: {integrity: sha512-UM/ByIoFra8yzV75n1o0Puu0bw5U/9UNnDacrJNspekBewIfsQ3D6ez1nvlWpt7aTsO6rujQtifBpycwIivqlg==}
+    peerDependencies:
+      '@types/react': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   sorted-array-functions@1.3.0:
     resolution: {integrity: sha512-2sqgzeFlid6N4Z2fUQ1cvFmTOLRi/sEDzSQ0OKYchqgoPmQBVyM3959qYx3fpS6Esef80KjmpgPeEr028dP3OA==}
 
@@ -8064,6 +8153,9 @@ packages:
 
   standard-as-callback@2.1.0:
     resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
+
+  standardwebhooks@1.0.0:
+    resolution: {integrity: sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==}
 
   statuses@2.0.1:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
@@ -10334,7 +10426,7 @@ snapshots:
       '@medusajs/modules-sdk': 2.18.0(@types/node@24.13.3)(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1)
       '@medusajs/orchestration': 2.18.0(@types/node@24.13.3)(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1)
       '@medusajs/telemetry': 2.18.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
-      '@medusajs/types': 2.18.0(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+      '@medusajs/types': 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
       '@medusajs/utils': 2.18.0(@types/node@24.13.3)(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1)
       '@medusajs/workflows-sdk': 2.18.0(@types/node@24.13.3)(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1)
       '@types/express': 4.17.25
@@ -10683,7 +10775,7 @@ snapshots:
     dependencies:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3)
 
-  '@medusajs/types@2.18.0(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))':
+  '@medusajs/types@2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))':
     dependencies:
       bignumber.js: 9.3.1
     optionalDependencies:
@@ -10805,9 +10897,9 @@ snapshots:
 
   '@mercurjs/docs@2.3.3': {}
 
-  '@mercurjs/types@2.3.3(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))':
+  '@mercurjs/types@2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))':
     dependencies:
-      '@medusajs/types': 2.18.0(ioredis@5.11.1(supports-color@8.1.1))(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+      '@medusajs/types': 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
     transitivePeerDependencies:
       - ioredis
       - vite
@@ -14465,6 +14557,8 @@ snapshots:
       color: 5.0.3
       text-hex: 1.0.0
 
+  '@stablelib/base64@1.0.1': {}
+
   '@swc/core-darwin-arm64@1.16.1':
     optional: true
 
@@ -16552,6 +16646,8 @@ snapshots:
 
   fast-levenshtein@2.0.6: {}
 
+  fast-sha256@1.3.0: {}
+
   fastq@1.20.3:
     dependencies:
       reusify: 1.1.0
@@ -18323,6 +18419,8 @@ snapshots:
 
   possible-typed-array-names@1.1.0: {}
 
+  postal-mime@2.7.5: {}
+
   postcss-import@15.1.0(postcss@8.5.26):
     dependencies:
       postcss: 8.5.26
@@ -18966,6 +19064,11 @@ snapshots:
 
   requires-port@1.0.0: {}
 
+  resend@6.26.0:
+    dependencies:
+      postal-mime: 2.7.5
+      standardwebhooks: 1.0.0
+
   resolve-cwd@3.0.0:
     dependencies:
       resolve-from: 5.0.0
@@ -19239,6 +19342,13 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
+  sonner@2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+    optionalDependencies:
+      '@types/react': 19.2.18
+
   sorted-array-functions@1.3.0: {}
 
   source-map-js@1.2.1: {}
@@ -19269,6 +19379,11 @@ snapshots:
       escape-string-regexp: 2.0.0
 
   standard-as-callback@2.1.0: {}
+
+  standardwebhooks@1.0.0:
+    dependencies:
+      '@stablelib/base64': 1.0.1
+      fast-sha256: 1.3.0
 
   statuses@2.0.1: {}
 

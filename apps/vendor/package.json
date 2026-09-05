@@ -8,9 +8,10 @@
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/demo-data.test.ts"
+    "test": "tsx --test src/lib/demo-data.test.ts src/lib/feedback.test.ts src/features/workspace/workspace.test.ts"
   },
   "dependencies": {
+    "@marketplace-v2/theme-sync": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
     "@mercurjs/types": "2.3.3",
@@ -22,9 +23,11 @@
     "radix-ui": "1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sonner": "2.0.8",
     "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
+    "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",

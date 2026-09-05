@@ -82,6 +82,8 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:web",
       watchPatterns: [
         "/apps/web/**",
+        "/packages/theme-sync/**",
+        "/packages/vendor-onboarding-contracts/**",
         "/.railway/**",
         "/.npmrc",
         "/package.json",
@@ -106,6 +108,8 @@ export default defineRailway((ctx) => {
         "https://api-production-ed23.up.railway.app",
       NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:
         ctx.shared.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
+      NEXT_PUBLIC_VENDOR_URL:
+        "https://marketplace-v2vendor-production.up.railway.app",
     },
   });
 
@@ -117,6 +121,8 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:admin",
       watchPatterns: [
         "/apps/admin/**",
+        "/packages/theme-sync/**",
+        "/packages/vendor-onboarding-contracts/**",
         "/.railway/**",
         "/.npmrc",
         "/package.json",
@@ -150,6 +156,8 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:vendor",
       watchPatterns: [
         "/apps/vendor/**",
+        "/packages/theme-sync/**",
+        "/packages/vendor-onboarding-contracts/**",
         "/.railway/**",
         "/.npmrc",
         "/package.json",
@@ -172,6 +180,8 @@ export default defineRailway((ctx) => {
       NODE_ENV: "production",
       NEXT_PUBLIC_MEDUSA_BACKEND_URL:
         "https://api-production-ed23.up.railway.app",
+      NEXT_PUBLIC_STOREFRONT_URL:
+        "https://marketplace-v2web-production.up.railway.app",
     },
   });
 

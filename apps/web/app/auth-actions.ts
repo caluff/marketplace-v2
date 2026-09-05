@@ -77,7 +77,7 @@ async function completeCustomerLogin(
       return customerLoginError(error, "profile")
     }
 
-    await setCustomerSession(result)
+    await setCustomerSession(result, safeRedirectPath(next, "/account") === "/account/sell")
     redirect(safeRedirectPath(next, "/account"))
   }
 

@@ -1,0 +1,111 @@
+import "server-only";
+
+import { FetchError } from "@medusajs/js-sdk";
+import type { HttpTypes } from "@mercurjs/types";
+import { cache } from "react";
+import { redirect } from "next/navigation";
+import {
+  createVendorSdk,
+  getVendorContext,
+  getVendorToken,
+} from "@/lib/auth-sdk";
+import {
+  scopedClient,
+  visibleProduct,
+  type AuthorizedVendor,
+} from "./operations";
+
+// Native order reads can expand fulfillments; compose the published contracts.
+export type VendorOrderDetailResponse = {
+  order: HttpTypes.VendorOrderResponse["order"] & {
+    fulfillments?: HttpTypes.VendorFulfillmentResponse["fulfillment"][];
+  };
+};
+
+export async function authorizeVendor(): Promise<AuthorizedVendor> {
+  const context = await getVendorContext();
+  if (context.status !== "authenticated")
+    throw new Error(
+      "Tu sesión o el acceso a la tienda cambió. Inicia sesión nuevamente; solo las tiendas activas pueden operar.",
+    );
+  const sdk = createVendorSdk(await getVendorToken());
+  if (!sdk) throw new Error("El servicio del portal no está configurado.");
+  return { sdk, membership: context.membership };
+}
+
+export const workspace = cache(async () => {
+  const context = await getVendorContext();
+  if (context.status === "seller_unavailable") redirect("/seller/status");
+  if (context.status === "seller_missing") redirect("/seller/select-seller");
+  if (context.status === "unauthenticated")
+    redirect("/seller/login?reason=expired");
+  if (context.status !== "authenticated") redirect("/seller/no-access");
+  const sdk = createVendorSdk(await getVendorToken());
+  if (!sdk) throw new Error("El servicio del portal no está configurado.");
+  return {
+    client: scopedClient({ sdk, membership: context.membership }),
+    membership: context.membership,
+  };
+});
+
+export function errorMessage(error: unknown) {
+  if (error instanceof FetchError) {
+    if (error.status === 401)
+      return "Tu sesión venció. Inicia sesión nuevamente.";
+    if (error.status === 403)
+      return "Tu rol o el estado de la tienda no permite esta operación.";
+    if (error.status === 404)
+      return "El registro no existe o no está disponible para esta tienda.";
+    if (error.status && error.status >= 400 && error.status < 500)
+      return `No se pudo completar la operación: ${error.message.slice(0, 400)}`;
+    return "El servicio no está disponible. Inténtalo nuevamente en unos momentos.";
+  }
+  return error instanceof Error
+    ? error.message
+    : "No se pudo completar la operación.";
+}
+
+export async function resultOf<T>(
+  request: Promise<T>,
+): Promise<{ data: T; error?: never } | { error: string; data?: never }> {
+  try {
+    return { data: await request };
+  } catch (error) {
+    return { error: errorMessage(error) };
+  }
+}
+
+export async function productDetail(id: string) {
+  const { client } = await workspace();
+  await visibleProduct(client, id);
+  return client.get<HttpTypes.VendorProductResponse>(`/vendor/products/${id}`, {
+    fields:
+      "id,title,subtitle,description,status,handle,variants.id,variants.title,variants.sku,changes.id,changes.status,changes.created_by,changes.created_at,changes.external_note,changes.declined_reason",
+  });
+}
+
+export async function inventoryLevels(
+  client: ReturnType<typeof scopedClient>,
+  id: string,
+) {
+  const levels: HttpTypes.VendorInventoryLevel[] = [];
+  for (let offset = 0; ; offset += 100) {
+    const response =
+      await client.get<HttpTypes.VendorInventoryLevelListResponse>(
+        `/vendor/inventory-items/${id}/location-levels`,
+        { limit: 100, offset },
+      );
+    levels.push(...response.inventory_levels);
+    if (
+      !response.inventory_levels.length ||
+      offset + response.inventory_levels.length >= response.count
+    )
+      return levels;
+  }
+}
+
+export const ORDER_FIELDS =
+  "id,display_id,status,email,currency_code,created_at,total,items.id,items.title,items.quantity,items.unit_price,items.total,shipping_address.*,fulfillments.id,fulfillments.packed_at,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.canceled_at";
+
+export const ORDER_LIST_FIELDS =
+  "id,display_id,status,email,currency_code,created_at,total";

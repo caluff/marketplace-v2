@@ -20,16 +20,25 @@ Use pnpm only. Prefer dependencies that are already installed. Do not add a
 production dependency when the platform or an existing package already covers
 the requirement.
 
+## Execution and autonomy
+
+- Infer the user's intended scope from the request, repository context, and nearby implementation.
+- When the user asks to implement, fix, refactor, review, or investigate something, carry the task through to completion rather than stopping after analysis or a plan.
+- Make reasonable, reversible implementation decisions autonomously when repository conventions provide a clear answer.
+- Ask the user only when a decision is genuinely blocking, materially changes product behavior, requires unavailable credentials, or would be destructive or difficult to reverse.
+- Do not ask for confirmation for ordinary code edits, repository inspection, documentation lookup, targeted tests, formatting, or other reversible development actions.
+- Do not stop after proposing what should be changed when the requested work can be performed directly.
+
 ## Documentation first
 
-Use Context7 MCP whenever the task asks about a library, framework, SDK, API,
-CLI, or cloud service, including setup, configuration, migration, API syntax,
-library-specific debugging, or version-sensitive behavior.
+Use Context7 when implementation depends on version-sensitive or uncertain behavior of a library, framework, SDK, API, CLI, or cloud service, or when the user explicitly asks for documentation-backed guidance.
+
+Do not query Context7 when the answer is already established by repository source, installed types, tests, version-matched local documentation, or a previously loaded authoritative source.
 
 1. Call `resolve-library-id` with the library name and the user's question,
-   unless an exact `/org/project` Context7 ID was provided.
+ unless an exact `/org/project` Context7 ID was provided.
 2. Select the closest official source, preferring strong documentation coverage,
-   source reputation, and the requested version.
+ source reputation, and the requested version.
 3. Call `query-docs` with the selected ID and one focused concept per query.
 4. Base the implementation or answer on the fetched documentation.
 
@@ -46,9 +55,9 @@ Before writing code:
 
 1. Inspect the nearest implementation, package manifest, and configuration.
 2. Locate existing components, SDK clients, helpers, schemas, tests, and naming
-   conventions before creating new ones.
+ conventions before creating new ones.
 3. Confirm that an imported API, route, type, component, or utility actually
-   exists. Never invent project abstractions.
+ exists. Never invent project abstractions.
 4. Preserve unrelated user changes in a dirty worktree.
 
 If a requested feature has no established local pattern, use the framework's
@@ -74,12 +83,12 @@ Repository boundaries:
 - Applications must not import source files directly from another application.
 - Frontends must not import backend source or access PostgreSQL/Redis directly.
 - Communication with the backend goes through the appropriate typed Medusa or
-  Mercur SDK.
+Mercur SDK.
 - Keep code local to an application by default. Create a shared workspace
-  package only after code is genuinely reused by at least two applications and
-  has a stable, application-agnostic public API.
+package only after code is genuinely reused by at least two applications and
+has a stable, application-agnostic public API.
 - Do not create a broad `shared`, `common`, or `utils` package for speculative
-  reuse.
+reuse.
 
 ## Frontend organization
 
@@ -90,31 +99,62 @@ application being edited rather than moving files solely for uniformity.
 Within each frontend:
 
 - `app/`: routes, layouts, metadata, loading/error boundaries, and route-level
-  composition.
+composition.
 - Route-local `_components/`: UI used only by that route or route subtree.
 - `features/<domain>/`: substantial reusable business features, including their
-  components, hooks, schemas, query keys, and feature-specific helpers.
+components, hooks, schemas, query keys, and feature-specific helpers.
 - `components/ui/`: generic UI primitives without marketplace business logic.
 - `components/`: application-wide layout and reusable presentation components.
 - `lib/`: SDK clients, environment validation, infrastructure adapters, and
-  generic pure helpers.
+generic pure helpers.
 
 Frontend rules:
 
 - Keep route files thin. They load/validate route input and compose feature UI.
 - Use Server Components by default. Add `"use client"` only for browser APIs,
-  event handlers, or client state.
+event handlers, or client state.
 - Keep server state in the backend/SDK cache rather than duplicating it in a
-  global client store.
+global client store.
 - Use Next.js `Image` for product and editorial images when compatible with the
-  source. Configure allowed remote origins explicitly.
+source. Configure allowed remote origins explicitly.
 - Use dynamic routes for products, categories, sellers, and other data-driven
-  entities.
+entities.
 - Do not hardcode products, categories, regions, inventory, shipping options, or
-  other backend-owned data in operational storefront code.
+other backend-owned data in operational storefront code.
 - Handle loading, error, empty, and success states explicitly.
 - Preserve each application's existing visual language. Do not assume the
-  storefront, operator panel, and vendor panel share one design system.
+storefront, operator panel, and vendor panel share one design system.
+
+### Progressive rendering and loading states
+
+Apply these rules whenever creating or changing a view in `apps/web`,
+`apps/admin`, or `apps/vendor`:
+
+- Identify which parts actually depend on remote data before composing the
+  view. Render independent content immediately: the layout, static navigation,
+  hero, headings, labels, and footer must not wait for unrelated API requests.
+- Isolate data-dependent content in focused components. In Server Components,
+  place `await` inside the consuming child and wrap that child in a local
+  `Suspense` boundary. Do not await all view data in a page or layout before
+  returning otherwise independent content.
+- Start independent requests in parallel and share promises or existing
+  request deduplication where appropriate. Products must not wait for account,
+  favorites, or seller status when only their individual controls need that
+  information.
+- Scope skeletons to the smallest meaningful loading region, such as a product
+  grid, table body, counter, or account control. Keep already available content
+  visible. Do not replace an entire view with skeletons unless the entire view
+  genuinely depends on the pending data; `loading.tsx` is not a default reason
+  to skeletonize static content.
+- Match skeleton dimensions to the content they replace to minimize layout
+  shifts. Keep empty and error states local where possible, and never show
+  fabricated data or a logged-out state while authentication is unresolved.
+- Preserve required authentication and authorization gates: progressive
+  rendering must never expose protected content before access is verified.
+- When implementing loading behavior, verify initial loads and navigation with
+  slow responses: independent content appears first, only dependent regions
+  show loading indicators, and those regions resolve to success, empty, or
+  error states without replacing the rest of the view.
 
 ## Backend organization
 
@@ -128,12 +168,12 @@ Module → Workflow → API route → Typed frontend SDK
 Use the Medusa conventions below:
 
 - `src/modules/<domain>/`: one domain's models, service, module definition, and
-  migrations.
+migrations.
 - `src/workflows/`: mutation orchestration and cross-domain business processes.
 - `src/workflows/steps/`: focused workflow operations with compensation where
-  applicable.
+applicable.
 - `src/api/`: thin HTTP adapters, authentication/scoping middleware, and request
-  validation.
+validation.
 - `src/links/`: relationships between separate modules.
 - `src/subscribers/`: asynchronous reactions to domain events.
 - `src/jobs/`: scheduled background work.
@@ -142,23 +182,23 @@ Use the Medusa conventions below:
 Backend rules:
 
 - All mutations go through workflows. API routes must not call module mutation
-  methods directly.
+methods directly.
 - Keep business validation, ownership checks, and cross-domain orchestration in
-  workflows, not route handlers.
+workflows, not route handlers.
 - Modules own their data and must not import or directly call other modules.
-  Connect domains with module links.
+Connect domains with module links.
 - Use Medusa Query for reads across modules. Use `query.graph()` for graph
-  retrieval and `query.index()` when filtering across linked modules.
+retrieval and `query.index()` when filtering across linked modules.
 - Use Zod from `@medusajs/framework/zod` in Medusa code and derive request types
-  from schemas.
+from schemas.
 - Use authenticated request types for protected routes and rely on configured
-  authentication/scoping middleware.
+authentication/scoping middleware.
 - Keep workflow composition functions synchronous; use workflow primitives such
-  as steps, `transform`, and `when` rather than ordinary async control flow.
+as steps, `transform`, and `when` rather than ordinary async control flow.
 - Use static imports. Do not dynamically import workflows or modules inside
-  request handlers.
+request handlers.
 - Medusa prices are stored in display units. Do not multiply or divide values by
-  100 when saving or rendering prices.
+100 when saving or rendering prices.
 
 ## Backend integration from frontends
 
@@ -166,11 +206,11 @@ Backend rules:
 - Use built-in SDK methods for built-in endpoints.
 - Use the SDK's generic client method for custom routes.
 - Do not use raw `fetch` for Medusa/Mercur API calls; the SDK supplies required
-  publishable-key, authentication, and session headers.
+publishable-key, authentication, and session headers.
 - Pass plain objects to SDK request bodies. Do not pre-serialize them with
-  `JSON.stringify` unless the verified API explicitly requires a string.
+`JSON.stringify` unless the verified API explicitly requires a string.
 - Use published or generated Medusa/Mercur types. Do not maintain handwritten
-  copies of backend entity types in frontend applications.
+copies of backend entity types in frontend applications.
 - Include the correct region when retrieving priced storefront entities.
 
 ## Naming and TypeScript
@@ -184,25 +224,25 @@ Backend rules:
 - Use `import type` for type-only imports.
 - Prefer inference when it is clear; add explicit types at public boundaries.
 - Derive TypeScript types from Zod schemas instead of duplicating validation
-  shapes.
+shapes.
 - Keep functions and components focused. Split large files at domain or behavior
-  boundaries rather than extracting arbitrary tiny helpers.
+boundaries rather than extracting arbitrary tiny helpers.
 
 ## Product and security boundaries
 
 - Store backend credentials only in the ignored root `.env`.
-- Browser-visible storefront configuration belongs in the ignored
-  `apps/web/.env.local` and must be limited to public values.
+- Browser-visible storefront configuration may use `apps/web/.env.local` for local development and platform-managed environment variables in deployed environments. Only explicitly public values may use `NEXT_PUBLIC_*`.
+`apps/web/.env.local` and must be limited to public values.
 - Never commit database, Redis, signing, admin, or provider secrets.
 - Keep seller registration disabled unless marketplace onboarding is explicitly
-  requested.
+requested.
 - Do not add Stripe, checkout, seller onboarding, payments, or payouts without
-  an explicit request.
+an explicit request.
 - `apps/admin` and `apps/vendor` are currently demonstration shells. Do not
-  present their authentication, records, or controls as operational until they
-  are connected to Mercur deliberately.
+present their authentication, records, or controls as operational until they
+are connected to Mercur deliberately.
 - Validate external input and enforce authorization on the backend. UI hiding is
-  not an authorization mechanism.
+not an authorization mechanism.
 
 ## Required skills
 
@@ -210,10 +250,10 @@ Before planning, researching, implementing, reviewing, or debugging these areas,
 load every applicable installed skill:
 
 - Medusa backend modules, workflows, API routes, subscribers, jobs, links, or
-  data models: `building-with-medusa`.
+data models: `building-with-medusa`.
 - Medusa Admin extensions: `building-admin-dashboard-customizations`.
 - Storefront work or Store API consumption in `apps/web`:
-  `building-storefronts` and `storefront-best-practices`.
+`building-storefronts` and `storefront-best-practices`.
 - Database migration generation: `db-generate` plus `building-with-medusa`.
 - Running Medusa migrations: `db-migrate` plus `building-with-medusa`.
 - Creating a Medusa admin user: `new-user`.
@@ -229,17 +269,24 @@ requirements take precedence over optional skill guidance.
 - Make the smallest coherent change that satisfies the request.
 - Preserve architecture, formatting, import style, and naming in nearby files.
 - Do not rewrite entire files or migrate an unrelated legacy area unless the
-  user explicitly requests it.
+user explicitly requests it.
 - Avoid touching unrelated code, generated output, build artifacts, or lockfile
-  entries.
+entries.
 - Update the root lockfile only through pnpm when dependencies actually change.
 - Add comments only where intent, constraints, or non-obvious business behavior
-  would otherwise be unclear.
+would otherwise be unclear.
 
 ## Validation before completion
 
 Run checks proportional to the affected area. Do not claim a check passed unless
 it was executed successfully.
+
+During implementation:
+- Prefer targeted typecheck, lint, and focused tests when useful for feedback.
+
+At completion:
+- Run the required completion checks for the affected area once.
+- Repeat a check only when subsequent changes could invalidate its result.
 
 Useful commands:
 
@@ -254,16 +301,29 @@ pnpm peers check
 Targeted variants are available as `lint:*`, `typecheck:*`, `test:*`, and
 `build:*` for `web`, `admin`, `vendor`, and `api`.
 
-- After changing one application, run its targeted lint and typecheck plus the
-  closest meaningful tests.
-- After changing Medusa modules, workflows, links, configuration, or API routes,
-  run the API lint, typecheck, tests, and build.
+- For changes limited to one application, the completion gate is its targeted lint and typecheck plus the closest meaningful tests.
+- For changes to Medusa modules, workflows, links, configuration, or API routes, the completion gate is API lint, typecheck, tests, and build.
 - After changing shared configuration, dependencies, or multiple applications,
-  run the corresponding root checks and `pnpm peers check` when dependencies
-  changed.
+run the corresponding root checks and `pnpm peers check` when dependencies
+changed.
 - Documentation-only changes do not require application builds.
 - If a required check cannot run because of missing infrastructure or
-  credentials, report exactly what was not verified.
+credentials, report exactly what was not verified.
+
+## Parallel work and subagents
+
+Use subagents when independent work can be performed in parallel and doing so materially reduces latency or improves coverage.
+
+Good candidates include:
+- repository exploration across independent areas;
+- documentation research;
+- independent frontend and backend investigation;
+- test failure investigation;
+- review of a completed implementation.
+
+Do not delegate trivial edits or tightly coupled work where coordination would cost more than performing the task directly.
+
+Subagents must not make overlapping edits to the same files unless explicitly coordinated.
 
 ## Review checklist
 
@@ -271,10 +331,12 @@ Before finishing, verify that:
 
 - The change follows the repository and domain boundaries above.
 - Inputs, authorization, errors, and empty/loading states are handled where
-  relevant.
+relevant.
+- Independent view content renders without waiting for unrelated data, and
+  skeletons are limited to the components that actually need loading states.
 - Types come from schemas or official/generated contracts rather than duplicate
-  definitions.
+definitions.
 - No secret, generated artifact, unrelated edit, or unnecessary dependency was
-  introduced.
+introduced.
 - Tests exercise meaningful behavior instead of merely mirroring the
-  implementation.
+implementation.

@@ -14,24 +14,24 @@ import {
   verifyCustomerMfaAction,
 } from "@/app/auth-actions"
 import { Button } from "@/components/ui/button"
+import { FeedbackToast } from "@/components/feedback-toast"
 import { INITIAL_AUTH_STATE, type AuthActionState } from "@/lib/auth-utils"
 
+const EXPIRED_SESSION_FEEDBACK = { status: "warning", message: "Tu sesión venció. Inicia sesión nuevamente." }
+const INVALID_RESET_FEEDBACK: AuthActionState = { status: "error", message: "El enlace no es válido o ya venció. Solicita uno nuevo." }
+
 function FieldError({ message }: { message?: string }) {
-  return message ? <p className="font-sans text-xs font-semibold text-accent">{message}</p> : null
+  return message ? <p className="font-sans text-xs font-semibold text-destructive">{message}</p> : null
 }
 
 function Status({ state }: { state: AuthActionState }) {
-  if (!state.message) return <div aria-live="polite" className="sr-only" />
   return (
-    <div
-      aria-live="polite"
-      className={state.status === "success" ? "border border-primary/25 bg-muted p-3 font-sans text-sm" : "border border-accent/40 bg-accent/8 p-3 font-sans text-sm"}
-    >
-      {state.message}
+    <>
+      <FeedbackToast feedback={state} />
       {state.status === "external_redirect" && state.externalUrl ? (
         <a className="mt-3 flex min-h-11 items-center justify-center bg-primary px-4 font-semibold text-primary-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/40" href={state.externalUrl}>Continuar con el proveedor</a>
       ) : null}
-    </div>
+    </>
   )
 }
 
@@ -110,7 +110,7 @@ export function CustomerLoginForm({ next, expired }: { next: string; expired?: b
   return (
     <form action={action} className="space-y-5" aria-label="Inicio de sesión de cliente">
       <input type="hidden" name="next" value={next} />
-      {expired ? <p role="status" className="border border-accent/35 bg-accent/8 p-3 font-sans text-sm">Tu sesión venció. Inicia sesión nuevamente.</p> : null}
+      {expired ? <FeedbackToast feedback={EXPIRED_SESSION_FEEDBACK} /> : null}
       <TextField id="login-email" name="email" label="Correo electrónico" type="email" autoComplete="email" error={state.fieldErrors?.email} />
       <div>
         <PasswordField id="login-password" name="password" label="Contraseña" autoComplete="current-password" error={state.fieldErrors?.password} />
@@ -156,7 +156,7 @@ export function CustomerResetPasswordForm({ hasToken }: { hasToken: boolean }) {
   const [state, action, pending] = useActionState(resetCustomerPasswordAction, INITIAL_AUTH_STATE)
   return (
     <form action={action} className="space-y-5" aria-label="Restablecer contraseña">
-      {!hasToken && state.status === "idle" ? <Status state={{ status: "error", message: "El enlace no es válido o ya venció. Solicita uno nuevo." }} /> : null}
+      {!hasToken && state.status === "idle" ? <Status state={INVALID_RESET_FEEDBACK} /> : null}
       <PasswordField id="reset-password" name="password" label="Nueva contraseña" autoComplete="new-password" error={state.fieldErrors?.password} />
       <PasswordField id="reset-confirmation" name="confirmation" label="Repite la contraseña" autoComplete="new-password" />
       <Status state={state} />

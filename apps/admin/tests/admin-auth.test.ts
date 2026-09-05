@@ -42,11 +42,11 @@ test("wires invalid credentials, reset, restoration and local logout", async () 
   const sdk = await read("src/lib/auth-sdk.ts");
   const proxy = await read("src/proxy.ts");
 
-  assert.match(actions, /INVALID_CREDENTIALS/);
+  assert.match(actions, /adminLoginErrorMessage\(error\)/);
   assert.match(actions, /auth\.resetPassword\("user", "emailpass"/);
   assert.match(actions, /auth\.updateProvider\("user", "emailpass"/);
   assert.match(actions, /finally[\s\S]*await clearAdminSession\(\)/);
-  assert.match(sdk, /sdk\.admin\.user\.me\(\)/);
+  assert.match(sdk, /retrieveAdminUser\(sdk\?\.admin\.user\)/);
   assert.match(proxy, /pathname\.startsWith\("\/dashboard"\)/);
   assert.match(proxy, /response\.cookies\.delete\(ADMIN_SESSION_COOKIE\)/);
 });

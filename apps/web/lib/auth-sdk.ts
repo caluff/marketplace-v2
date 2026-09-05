@@ -38,7 +38,7 @@ export function createCustomerSdk(token?: string) {
 
 const secureCookie = process.env.NODE_ENV === "production"
 
-export async function setCustomerSession(token: string) {
+export async function setCustomerSession(token: string, preserveVerificationCode = false) {
   const store = await cookies()
   store.set(WEB_SESSION_COOKIE, token, {
     httpOnly: true,
@@ -50,7 +50,7 @@ export async function setCustomerSession(token: string) {
   store.delete(WEB_MFA_COOKIE)
   store.delete(WEB_RESET_COOKIE)
   store.delete(WEB_VERIFICATION_COOKIE)
-  store.delete(WEB_VERIFICATION_CODE_COOKIE)
+  if (!preserveVerificationCode) store.delete(WEB_VERIFICATION_CODE_COOKIE)
 }
 
 export async function clearCustomerSession() {
@@ -119,13 +119,21 @@ export async function getCurrentCustomer(): Promise<HttpTypes.StoreCustomer | nu
   if (!token) return null
 
   const sdk = createCustomerSdk(token)
-  if (!sdk) return null
+  return retrieveCustomerSession(sdk?.store.customer)
+}
+
+export async function retrieveCustomerSession(
+  client: Pick<Medusa["store"]["customer"], "retrieve"> | undefined,
+): Promise<HttpTypes.StoreCustomer | null> {
+  if (!client) throw new Error("El servicio de cuenta no está disponible.")
 
   try {
-    return (await sdk.store.customer.retrieve()).customer
+    return (await client.retrieve()).customer
   } catch (error) {
-    if (error instanceof FetchError && error.status === 401) return null
-    return null
+    if (error instanceof FetchError && (error.status === 401 || error.status === 403)) {
+      return null
+    }
+    throw error
   }
 }
 

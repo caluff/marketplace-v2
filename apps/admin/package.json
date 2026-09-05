@@ -11,9 +11,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:smoke",
-    "test:smoke": "tsx --test tests/admin-smoke.test.mjs tests/admin-auth.test.ts"
+    "test:smoke": "tsx --test tests/admin-smoke.test.mjs tests/*.test.ts"
   },
   "dependencies": {
+    "@marketplace-v2/theme-sync": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
     "class-variance-authority": "0.7.1",
@@ -24,9 +25,12 @@
     "radix-ui": "1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sonner": "2.0.8",
     "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
+    "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
+    "@mercurjs/types": "2.3.3",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",

@@ -1,6 +1,8 @@
 "use client";
 
 import { PanelLeft } from "lucide-react";
+import type { HttpTypes } from "@medusajs/types";
+import { AdminUserMenu } from "@/components/admin/admin-user-menu";
 
 import { Brand } from "@/components/admin/brand";
 import { NavigationContent } from "@/components/admin/navigation";
@@ -13,7 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-export function MobileNavigation() {
+export function MobileNavigation({ user }: { user: HttpTypes.AdminUser }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -38,6 +40,7 @@ export function MobileNavigation() {
           <Brand />
         </div>
         <NavigationContent mobile />
+        <AdminUserMenu user={user} />
       </SheetContent>
     </Sheet>
   );

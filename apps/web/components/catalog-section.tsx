@@ -1,3 +1,4 @@
+import type { HttpTypes } from "@medusajs/types"
 import {
   CircleAlert,
   Clock,
@@ -9,8 +10,13 @@ import {
   WifiOff,
 } from "lucide-react"
 import Link from "next/link"
+import { Suspense } from "react"
 
 import { ProductCard } from "@/components/product-card"
+import { ProductGridSkeleton } from "@/components/product-grid-skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
+import { FavoriteButton } from "@/features/account/components/favorite-button"
+import { getFavoriteProductIds } from "@/features/account/favorites"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -21,10 +27,9 @@ import {
 import type { StorefrontCatalogResult } from "@/lib/medusa"
 
 type CatalogSectionProps = {
-  result: StorefrontCatalogResult
-  activeCategoryId?: string
-  favoriteProductIds?: string[]
-  authenticated?: boolean
+  result: Promise<StorefrontCatalogResult>
+  activeCategoryId: Promise<string | undefined>
+  customer: Promise<HttpTypes.StoreCustomer | null>
 }
 
 type ErrorStatus = Exclude<
@@ -104,21 +109,7 @@ function RetryButton({ activeCategoryId }: { activeCategoryId?: string }) {
   )
 }
 
-export function CatalogSection({
-  result,
-  activeCategoryId,
-  favoriteProductIds = [],
-  authenticated = false,
-}: CatalogSectionProps) {
-  const favorites = new Set(favoriteProductIds)
-  const categories =
-    result.status === "products" || result.status === "empty"
-      ? result.categories
-      : []
-  const activeCategory = categories.find(
-    (category) => category.id === activeCategoryId,
-  )
-
+export function CatalogSection(props: CatalogSectionProps) {
   return (
     <section
       id="catalog"
@@ -135,96 +126,169 @@ export function CatalogSection({
               id="catalog-title"
               className="mt-2 text-4xl tracking-[-0.035em] sm:text-6xl"
             >
-              {activeCategory?.name ?? "El catálogo"}
+              <Suspense fallback="El catálogo">
+                <CatalogTitle
+                  result={props.result}
+                  activeCategoryId={props.activeCategoryId}
+                />
+              </Suspense>
             </h2>
           </div>
-          {result.status === "products" ? (
-            <p className="font-sans text-sm text-muted-foreground">
-              Mostrando {result.products.length} de {result.count}
-            </p>
-          ) : null}
+          <Suspense fallback={null}>
+            <CatalogCount result={props.result} />
+          </Suspense>
         </div>
-
-        {result.status === "products" ? (
-          <>
-            {activeCategory ? (
-              <div className="mb-7 flex justify-end">
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/#catalog">Quitar filtro</Link>
-                </Button>
-              </div>
-            ) : null}
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
-              {result.products.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  index={index}
-                  isFavorite={favorites.has(product.id)}
-                  authenticated={authenticated}
-                />
-              ))}
-            </div>
-          </>
-        ) : null}
-
-        {result.status === "empty" ? (
-          <Card className="mx-auto max-w-2xl bg-background text-center">
-            <CardHeader className="items-center px-6 py-12 sm:px-12 sm:py-16">
-              <PackageOpen
-                aria-hidden="true"
-                className="size-12 text-brand-accent"
-                strokeWidth={1.25}
-              />
-              <CardTitle className="mt-3 text-3xl">
-                {activeCategory
-                  ? "Esta categoría todavía está vacía"
-                  : "El catálogo todavía está vacío"}
-              </CardTitle>
-              <CardDescription className="max-w-md text-base">
-                {activeCategory
-                  ? "Volvé al catálogo completo para seguir explorando."
-                  : "La conexión está lista. Los productos aparecerán acá cuando se publiquen en Medusa."}
-              </CardDescription>
-              {activeCategory ? (
-                <Button asChild variant="accent" className="mt-4">
-                  <Link href="/#catalog">Ver todo el catálogo</Link>
-                </Button>
-              ) : null}
-            </CardHeader>
-          </Card>
-        ) : null}
-
-        {result.status !== "products" && result.status !== "empty" ? (
-          <Card className="mx-auto max-w-2xl bg-background">
-            <CardHeader className="px-6 py-10 sm:px-10 sm:py-12">
-              {(() => {
-                const content = errorContent[result.status]
-                const Icon = content.Icon
-
-                return (
-                  <>
-                    <Icon
-                      aria-hidden="true"
-                      className="size-11 text-brand-accent"
-                      strokeWidth={1.25}
-                    />
-                    <CardTitle className="mt-3 text-3xl">
-                      {content.title}
-                    </CardTitle>
-                    <CardDescription className="max-w-xl text-base">
-                      {content.description}
-                    </CardDescription>
-                    <div className="mt-5">
-                      <RetryButton activeCategoryId={activeCategoryId} />
-                    </div>
-                  </>
-                )
-              })()}
-            </CardHeader>
-          </Card>
-        ) : null}
+        <Suspense fallback={<ProductGridSkeleton />}>
+          <CatalogContent {...props} />
+        </Suspense>
       </div>
     </section>
+  )
+}
+
+async function CatalogTitle({
+  result,
+  activeCategoryId,
+}: Pick<CatalogSectionProps, "result" | "activeCategoryId">) {
+  const categoryId = await activeCategoryId
+  if (!categoryId) return "El catálogo"
+  const catalog = await result
+  return catalog.status === "products" || catalog.status === "empty"
+    ? (catalog.categories.find((category) => category.id === categoryId)
+        ?.name ?? "El catálogo")
+    : "El catálogo"
+}
+
+async function CatalogCount({ result }: Pick<CatalogSectionProps, "result">) {
+  const catalog = await result
+  return catalog.status === "products" ? (
+    <p className="font-sans text-sm text-muted-foreground">
+      Mostrando {catalog.products.length} de {catalog.count}
+    </p>
+  ) : null
+}
+
+async function ProductFavorite({
+  customer,
+  productId,
+}: Pick<CatalogSectionProps, "customer"> & { productId: string }) {
+  const account = await customer
+  return (
+    <FavoriteButton
+      productId={productId}
+      saved={getFavoriteProductIds(account?.metadata).includes(productId)}
+      authenticated={Boolean(account)}
+      compact
+    />
+  )
+}
+
+async function CatalogContent(props: CatalogSectionProps) {
+  const [result, activeCategoryId] = await Promise.all([
+    props.result,
+    props.activeCategoryId,
+  ])
+  const categories =
+    result.status === "products" || result.status === "empty"
+      ? result.categories
+      : []
+  const activeCategory = categories.find(
+    (category) => category.id === activeCategoryId,
+  )
+  return (
+    <>
+      {result.status === "products" ? (
+        <>
+          {activeCategory ? (
+            <div className="mb-7 flex justify-end">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/#catalog">Quitar filtro</Link>
+              </Button>
+            </div>
+          ) : null}
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+            {result.products.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                index={index}
+                favoriteAction={
+                  <Suspense
+                    fallback={
+                      <Skeleton
+                        className="size-11"
+                        aria-label="Cargando favorito"
+                      />
+                    }
+                  >
+                    <ProductFavorite
+                      customer={props.customer}
+                      productId={product.id}
+                    />
+                  </Suspense>
+                }
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {result.status === "empty" ? (
+        <Card className="mx-auto max-w-2xl bg-background text-center">
+          <CardHeader className="items-center px-6 py-12 sm:px-12 sm:py-16">
+            <PackageOpen
+              aria-hidden="true"
+              className="size-12 text-brand-accent"
+              strokeWidth={1.25}
+            />
+            <CardTitle className="mt-3 text-3xl">
+              {activeCategory
+                ? "Esta categoría todavía está vacía"
+                : "El catálogo todavía está vacío"}
+            </CardTitle>
+            <CardDescription className="max-w-md text-base">
+              {activeCategory
+                ? "Volvé al catálogo completo para seguir explorando."
+                : "La conexión está lista. Los productos aparecerán acá cuando se publiquen en Medusa."}
+            </CardDescription>
+            {activeCategory ? (
+              <Button asChild variant="accent" className="mt-4">
+                <Link href="/#catalog">Ver todo el catálogo</Link>
+              </Button>
+            ) : null}
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      {result.status !== "products" && result.status !== "empty" ? (
+        <Card className="mx-auto max-w-2xl bg-background">
+          <CardHeader className="px-6 py-10 sm:px-10 sm:py-12">
+            {(() => {
+              const content = errorContent[result.status]
+              const Icon = content.Icon
+
+              return (
+                <>
+                  <Icon
+                    aria-hidden="true"
+                    className="size-11 text-brand-accent"
+                    strokeWidth={1.25}
+                  />
+                  <CardTitle className="mt-3 text-3xl">
+                    {content.title}
+                  </CardTitle>
+                  <CardDescription className="max-w-xl text-base">
+                    {content.description}
+                  </CardDescription>
+                  <div className="mt-5">
+                    <RetryButton activeCategoryId={activeCategoryId} />
+                  </div>
+                </>
+              )
+            })()}
+          </CardHeader>
+        </Card>
+      ) : null}
+    </>
   )
 }

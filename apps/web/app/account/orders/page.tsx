@@ -29,7 +29,7 @@ import {
   getShippingStatusLabel,
 } from "@/features/account/order-format"
 
-export const metadata: Metadata = { title: "Mis órdenes | mercado / v2" }
+export const metadata: Metadata = { title: "Mis órdenes | Marketplace V2" }
 
 export default async function OrdersPage({
   searchParams,

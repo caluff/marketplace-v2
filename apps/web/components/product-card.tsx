@@ -1,6 +1,7 @@
 import type { HttpTypes } from "@medusajs/types"
 import { ImageIcon } from "lucide-react"
 import Image from "next/image"
+import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,6 +12,7 @@ type ProductCardProps = {
   index: number
   isFavorite?: boolean
   authenticated?: boolean
+  favoriteAction?: ReactNode
 }
 
 type ProductPrice = {
@@ -109,6 +111,7 @@ export function ProductCard({
   index,
   isFavorite = false,
   authenticated = false,
+  favoriteAction,
 }: ProductCardProps) {
   const image = getProductImage(product)
   const price = getProductPrice(product)
@@ -152,12 +155,14 @@ export function ProductCard({
             </Badge>
           ) : null}
           <div className="absolute top-3 right-3">
-            <FavoriteButton
-              productId={product.id}
-              saved={isFavorite}
-              authenticated={authenticated}
-              compact
-            />
+            {favoriteAction ?? (
+              <FavoriteButton
+                productId={product.id}
+                saved={isFavorite}
+                authenticated={authenticated}
+                compact
+              />
+            )}
           </div>
         </div>
 

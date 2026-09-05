@@ -1,0 +1,8 @@
+{
+  "name": "@marketplace-v2/vendor-onboarding-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "types": "./index.d.ts",
+  "exports": { ".": { "types": "./index.d.ts" } },
+  "dependencies": { "@medusajs/types": "2.18.0", "@mercurjs/types": "2.3.3" }
+}

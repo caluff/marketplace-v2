@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Slot } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
@@ -25,9 +26,14 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"h2">) {
+function CardTitle({
+  className,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"h2"> & { asChild?: boolean }) {
+  const Component = asChild ? Slot.Root : "h2";
   return (
-    <h2
+    <Component
       data-slot="card-title"
       className={cn("text-base font-bold tracking-tight", className)}
       {...props}

@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import path from "path";
 import { loadEnv, MedusaError } from "@medusajs/framework/utils";
 import { withMercur } from "@mercurjs/core";
+import { getResendConfiguration } from "./src/modules/resend/configuration";
 
 const findWorkspaceRoot = (start: string): string | undefined => {
   let current = path.resolve(start);
@@ -119,6 +120,7 @@ if (
 }
 
 const workerMode = requestedWorkerMode as "server" | "worker" | "shared";
+const resendConfiguration = getResendConfiguration();
 
 if (jwtSecret === cookieSecret) {
   throw new MedusaError(
@@ -164,6 +166,25 @@ module.exports = withMercur({
     seller_registration: false,
   },
   modules: [
+    { resolve: "./src/modules/vendor-onboarding" },
+    { resolve: "./src/modules/inventory" },
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/notification-local",
+            id: "local",
+            options: { channels: ["feed"] },
+          },
+          ...(resendConfiguration ? [{
+            resolve: "./src/modules/resend",
+            id: "resend",
+            options: { channels: ["email"], ...resendConfiguration },
+          }] : []),
+        ],
+      },
+    },
     {
       resolve: "@medusajs/medusa/caching",
       options: {
@@ -179,12 +200,22 @@ module.exports = withMercur({
     },
     {
       resolve: "@medusajs/medusa/event-bus-redis",
-      options: { redisUrl },
+      options: {
+        redisUrl,
+        // Wait on Redis's queue marker; new events wake the worker immediately.
+        workerOptions: { drainDelay: 60 },
+        // Auth delivery failures must be retried by the existing event bus.
+        jobOptions: { attempts: 5, backoff: { type: "exponential", delay: 5_000 } },
+      },
     },
     {
       resolve: "@medusajs/medusa/workflow-engine-redis",
       options: {
-        redis: { redisUrl },
+        redis: {
+          redisUrl,
+          // Applies to all three workers; delayed jobs retain BullMQ's timeout.
+          workerOptions: { drainDelay: 60 },
+        },
       },
     },
     {

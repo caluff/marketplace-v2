@@ -1,9 +1,10 @@
 "use client"
 
-import { Heart, MapPin, Package, UserRound } from "lucide-react"
+import { Heart, MapPin, Package, Store, UserRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import type { ApplicationNavigation } from "@/features/vendor-onboarding/presentation"
 
 const links = [
   { href: "/account", label: "Información de la cuenta", icon: UserRound },
@@ -12,12 +13,23 @@ const links = [
   { href: "/account/favorites", label: "Favoritos", icon: Heart },
 ]
 
-export function AccountNav() {
+export function AccountNav({
+  vendorApplication,
+}: {
+  vendorApplication?: ApplicationNavigation
+}) {
   const pathname = usePathname()
   return (
     <nav aria-label="Secciones de mi cuenta">
       <ul className="grid grid-cols-2 gap-1 lg:grid-cols-1">
-        {links.map(({ href, label, icon: Icon }) => {
+        {[
+          ...links,
+          {
+            href: "/account/sell",
+            label: vendorApplication?.label ?? "Vender en Marketplace V2",
+            icon: Store,
+          },
+        ].map(({ href, label, icon: Icon }) => {
           const active =
             href === "/account" ? pathname === href : pathname.startsWith(href)
           return (
@@ -38,6 +50,15 @@ export function AccountNav() {
                   aria-hidden="true"
                 />
                 {label}
+                {href === "/account/sell" &&
+                Boolean(vendorApplication?.unreadCount) ? (
+                  <span
+                    className="ml-auto bg-brand-accent/10 px-2 py-1 text-xs"
+                    aria-label={`${vendorApplication?.unreadCount} novedades sin leer`}
+                  >
+                    {vendorApplication?.unreadCount}
+                  </span>
+                ) : null}
               </Link>
             </li>
           )

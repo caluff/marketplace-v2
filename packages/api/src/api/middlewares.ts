@@ -7,6 +7,8 @@ import {
 import { FeatureFlag, MedusaError } from "@medusajs/framework/utils";
 import { customerAccountMiddlewares } from "./store/customer-account/middlewares";
 import { favoriteMiddlewares } from "./store/customers/me/favorites/middlewares";
+import { vendorApplicationMiddlewares } from "./store/vendor-application/middlewares";
+import { vendorInventoryMiddlewares } from "./vendor/inventory-adjustments/middlewares";
 
 const requireSellerRegistrationFlag = (
   _req: MedusaRequest,
@@ -25,6 +27,8 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
+    ...vendorApplicationMiddlewares,
+    ...vendorInventoryMiddlewares,
     ...customerAccountMiddlewares,
     ...favoriteMiddlewares,
     {

@@ -2,7 +2,14 @@ import type { NextConfig } from "next";
 
 function getServerActionAllowedOrigins() {
   const configured = process.env.SERVER_ACTIONS_ALLOWED_ORIGINS?.split(",") ?? [];
-  const candidates = [process.env.RAILWAY_PUBLIC_DOMAIN, ...configured];
+  const candidates = [
+    process.env.RAILWAY_PUBLIC_DOMAIN,
+    ...configured,
+    // Orca forwards this preview to localhost:7000 with a different host.
+    process.env.NODE_ENV === "development"
+      ? "marketplace-v2-3.orca.localhost:6136"
+      : undefined,
+  ];
 
   return candidates.flatMap((candidate) => {
     const value = candidate?.trim();

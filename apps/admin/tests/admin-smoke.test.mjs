@@ -24,10 +24,12 @@ test("allows only configured Server Action origins behind Railway", async () => 
   assert.match(nextConfig, /RAILWAY_PUBLIC_DOMAIN/);
   assert.match(nextConfig, /SERVER_ACTIONS_ALLOWED_ORIGINS/);
   assert.doesNotMatch(nextConfig, /allowedOrigins:\s*\[\s*["']\*["']/);
-  assert.match(
-    railway,
-    /service\("@marketplace-v2\/admin"[\s\S]*NEXT_PUBLIC_MEDUSA_BACKEND_URL/,
-  );
+  const adminService = railway
+    .split("const admin = service(")[1]
+    ?.split("const vendor = service(")[0];
+  assert.ok(adminService, "Railway declares an independent admin service");
+  assert.match(adminService, /NEXT_PUBLIC_MEDUSA_BACKEND_URL/);
+  assert.match(adminService, /\/packages\/vendor-onboarding-contracts\/\*\*/);
 });
 
 test("ships the dashboard and functional operator login routes", async () => {

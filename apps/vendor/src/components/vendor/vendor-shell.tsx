@@ -11,15 +11,10 @@ import {
   Settings2,
   ShoppingBag,
   Store,
-  LogOut,
-  Repeat2,
 } from "lucide-react";
 
-import { logoutVendorAction } from "@/app/seller/auth-actions";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/mode-toggle";
-import { Separator } from "@/components/ui/separator";
+import { VendorUserMenu } from "./vendor-user-menu";
 import {
   Sheet,
   SheetClose,
@@ -65,7 +60,7 @@ function Brand() {
       </span>
       <span className="min-w-0">
         <span className="block font-display text-lg leading-5">
-          Mercado Sur
+          Marketplace V2
         </span>
         <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/55">
           Portal vendedor
@@ -78,24 +73,26 @@ function Brand() {
 function SidebarContent({
   pathname,
   identity,
+  canSwitchSeller,
   mobile,
 }: {
   pathname: string;
   identity: VendorIdentity;
+  canSwitchSeller: boolean;
   mobile?: boolean;
 }) {
-  const initials = identity.memberName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "MV";
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="px-5 py-5">
+      <div
+        className="flex h-16 shrink-0 items-center border-b border-sidebar-border px-5"
+        data-testid="vendor-sidebar-brand"
+      >
         <Brand />
       </div>
-      <Separator className="bg-sidebar-border" />
-      <nav aria-label="Navegación del vendedor" className="flex-1 px-3 py-5">
+      <nav
+        aria-label="Navegación del vendedor"
+        className="min-h-0 flex-1 overflow-y-auto px-3 py-5"
+      >
         <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-sidebar-foreground/45">
           Operación
         </p>
@@ -138,26 +135,24 @@ function SidebarContent({
           })}
         </ul>
       </nav>
-      <div className="p-3">
-        <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/45 p-3">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
-              {initials}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{identity.sellerName}</p>
-              <p className="truncate text-xs text-sidebar-foreground/55">
-                {identity.memberName} · {roleLabels[identity.roleId] ?? identity.roleId}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <VendorUserMenu
+        {...identity}
+        roleLabel={roleLabels[identity.roleId] ?? identity.roleId}
+        canSwitchSeller={canSwitchSeller}
+      />
     </div>
   );
 }
 
-export function VendorShell({ children, identity, canSwitchSeller }: { children: ReactNode; identity: VendorIdentity; canSwitchSeller: boolean }) {
+export function VendorShell({
+  children,
+  identity,
+  canSwitchSeller,
+}: {
+  children: ReactNode;
+  identity: VendorIdentity;
+  canSwitchSeller: boolean;
+}) {
   const pathname = usePathname();
   const currentRoute = vendorRoutes.find((route) =>
     route.href === "/seller"
@@ -174,7 +169,11 @@ export function VendorShell({ children, identity, canSwitchSeller }: { children:
         Saltar al contenido
       </a>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-sidebar-border md:block">
-        <SidebarContent pathname={pathname} identity={identity} />
+        <SidebarContent
+          pathname={pathname}
+          identity={identity}
+          canSwitchSeller={canSwitchSeller}
+        />
       </aside>
       <div className="min-h-screen md:pl-64">
         <header className="sticky top-0 z-30 flex h-16 items-center border-b border-border/75 bg-background/88 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
@@ -199,7 +198,12 @@ export function VendorShell({ children, identity, canSwitchSeller }: { children:
               <SheetDescription className="sr-only">
                 Enlaces principales del portal de vendedor.
               </SheetDescription>
-              <SidebarContent pathname={pathname} identity={identity} mobile />
+              <SidebarContent
+                pathname={pathname}
+                identity={identity}
+                canSwitchSeller={canSwitchSeller}
+                mobile
+              />
             </SheetContent>
           </Sheet>
           <div className="min-w-0 flex-1">
@@ -209,22 +213,6 @@ export function VendorShell({ children, identity, canSwitchSeller }: { children:
             <p className="truncate text-sm font-bold">
               {currentRoute?.label ?? "Portal vendedor"}
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <ModeToggle />
-            <Badge variant="outline" className="hidden max-w-48 truncate sm:inline-flex">
-              {roleLabels[identity.roleId] ?? identity.roleId}
-            </Badge>
-            {canSwitchSeller ? (
-              <Button asChild variant="outline" size="sm" className="h-11">
-                <Link href="/seller/select-seller"><Repeat2 aria-hidden="true" /> Cambiar tienda</Link>
-              </Button>
-            ) : null}
-            <form action={logoutVendorAction}>
-              <Button type="submit" variant="ghost" size="icon" className="size-11" aria-label={`Cerrar sesión de ${identity.memberEmail}`}>
-                <LogOut aria-hidden="true" />
-              </Button>
-            </form>
           </div>
         </header>
         <main

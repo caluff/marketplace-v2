@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { AccountNav } from "@/features/account/components/account-nav"
 import { CustomerMenu } from "@/features/account/components/customer-menu"
 import { getAccount } from "@/features/account/data"
+import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
 
 export const metadata: Metadata = {
-  title: "Mi cuenta | mercado / v2",
+  title: "Mi cuenta | Marketplace V2",
   robots: { index: false, follow: false },
 }
 export const dynamic = "force-dynamic"
@@ -22,6 +23,7 @@ export default async function AccountLayout({
   children: ReactNode
 }) {
   const { customer } = await getAccount()
+  const vendorApplication = await getApplicationNavigation()
   return (
     <>
       <a
@@ -36,7 +38,7 @@ export default async function AccountLayout({
             href="/"
             className="inline-flex min-h-11 items-center text-sm font-black tracking-[0.18em] uppercase"
           >
-            mercado / v2
+            Marketplace V2
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex">
@@ -47,6 +49,7 @@ export default async function AccountLayout({
               first_name={customer.first_name}
               last_name={customer.last_name}
               email={customer.email}
+              vendorApplication={vendorApplication}
             />
           </div>
         </div>
@@ -59,7 +62,7 @@ export default async function AccountLayout({
           <p className="mt-2 mb-7 text-sm text-muted-foreground">
             Tu espacio, a tu manera.
           </p>
-          <AccountNav />
+          <AccountNav vendorApplication={vendorApplication} />
           <form
             action={logoutCustomerAction}
             className="mt-6 border-t border-border pt-4"

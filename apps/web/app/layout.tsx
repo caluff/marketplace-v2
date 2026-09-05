@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist_Mono, Public_Sans } from "next/font/google"
 import type { ReactNode } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
 const publicSans = Public_Sans({
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "mercado / v2",
+  title: "Marketplace V2",
   description: "Una selección independiente impulsada por Mercur y Medusa.",
 }
 
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           storageKey="marketplace-v2-theme"
         >
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

@@ -4,11 +4,7 @@ import Link from "next/link"
 import { HeroWaveBackground } from "@/components/hero-wave-background"
 import { Button } from "@/components/ui/button"
 
-type HeroProps = {
-  productCount?: number
-}
-
-export function Hero({ productCount }: HeroProps) {
+export function Hero() {
   return (
     <section
       aria-labelledby="hero-title"
@@ -32,12 +28,6 @@ export function Hero({ productCount }: HeroProps) {
             Piezas singulares reunidas en un catálogo vivo, directo desde su
             origen.
           </p>
-          {typeof productCount === "number" && productCount > 0 ? (
-            <p className="mt-5 font-sans text-xs font-bold tracking-[0.14em] uppercase">
-              {productCount} {productCount === 1 ? "pieza" : "piezas"} en esta
-              selección
-            </p>
-          ) : null}
           <Button
             asChild
             variant="accent"
