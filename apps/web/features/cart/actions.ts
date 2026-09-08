@@ -25,6 +25,7 @@ import {
   parseQuantity,
   selectedShippingOptions,
 } from "./presentation"
+import { getReceiptOrderIds } from "./receipt"
 
 export type CartActionState = {
   error?: string
@@ -329,31 +330,7 @@ export async function completeCheckoutAction(): Promise<CartActionState> {
       return failure(
         new FetchError(result.error.message, result.error.type, 400),
       )
-    // Mercur's published group DTO omits graph relations; narrow the requested
-    // order IDs before persisting the receipt capability for guest checkout.
-    const group: unknown = result.order_group
-    if (
-      !group ||
-      typeof group !== "object" ||
-      !("orders" in group) ||
-      !Array.isArray(group.orders)
-    )
-      throw new Error(
-        "El pedido se creó, pero no pudimos cargar su comprobante. Vuelve a consultar el estado.",
-      )
-    const ids = group.orders.map((order: unknown) =>
-      order && typeof order === "object" && "id" in order ? order.id : null,
-    )
-    if (
-      !ids.length ||
-      ids.length > 30 ||
-      !ids.every(
-        (id) => typeof id === "string" && /^order_[a-zA-Z0-9]+$/.test(id),
-      )
-    )
-      throw new Error(
-        "No pudimos recuperar los pedidos. Consulta el estado nuevamente.",
-      )
+    const ids = getReceiptOrderIds(result.order_group, cart.id)
     const store = await cookies()
     store.set(RECEIPT_COOKIE, JSON.stringify(ids), {
       ...cookieOptions,

@@ -10,9 +10,9 @@ const completeFromParentWorkflow = createWorkflow("complete-cart-retry-from-pare
   return new WorkflowResponse(result);
 });
 
-it.each(["direct", "nested"] as const)("%s completion retries retain the cart lock and reuse orders without reserving or authorizing again", async (invocation) => {
+function completionFixture(groupCartId = "cart_completed") {
   const cartId = "cart_completed";
-  const existingGroup = { id: "og_existing", cart_id: cartId };
+  const existingGroup = { id: "og_existing", cart_id: groupCartId };
   const existingCart = {
     id: cartId,
     completed_at: "2026-09-08T00:00:00Z",
@@ -49,6 +49,12 @@ it.each(["direct", "nested"] as const)("%s completion retries retain the cart lo
     logger: asValue({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }),
   });
 
+  return { cartId, existingGroup, container, acquire, release, createOrders, createReservationItems, authorizePaymentSession };
+}
+
+it.each(["direct", "nested"] as const)("%s completion retries retain the cart lock and reuse orders without reserving or authorizing again", async (invocation) => {
+  const { cartId, existingGroup, container, acquire, release, createOrders, createReservationItems, authorizePaymentSession } = completionFixture();
+
   const workflow = invocation === "nested" ? completeFromParentWorkflow : completeCartWithSplitOrdersWorkflow;
   for (let retry = 0; retry < 2; retry++) {
     const { result } = await workflow(container).run({ input: { cart_id: cartId } });
@@ -58,6 +64,21 @@ it.each(["direct", "nested"] as const)("%s completion retries retain the cart lo
   expect(acquire).toHaveBeenCalledTimes(2);
   expect(acquire).toHaveBeenCalledWith(cartId, expect.objectContaining({ expire: 120 }));
   expect(release).toHaveBeenCalledTimes(2);
+  expect(createOrders).not.toHaveBeenCalled();
+  expect(createReservationItems).not.toHaveBeenCalled();
+  expect(authorizePaymentSession).not.toHaveBeenCalled();
+});
+
+it.each(["direct", "nested"] as const)("%s completion refuses another cart's order group before returning order data", async (invocation) => {
+  const { cartId, container, acquire, release, createOrders, createReservationItems, authorizePaymentSession } = completionFixture("cart_another_customer");
+  const workflow = invocation === "nested" ? completeFromParentWorkflow : completeCartWithSplitOrdersWorkflow;
+
+  await expect(workflow(container).run({ input: { cart_id: cartId } })).rejects.toMatchObject({
+    message: "The existing order group does not belong to this cart.",
+  });
+
+  expect(acquire).toHaveBeenCalledTimes(1);
+  expect(release).toHaveBeenCalledTimes(1);
   expect(createOrders).not.toHaveBeenCalled();
   expect(createReservationItems).not.toHaveBeenCalled();
   expect(authorizePaymentSession).not.toHaveBeenCalled();

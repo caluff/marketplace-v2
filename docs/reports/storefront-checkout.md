@@ -46,6 +46,16 @@ fields and verifies that retries neither create orders, reserve inventory nor
 authorize payment again. Two native retries against the QA cart also returned
 the same group with no additional order groups or orders.
 
+A second, distinct-cart test exposed another native defect: the custom
+`OrderGroupRepository.findAndCount` SQL ignored `filters.cart_id`, so a lookup
+could reuse another cart's group. The patch applies that filter with SQL
+parameters. Both the completion workflow and storefront receipt extraction
+also reject a returned group whose `cart_id` differs from the current cart.
+Regression coverage includes different carts and a cart with no group;
+repeating only the same cart cannot detect this defect. Native Query against
+the configured database returned only the old QA cart's three cancelled groups,
+zero groups for the second cart before completion, and zero for a missing cart.
+
 The lock also runs when Stripe webhook processing invokes completion as a
 subworkflow. Its timeout/TTL arguments are expressed in seconds, as required by
 the installed locking step/provider. This keeps browser and webhook completion
@@ -98,10 +108,15 @@ address entry, the seller's USD 20 shipping option and Stripe Elements loading.
 The seller's Stripe account is active and has no pending requirements. The
 public test key is configured locally and in Railway. At 390px the checkout has
 no horizontal overflow. An actual streamed checkout response delivered the
-heading at 139ms and its cart summary at 3509ms.
+heading at 139ms and its cart summary at 3509ms. Stripe's cross-origin card fields
+were not automated: the test authorization used Stripe's test SDK, followed by
+native cart completion. The distinct-cart test created one USD 220 order with
+one inventory reservation and zero captured amount. Original webhook delivery
+was observed, but the corrected order was created by the native CLI workflow;
+webhook-only order creation has not been verified end to end.
 
 Completion checks: workspace lint, typecheck and builds passed; all application
-tests passed (web 70, API 574 plus three deployment tests). The exact
+tests passed (web 74, API 580 plus three deployment tests). The exact
 `pnpm build:api:deploy` command passed with the patched standalone dependencies.
 Workspace peer dependency validation passed. API lint retains seven pre-existing
 warnings.

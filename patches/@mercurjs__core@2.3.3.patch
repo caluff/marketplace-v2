@@ -78,6 +78,20 @@ index f450c0c76732b6209e2249caa8d49fe19ac22591..2e6945364833f22aa506512721370b76
      ]);
      req.filterableFields ??= {};
      const existingAnd = req.filterableFields.$and ?? [];
+diff --git a/.medusa/server/src/modules/seller/repositories/order-group.js b/.medusa/server/src/modules/seller/repositories/order-group.js
+index a64058b778254434d80188ac20e2902a9cbba5de..df63873b35232deacfb5a534f2cf21e935c09413 100644
+--- a/.medusa/server/src/modules/seller/repositories/order-group.js
++++ b/.medusa/server/src/modules/seller/repositories/order-group.js
+@@ -56,6 +56,9 @@ class OrderGroupRepository extends utils_1.DALUtils.mikroOrmBaseRepositoryFactor
+         const knex = manager.getKnex();
+         const params = [];
+         const whereClauses = ["og.deleted_at IS NULL"];
++        if (filters.cart_id !== undefined) {
++            this.parseFilterValue("og.cart_id", filters.cart_id, whereClauses, params);
++        }
+         if (filters.id) {
+             const ids = Array.isArray(filters.id) ? filters.id : [filters.id];
+             const placeholders = ids.map(() => "?").join(",");
 diff --git a/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.d.ts b/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.d.ts
 index c61b110e1528b1b04dd1f5ee9e05f284d8b19273..6286ba4e809bcabf2b2043ec9f01945badb51c9d 100644
 --- a/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.d.ts
@@ -151,7 +165,7 @@ index 421ad74978a9bfe6b28456f541f71484e6d6cbf8..daee4b54067c5e7e02ced7a44a6cd866
  }
  exports.config = {
 diff --git a/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js b/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
-index 2f5c4545425355ecefff8d0a3515ef20be8c0372..dae74b4c16fb2b1e3c41aa9de6b491bfc4185edf 100644
+index 2f5c4545425355ecefff8d0a3515ef20be8c0372..32e94d2c5ef70ccbf9c7b90758e52a9763c06821 100644
 --- a/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
 +++ b/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
 @@ -23,12 +23,13 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
@@ -171,7 +185,19 @@ index 2f5c4545425355ecefff8d0a3515ef20be8c0372..dae74b4c16fb2b1e3c41aa9de6b491bf
          filters: { cart_id: input.cart_id },
          options: {
              isList: false,
-@@ -431,6 +432,7 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
+@@ -43,7 +44,10 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
+     }).config({
+         name: "cart-query",
+     }));
+-    const orderGroupId = (0, workflows_sdk_1.transform)({ orderGroup }, ({ orderGroup }) => {
++    const orderGroupId = (0, workflows_sdk_1.transform)({ orderGroup, input }, ({ orderGroup, input }) => {
++        if (orderGroup?.data && orderGroup.data.cart_id !== input.cart_id) {
++            throw new utils_1.MedusaError(utils_1.MedusaError.Types.NOT_ALLOWED, "The existing order group does not belong to this cart.");
++        }
+         return orderGroup?.data?.id;
+     });
+     const paymentSessions = (0, core_flows_1.validateCartPaymentsStep)({ cart: cartData.data });
+@@ -431,6 +435,7 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
      });
      (0, core_flows_1.releaseLockStep)({
          key: input.cart_id,
