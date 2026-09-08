@@ -115,6 +115,23 @@ one inventory reservation and zero captured amount. Original webhook delivery
 was observed, but the corrected order was created by the native CLI workflow;
 webhook-only order creation has not been verified end to end.
 
+After deploying the cart-scoping correction, the public storefront's
+`/checkout/return` completed successfully and displayed the correct order #4,
+New York shipping address, USD 200 product plus USD 20 shipping, and authorized
+payment status. The cart was cleared. Two native retries returned the same
+group and order. API, worker, storefront, operator and seller deployments all
+reached `SUCCESS`; the API health check returned HTTP 200.
+
+The original Stripe test event was resent through the official Stripe CLI after
+deployment. The API returned HTTP 200, the worker processed the event, and Stripe
+reported no pending webhook deliveries. The cart still had exactly one group,
+one order and one reservation, with zero captured amount. This checks delivery
+and duplicate-event handling; an existing order skips webhook-only creation.
+After receipt verification, the second QA order and its test authorization were
+cancelled through native workflows. Its reservation was released; stocked
+inventory remained 20 with zero reserved and zero captured amount. All four QA
+orders remain as cancelled audit records.
+
 Completion checks: workspace lint, typecheck and builds passed; all application
 tests passed (web 74, API 580 plus three deployment tests). The exact
 `pnpm build:api:deploy` command passed with the patched standalone dependencies.
