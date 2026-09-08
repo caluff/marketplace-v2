@@ -205,3 +205,38 @@ index 2f5c4545425355ecefff8d0a3515ef20be8c0372..32e94d2c5ef70ccbf9c7b90758e52a97
      });
      const result = (0, workflows_sdk_1.transform)({ createdOrderGroup, orderGroupId }, ({ createdOrderGroup, orderGroupId }) => {
          return { order_group_id: createdOrderGroup?.id ?? orderGroupId };
+diff --git a/.medusa/server/src/api/store/carts/middlewares.js b/.medusa/server/src/api/store/carts/middlewares.js
+--- a/.medusa/server/src/api/store/carts/middlewares.js
++++ b/.medusa/server/src/api/store/carts/middlewares.js
+@@ -6,6 +6,9 @@
+ const query_config_1 = require("./[id]/complete/query-config");
+ const validators_1 = require("./[id]/complete/validators");
+ const validators_2 = require("./[id]/line-items/validators");
++const cart_validators = require("@medusajs/medusa/api/store/carts/validators");
++const cart_query_config = require("@medusajs/medusa/api/store/carts/query-config");
++const cart_helpers = require("./helpers");
+ const OVERRIDDEN_ROUTES = new Set([
+     "POST /store/carts/:id/complete",
+     "POST /store/carts/:id/line-items",
+@@ -40,5 +43,11 @@
+         method: ["POST"],
+         matcher: "/store/carts/:id/line-items",
+-        middlewares: [(0, http_1.validateAndTransformBody)(validators_2.StoreAddCartLineItem)],
++        middlewares: [
++            (0, http_1.validateAndTransformBody)(validators_2.StoreAddCartLineItem),
++            (0, http_1.validateAndTransformQuery)(cart_validators.StoreGetCartsCart, {
++                ...cart_query_config.retrieveTransformQueryConfig,
++                defaults: cart_helpers.defaultStoreCartFields,
++            }),
++        ],
+     },
+ ];
+diff --git a/.medusa/server/src/api/store/carts/[id]/line-items/route.js b/.medusa/server/src/api/store/carts/[id]/line-items/route.js
+--- a/.medusa/server/src/api/store/carts/[id]/line-items/route.js
++++ b/.medusa/server/src/api/store/carts/[id]/line-items/route.js
+@@ -33,4 +33,4 @@
+         },
+     });
+-    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, helpers_1.defaultStoreCartFields);
++    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, req.queryConfig.fields);
+     res.status(200).json({ cart });

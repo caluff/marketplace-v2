@@ -5,7 +5,9 @@ import { LoaderCircle, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import { useActionState, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { addToCartAction } from "@/features/cart/actions"
+import type { AddCartItemResult } from "@/features/cart/add-item"
+import { submitCartItem } from "@/features/cart/add-item-client"
+import { notifyCartUpdated } from "@/features/cart/cart-events"
 import {
   formatPrice,
   getLowestOfferPrice,
@@ -42,7 +44,16 @@ export function ProductPurchase({
     getOfferPrice(selectedOffer) &&
     isOfferAvailable(selectedOffer),
   )
-  const [state, action, isPending] = useActionState(addToCartAction, {})
+  const [state, action, isPending] = useActionState<
+    AddCartItemResult | null,
+    FormData
+  >(async (_previous, form) => {
+    const result = await submitCartItem(form)
+    if (typeof result.cartCount === "number") notifyCartUpdated(result.cartCount)
+    return result
+  }, null)
+  const error = state && "error" in state ? state.error : undefined
+  const success = state && "success" in state ? state.success : undefined
 
   return (
     <div className="mt-8">
@@ -206,14 +217,14 @@ export function ProductPurchase({
           )}
           {isPending ? "Agregando…" : "Agregar al carrito"}
         </Button>
-        {state.error ? (
+        {error ? (
           <p role="alert" className="font-sans text-sm text-destructive">
-            {state.error}
+            {error}
           </p>
         ) : null}
-        {state.success ? (
+        {success ? (
           <p role="status" className="font-sans text-sm text-success">
-            {state.success}{" "}
+            {success}{" "}
             <Link href="/cart" className="underline underline-offset-4">
               Ver carrito
             </Link>

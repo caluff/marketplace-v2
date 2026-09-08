@@ -1,11 +1,9 @@
 "use server"
 
 import { FetchError } from "@medusajs/js-sdk"
-import type { HttpTypes } from "@medusajs/types"
 import type { HttpTypes as MercurHttpTypes } from "@mercurjs/types"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
-import { getStorefrontRegion } from "@/lib/medusa"
 import {
   accountFormValues,
   normalizeUsPhone,
@@ -26,6 +24,7 @@ import {
   selectedShippingOptions,
 } from "./presentation"
 import { getReceiptOrderIds } from "./receipt"
+import { cookieOptions, failure } from "./server-state"
 
 export type CartActionState = {
   error?: string
@@ -34,76 +33,17 @@ export type CartActionState = {
   redirectTo?: string
   values?: Record<string, string>
 }
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: 60 * 60 * 24 * 30,
-}
-
-function failure(error: unknown): CartActionState {
-  if (
-    error instanceof Error &&
-    ["TimeoutError", "AbortError"].includes(error.name)
-  )
-    return {
-      error:
-        "La operación está demorando. Consulta el carrito o el estado del pedido antes de repetirla.",
-    }
-  if (error instanceof FetchError) {
-    if (error.status === 401)
-      return { error: "Tu sesión venció. Vuelve a ingresar para continuar." }
-    if (/stock|inventory/i.test(error.message))
-      return {
-        error: "No hay stock suficiente. Revisa las cantidades del carrito.",
-      }
-    if (/shipping|delivery/i.test(error.message))
-      return {
-        error: "Revisa el envío: debe cubrir todos los productos del carrito.",
-      }
-    if (
-      /payout|sale.readiness|stripe.connect|Stripe setup|seller.*ready|payment.*configured/i.test(
-        error.message,
-      )
-    )
-      return {
-        error:
-          "Un vendedor todavía no está habilitado para cobrar. El carrito se conserva para que puedas intentarlo más tarde.",
-      }
-    if (/paused|not.*sale|unavailable/i.test(error.message))
-      return {
-        error:
-          "Un producto ya no está disponible para la venta. Revisa el carrito.",
-      }
-    if (/payment|authorize/i.test(error.message))
-      return {
-        error:
-          "El pago todavía no está confirmado. Comprueba su estado antes de volver a pagar.",
-      }
-    return {
-      error:
-        "No pudimos completar la operación. Revisa el carrito y vuelve a intentarlo.",
-    }
-  }
-  return {
-    error:
-      error instanceof Error
-        ? error.message
-        : "No pudimos completar la operación.",
-  }
-}
 
 function refreshCart() {
   revalidatePath("/", "layout")
 }
 
-async function currentCart() {
+async function currentCart(fields = CART_FIELDS) {
   const id = (await cookies()).get(CART_COOKIE)?.value
   if (!id || !/^cart_[a-zA-Z0-9]+$/.test(id))
     throw new Error("Tu carrito está vacío o venció. Vuelve al catálogo.")
   const sdk = await cartSdk()
-  const { cart } = await sdk.store.cart.retrieve(id, { fields: CART_FIELDS })
+  const { cart } = await sdk.store.cart.retrieve(id, { fields })
   if (!isUsCart(cart))
     throw new Error(
       "Esta tienda solo acepta compras en USD con entrega en Estados Unidos.",
@@ -111,71 +51,29 @@ async function currentCart() {
   return { sdk, cart }
 }
 
-export async function addToCartAction(
-  _previous: CartActionState,
-  form: FormData,
-): Promise<CartActionState> {
-  try {
-    const offerId = form.get("offer_id")
-    if (typeof offerId !== "string" || !/^offer_[a-zA-Z0-9]+$/.test(offerId))
-      throw new Error("Selecciona una oferta del producto.")
-    const quantity = parseQuantity(form.get("quantity"))
-    const sdk = await cartSdk()
-    const store = await cookies()
-    let cart: HttpTypes.StoreCart | undefined
-    const id = store.get(CART_COOKIE)?.value
-    if (id && /^cart_[a-zA-Z0-9]+$/.test(id)) {
-      try {
-        cart = (await sdk.store.cart.retrieve(id, { fields: CART_FIELDS })).cart
-      } catch (error) {
-        if (!(error instanceof FetchError && error.status === 404)) throw error
-      }
-    }
-    if (!cart || cart.completed_at) {
-      const region = await getStorefrontRegion()
-      if (!region)
-        throw new Error(
-          "Las compras para Estados Unidos todavía no están disponibles.",
-        )
-      cart = (
-        await sdk.store.cart.create(
-          { region_id: region.id },
-          { fields: CART_FIELDS },
-        )
-      ).cart
-      store.set(CART_COOKIE, cart.id, cookieOptions)
-    }
-    if (!isUsCart(cart))
-      throw new Error("Este carrito no corresponde a Estados Unidos y USD.")
-    await sdk.client.fetch<HttpTypes.StoreCartResponse>(
-      `/store/carts/${cart.id}/line-items`,
-      { method: "POST", body: { offer_id: offerId, quantity } },
-    )
-    refreshCart()
-    return { success: "Producto añadido al carrito." }
-  } catch (error) {
-    return failure(error)
-  }
-}
-
 export async function updateCartItemAction(
   _previous: CartActionState,
   form: FormData,
 ): Promise<CartActionState> {
   try {
-    const { sdk, cart } = await currentCart()
+    const { sdk, cart } = await currentCart(
+      "id,currency_code,completed_at,region.countries.iso_2,items.id",
+    )
     if (cart.completed_at)
       throw new Error("Este carrito ya se convirtió en pedido.")
     const id = String(form.get("item_id") ?? "")
     if (!cart.items?.some((item) => item.id === id))
       throw new Error("Ese producto ya no está en tu carrito.")
     if (form.get("remove") === "true")
-      await sdk.store.cart.deleteLineItem(cart.id, id)
+      await sdk.store.cart.deleteLineItem(cart.id, id, { fields: "id" })
     else
-      await sdk.store.cart.updateLineItem(cart.id, id, {
-        quantity: parseQuantity(form.get("quantity")),
-      })
-    refreshCart()
+      await sdk.store.cart.updateLineItem(
+        cart.id,
+        id,
+        { quantity: parseQuantity(form.get("quantity")) },
+        { fields: "id" },
+      )
+    revalidatePath("/cart")
     return { success: "Carrito actualizado." }
   } catch (error) {
     return failure(error)

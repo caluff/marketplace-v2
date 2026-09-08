@@ -28,6 +28,9 @@ export default defineRailway((ctx) => {
       preDeployCommand: ["pnpm db:migrate"],
       startCommand: "pnpm start:api",
       healthcheckPath: "/health",
+      multiRegionConfig: {
+        "us-west2": { numReplicas: 1 },
+      },
     },
     env: {
       NODE_ENV: "production",

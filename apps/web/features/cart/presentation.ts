@@ -27,10 +27,15 @@ export function shippingGroups(
   cart?: HttpTypes.StoreCart,
 ) {
   return Object.entries(options).flatMap(([sellerId, entries]) => {
-    const profiles = Map.groupBy(
-      entries,
-      (option) => option.shipping_profile_id,
-    )
+    const profiles = new Map<
+      ShippingOptionDTO["shipping_profile_id"],
+      ShippingOptionDTO[]
+    >()
+    for (const option of entries) {
+      const choices = profiles.get(option.shipping_profile_id)
+      if (choices) choices.push(option)
+      else profiles.set(option.shipping_profile_id, [option])
+    }
     return [...profiles.entries()]
       .filter(
         ([profileId]) =>
