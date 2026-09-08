@@ -6,6 +6,7 @@ import { requireVendorAccess } from "../../lib/vendor-onboarding/access";
 import type { ApplicationRecord, MutationRecord } from "../../modules/vendor-onboarding/service";
 import type VendorOnboardingService from "../../modules/vendor-onboarding/service";
 import type { DraftData } from "../../lib/vendor-onboarding/schemas";
+import { warehouseFixture } from "./fixtures/vendor-warehouse";
 
 const data: DraftData = {
   responsible: { first_name: "Jane", last_name: "Buyer", phone: "+12025550123" },
@@ -14,7 +15,8 @@ const data: DraftData = {
 };
 const mutationId = "90885306-3217-46ab-8cef-fcf0ac647f8d";
 
-function fixture(options: { reused?: boolean; verified?: boolean; failFinalize?: boolean; foreignMember?: boolean; inactive?: boolean; loseMemberResponse?: boolean; loseBindResponse?: boolean; loseCommitResponse?: boolean; loseSellerResponse?: boolean; unavailableCommitReadback?: boolean } = {}) {
+function fixture(options: { reused?: boolean; verified?: boolean; failFinalize?: boolean; foreignMember?: boolean; inactive?: boolean; loseMemberResponse?: boolean; loseBindResponse?: boolean; loseCommitResponse?: boolean; loseSellerResponse?: boolean; unavailableCommitReadback?: boolean; loseCreateResponse?: boolean; loseLinkResponse?: boolean } = {}) {
+  const warehouse = warehouseFixture(options);
   const operations: string[] = [];
   const now = new Date();
   let app = { id: "vapp_one", customer_id: "cus_buyer", auth_identity_id: "auth_buyer", applicant_email: "buyer@example.test", status: "submitted", version: 2, current_step: "review", data, submitted_data: data, submission_revision: 1, submitted_at: now, reviewed_at: null, review: null, terms_version: "v1", seller_id: null, member_id: null, approval_state: "idle", approval_operation_id: null, approval_error_code: null, created_at: now, updated_at: now, deleted_at: null } as ApplicationRecord;
@@ -43,13 +45,14 @@ function fixture(options: { reused?: boolean; verified?: boolean; failFinalize?:
     deleteSellerAddresses: jest.fn(async () => undefined),
   };
   const onboarding = {
+    ...warehouse.onboarding,
     retrieveVendorApplication: jest.fn(async () => structuredClone(app)),
     retrieveVendorApplicationMutation: jest.fn(async () => { if (options.unavailableCommitReadback && attemptedFinalize) throw new Error("database unavailable"); return structuredClone(mutation); }),
     listVendorApplications: jest.fn(async filter => Object.entries(filter).every(([key, value]) => app[key] === value) ? [structuredClone(app)] : []),
     listVendorApplicationMutations: jest.fn(async () => mutation ? [structuredClone(mutation)] : []),
     atomicMutation: jest.fn(async (input: Parameters<VendorOnboardingService["atomicMutation"]>[0]) => {
       operations.push("claim");
-      mutation = { id: "vappmut_operation", application_id: app.id, customer_id: app.customer_id, mutation_id: input.mutation_id, actor_id: input.actor_id, request_hash: input.request_hash, expected_version: input.expected_version, operation: input.operation, transaction_id: input.transaction_id, state: "processing", member_id: null, seller_id: null, created_member: false, result: null, error_code: null, created_at: now, updated_at: now, deleted_at: null };
+      mutation = { id: "vappmut_operation", application_id: app.id, customer_id: app.customer_id, mutation_id: input.mutation_id, actor_id: input.actor_id, request_hash: input.request_hash, expected_version: input.expected_version, operation: input.operation, transaction_id: input.transaction_id, state: "processing", member_id: null, seller_id: null, created_member: false, warehouse_id: null, warehouse_ready: false, result: null, error_code: null, created_at: now, updated_at: now, deleted_at: null };
       app = { ...app, approval_state: "processing", approval_operation_id: mutation.id };
       mutation.result = structuredClone(app);
       return { application: structuredClone(app), mutation: structuredClone(mutation), replay: false };
@@ -66,15 +69,16 @@ function fixture(options: { reused?: boolean; verified?: boolean; failFinalize?:
   };
   const container = createMedusaContainer();
   container.register({
+    stock_location: asValue(warehouse.stock), link: asValue(warehouse.link),
     vendorOnboarding: asValue(onboarding), seller: asValue(native),
     auth: asValue({ retrieveAuthIdentity: jest.fn(async () => ({ id: "auth_buyer", app_metadata: structuredClone(metadata), provider_identities: [{ provider: "emailpass", entity_id: "buyer@example.test" }] })), listAuthVerifications: jest.fn(async () => options.verified === false ? [] : [{ verified_at: now }]), updateAuthIdentities: jest.fn(async (input) => { operations.push("bind"); metadata = structuredClone(input.app_metadata); if (options.loseBindResponse) throw new Error("bind response lost"); return input; }) }),
-    query: asValue({ graph: jest.fn(async ({ entity }) => ({ data: entity === "customer" ? [{ id: "cus_buyer", email: "buyer@example.test", has_account: true }] : entity === "user" ? [{ id: "user_reviewer", rbac_roles: [{ id: "role_review" }] }] : entity === "store" ? [{ supported_currencies: [{ currency_code: "usd" }] }] : entity === "product_category" ? [{ id: "pcat_craft" }] : entity === "seller" ? structuredClone(sellers) : [] })) }),
+    query: asValue({ graph: jest.fn(async ({ entity, filters }) => ({ data: entity === "customer" ? [{ id: "cus_buyer", email: "buyer@example.test", has_account: true }] : entity === "user" ? [{ id: "user_reviewer", rbac_roles: [{ id: "role_review" }] }] : entity === "store" ? [{ supported_currencies: [{ currency_code: "usd" }] }] : entity === "product_category" ? [{ id: "pcat_craft" }] : entity === "seller" ? structuredClone(sellers) : await warehouse.graph({ entity, filters }) })) }),
     rbac: asValue({ listPoliciesForRole: jest.fn(async () => [{ resource: "seller", operation: "*" }]), listRbacRoles: jest.fn(async ({ id }) => id.map(id => ({ id }))), listRbacPolicies: jest.fn(async () => []), listRbacRolePolicies: jest.fn(async () => []), createRbacRolePolicies: jest.fn(async () => []) }),
     locking: asValue({ acquire: jest.fn(async () => { operations.push("lock"); }), release: jest.fn(async () => { operations.push("unlock"); return true; }) }),
     event_bus: asValue({ emit: jest.fn(async () => undefined), releaseGroupedEvents: jest.fn(async () => undefined), clearGroupedEvents: jest.fn(async () => undefined) }),
     logger: asValue({ error: jest.fn(), warn: jest.fn(), info: jest.fn() }),
   });
-  return { container, native, onboarding, operations, events, state: () => ({ app, metadata, members, sellers, memberships }) };
+  return { container, native, onboarding, warehouse, operations, events, state: () => ({ app, metadata, members, sellers, memberships }) };
 }
 const approve = { operation: "review" as const, application_id: "vapp_one", reviewer_id: "user_reviewer", body: { mutation_id: mutationId, expected_version: 2, decision: "approve" as const } };
 
@@ -95,7 +99,7 @@ describe("vendor application native approval saga", () => {
     expect(f.state().members).toHaveLength(1);
     expect(f.state().metadata.member_id).toBe("mem_operation");
   });
-  it.each([{ loseMemberResponse: true }, { loseBindResponse: true }, { loseCommitResponse: true }])("recovers a committed write with a lost response %j", async options => {
+  it.each([{ loseMemberResponse: true }, { loseBindResponse: true }, { loseCommitResponse: true }, { loseCreateResponse: true }, { loseLinkResponse: true }])("recovers a committed write with a lost response %j", async options => {
     const f = fixture(options);
     await mutateVendorApplicationWorkflow(f.container).run({ input: approve });
     expect(f.state().app.status).toBe("approved");
@@ -103,6 +107,8 @@ describe("vendor application native approval saga", () => {
     expect(f.native.createMembers).toHaveBeenCalledTimes(1);
     expect(f.native.createSellers).toHaveBeenCalledTimes(1);
     expect(f.events).toEqual(["approved"]);
+    expect(f.warehouse.locations).toHaveLength(1);
+    expect(f.warehouse.claims[0].state).toBe("ready");
   });
   it("uses native account creation/approval and binds the same identity without removing buyer metadata", async () => {
     const f = fixture();
@@ -128,6 +134,8 @@ describe("vendor application native approval saga", () => {
     expect(f.state().members).toEqual([]);
     expect(f.state().sellers).toEqual([]);
     expect(f.state().memberships).toEqual([]);
+    expect(f.warehouse.locations).toEqual([]);
+    expect(f.warehouse.claims[0].state).toBe("released");
     expect(f.state().app.status).toBe("submitted");
     expect(f.events).toEqual([]);
   });
@@ -149,6 +157,7 @@ describe("vendor application native approval saga", () => {
     await mutateVendorApplicationWorkflow(f.container).run({ input: approve });
     await mutateVendorApplicationWorkflow(f.container).run({ input: approve });
     expect(f.native.createSellers).toHaveBeenCalledTimes(1);
+    expect(f.warehouse.stock.createStockLocations).toHaveBeenCalledTimes(1);
     await expect(mutateVendorApplicationWorkflow(f.container).run({ input: { ...approve, body: { ...approve.body, expected_version: 99 } } })).rejects.toMatchObject({ code: "mutation_conflict" });
   });
   it("denies operational access when an open native seller has no committed application", async () => {

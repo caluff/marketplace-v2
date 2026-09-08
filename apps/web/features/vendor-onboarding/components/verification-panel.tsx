@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { CheckCircle2, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -24,7 +23,6 @@ export function VerificationPanel({
   hasCode?: boolean
   onVerified?: () => void
 }) {
-  const router = useRouter()
   const [isVerified, setIsVerified] = useState(verified)
   const [code, setCode] = useState("")
   const [feedback, setFeedback] = useState<Feedback | null>(null)
@@ -123,7 +121,6 @@ export function VerificationPanel({
               if (result.status === "success") {
                 setIsVerified(true)
                 onVerified?.()
-                router.refresh()
               }
             } catch {
               setFeedback({

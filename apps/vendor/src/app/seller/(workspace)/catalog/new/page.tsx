@@ -1,45 +1,44 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeading } from "@/features/workspace/components";
-import { MutationForm } from "@/features/workspace/mutation-form";
 import { createProductAction } from "@/features/workspace/actions";
 import { workspace } from "@/features/workspace/data";
+import { CategoryFields } from "@/features/catalog/category-fields";
+import { ProductForm } from "@/features/catalog/product-form";
 
 export const metadata: Metadata = { title: "Crear producto" };
+
 export default async function NewProductPage() {
   await workspace();
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <PageHeading
         eyebrow="Catálogo"
         title="Crear producto"
-        description="Prepara la información del producto. Al crearlo se envía a aprobación; la publicación requiere revisión."
+        description="Prepara un producto con sus variantes. Los SKU maestros se generan automáticamente y todo se revisa antes de publicarse."
       />
       <Card>
         <CardHeader>
-          <CardTitle>Información del producto</CardTitle>
+          <CardTitle>Información y variantes</CardTitle>
         </CardHeader>
         <CardContent>
-          <MutationForm
+          <ProductForm
             action={createProductAction}
-            submit="Enviar a revisión"
-            disableAfterSuccess
-            hidden={{ status: "proposed" }}
-            fields={[
-              {
-                name: "title",
-                label: "Nombre",
-                required: true,
-                maxLength: 200,
-              },
-              { name: "subtitle", label: "Subtítulo", maxLength: 200 },
-              {
-                name: "description",
-                label: "Descripción",
-                type: "textarea",
-                maxLength: 10000,
-              },
-            ]}
+            categories={
+              <Suspense
+                fallback={
+                  <p
+                    role="status"
+                    className="h-24 text-sm text-muted-foreground"
+                  >
+                    Cargando categorías…
+                  </p>
+                }
+              >
+                <CategoryFields />
+              </Suspense>
+            }
           />
         </CardContent>
       </Card>

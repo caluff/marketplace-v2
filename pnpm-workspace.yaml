@@ -1,6 +1,11 @@
 packages:
   - apps/*
   - packages/*
+
+patchedDependencies:
+  '@medusajs/framework@2.18.0': patches/@medusajs__framework@2.18.0.patch
+  '@mercurjs/core@2.3.3': patches/@mercurjs__core@2.3.3.patch
+  '@mercurjs/payout-stripe-connect@2.3.3': patches/@mercurjs__payout-stripe-connect@2.3.3.patch
 overrides:
   vite: 5.4.21
   fdir@6.1.1>picomatch: 3.0.1

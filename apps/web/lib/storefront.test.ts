@@ -6,7 +6,13 @@ import {
   classifyCatalogError,
   getCatalogContentStatus,
   StorefrontTimeoutError,
+  withTimeout,
 } from "./catalog-state.ts"
+import { createCatalogSdk } from "./catalog-sdk.ts"
+import {
+  isOptimizableProductImage,
+  productImagePattern,
+} from "./product-image-config.ts"
 import {
   isJwtExpired,
   safeRedirectPath,
@@ -15,6 +21,140 @@ import {
 import { validateStorefrontEnvironment } from "./storefront-config.ts"
 
 const TEST_PUBLISHABLE_KEY = `pk_${"a".repeat(64)}`
+
+test("catalog deadlines cancel the actual SDK transport, preserving its public key", async (context) => {
+  let aborted = false
+  context.mock.method(
+    globalThis,
+    "fetch",
+    async (_input: unknown, init: RequestInit) => {
+      assert.equal(
+        new Headers(init.headers).get("x-publishable-api-key"),
+        TEST_PUBLISHABLE_KEY,
+      )
+      assert.equal(init.cache, "no-store")
+      return new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener(
+          "abort",
+          () => {
+            aborted = true
+            reject(init.signal?.reason)
+          },
+          { once: true },
+        )
+      })
+    },
+  )
+  await assert.rejects(
+    withTimeout(
+      (signal) =>
+        createCatalogSdk(
+          {
+            baseUrl: "https://commerce.example.com",
+            publishableKey: TEST_PUBLISHABLE_KEY,
+          },
+          signal,
+        ).store.product.list({ limit: 1 }),
+      20,
+    ),
+    StorefrontTimeoutError,
+  )
+  assert.equal(aborted, true)
+})
+
+test("a cancelled SDK read does not cancel another visitor's SDK", async (context) => {
+  const first = new AbortController()
+  const second = new AbortController()
+  let requests = 0
+  context.mock.method(
+    globalThis,
+    "fetch",
+    async (_input: unknown, init: RequestInit) => {
+      requests++
+      assert.equal(init.signal?.aborted, false)
+      return Response.json({ regions: [{ id: "reg_us" }] })
+    },
+  )
+  const config = {
+    baseUrl: "https://commerce.example.com",
+    publishableKey: TEST_PUBLISHABLE_KEY,
+  }
+  const cancelled = createCatalogSdk(config, first.signal)
+  const active = createCatalogSdk(config, second.signal)
+  first.abort()
+  await assert.rejects(async () => cancelled.store.region.list())
+  assert.equal((await active.store.region.list()).regions[0].id, "reg_us")
+  assert.equal(requests, 1)
+})
+
+test("public image optimization allows only the configured HTTPS folder", () => {
+  const base =
+    "https://images.example.com/storage/v1/object/public/products/products"
+  assert.deepEqual(productImagePattern(base), {
+    protocol: "https",
+    hostname: "images.example.com",
+    port: "",
+    pathname: "/storage/v1/object/public/products/products/**",
+    search: "",
+  })
+  assert.equal(
+    isOptimizableProductImage(new URL(`${base}/photo.jpg`), base),
+    true,
+  )
+  for (const url of [
+    "https://other.example.com/storage/v1/object/public/products/products/photo.jpg",
+    `${base}-other/photo.jpg`,
+    `${base}/../private/photo.jpg`,
+    `${base}/photo.jpg?token=secret`,
+    `${base}/photo.jpg#fragment`,
+    "http://images.example.com/storage/v1/object/public/products/products/photo.jpg",
+  ])
+    assert.equal(isOptimizableProductImage(new URL(url), base), false)
+  for (const value of [
+    undefined,
+    "https://images.example.com",
+    `${base}?token=secret`,
+    "https://*.example.com/products",
+    "https://user:secret@images.example.com/products",
+  ])
+    assert.equal(productImagePattern(value), null)
+})
+
+test("catalog products resolve even while category navigation is still loading", async (context) => {
+  const previousUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+  const previousKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL = "https://commerce.example.com"
+  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = TEST_PUBLISHABLE_KEY
+  context.after(() => {
+    if (previousUrl === undefined)
+      delete process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+    else process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL = previousUrl
+    if (previousKey === undefined)
+      delete process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+    else process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = previousKey
+  })
+  let releaseCategories!: (response: Response) => void
+  const delayedCategories = new Promise<Response>((resolve) => {
+    releaseCategories = resolve
+  })
+  context.mock.method(globalThis, "fetch", async (input: URL) => {
+    if (input.pathname === "/store/product-categories") return delayedCategories
+    if (input.pathname === "/store/regions")
+      return Response.json({ regions: [{ id: "reg_us" }] })
+    assert.equal(input.pathname, "/store/products")
+    assert.equal(input.searchParams.get("region_id"), "reg_us")
+    return Response.json({ products: [{ id: "prod_one" }], count: 1 })
+  })
+  const { getStorefrontCatalog, getStorefrontCategories } =
+    await import("./medusa.ts")
+  const categories = getStorefrontCategories()
+  try {
+    assert.equal((await getStorefrontCatalog()).status, "products")
+  } finally {
+    releaseCategories(Response.json({ product_categories: [] }))
+    await categories
+  }
+})
 
 test("reports missing public configuration without returning values", () => {
   assert.deepEqual(validateStorefrontEnvironment({}), {
@@ -88,7 +228,10 @@ test("distinguishes an empty catalog from a catalog with products", () => {
 })
 
 test("accepts only internal return paths", () => {
-  assert.equal(safeRedirectPath("/account?tab=orders", "/"), "/account?tab=orders")
+  assert.equal(
+    safeRedirectPath("/account?tab=orders", "/"),
+    "/account?tab=orders",
+  )
   assert.equal(safeRedirectPath("https://evil.example", "/account"), "/account")
   assert.equal(safeRedirectPath("//evil.example", "/account"), "/account")
   assert.equal(safeRedirectPath("/\\evil.example", "/account"), "/account")
@@ -96,7 +239,10 @@ test("accepts only internal return paths", () => {
 })
 
 test("wires customer registration, restoration, reset, verification and logout", async () => {
-  const actions = await readFile(new URL("../app/auth-actions.ts", import.meta.url), "utf8")
+  const actions = await readFile(
+    new URL("../app/auth-actions.ts", import.meta.url),
+    "utf8",
+  )
   const sdk = await readFile(new URL("./auth-sdk.ts", import.meta.url), "utf8")
   const proxy = await readFile(new URL("../proxy.ts", import.meta.url), "utf8")
 
@@ -112,7 +258,10 @@ test("wires customer registration, restoration, reset, verification and logout",
 })
 
 test("uses generic credential and recovery responses", async () => {
-  const actions = await readFile(new URL("../app/auth-actions.ts", import.meta.url), "utf8")
+  const actions = await readFile(
+    new URL("../app/auth-actions.ts", import.meta.url),
+    "utf8",
+  )
 
   assert.match(actions, /INVALID_CREDENTIALS/)
   assert.match(actions, /Si existe una cuenta con ese correo/)
@@ -120,15 +269,27 @@ test("uses generic credential and recovery responses", async () => {
 })
 
 test("keeps customer forms accessible and pending-safe", async () => {
-  const forms = await readFile(new URL("../components/auth/auth-forms.tsx", import.meta.url), "utf8")
+  const forms = await readFile(
+    new URL("../components/auth/auth-forms.tsx", import.meta.url),
+    "utf8",
+  )
 
   assert.match(forms, /<FeedbackToast feedback={state}/)
-  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8")
-  const toaster = await readFile(new URL("../components/ui/sonner.tsx", import.meta.url), "utf8")
+  const layout = await readFile(
+    new URL("../app/layout.tsx", import.meta.url),
+    "utf8",
+  )
+  const toaster = await readFile(
+    new URL("../components/ui/sonner.tsx", import.meta.url),
+    "utf8",
+  )
   assert.match(layout, /<Toaster/)
   assert.match(toaster, /containerAriaLabel="Notificaciones"/)
   assert.match(toaster, /Cerrar notificación/)
-  assert.match(forms, /aria-label={visible \? "Ocultar contraseña" : "Mostrar contraseña"}/)
+  assert.match(
+    forms,
+    /aria-label={visible \? "Ocultar contraseña" : "Mostrar contraseña"}/,
+  )
   assert.match(forms, /autoComplete="current-password"/)
   assert.match(forms, /autoComplete="new-password"/)
   assert.match(forms, /disabled={pending}/)
@@ -140,7 +301,10 @@ test("validates email and password before authentication", () => {
     email: "Ingresa un correo electrónico válido.",
     password: "La contraseña debe tener entre 8 y 256 caracteres.",
   })
-  assert.deepEqual(validateCredentials("cliente@example.com", "correcta-123"), {})
+  assert.deepEqual(
+    validateCredentials("cliente@example.com", "correcta-123"),
+    {},
+  )
 })
 
 test("detects expired and malformed JWTs for optimistic route protection", () => {

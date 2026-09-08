@@ -19,17 +19,36 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function SellPage({
+export default function SellPage({
   searchParams,
 }: {
   searchParams: Promise<{ offset?: string }>
 }) {
-  const params = await searchParams
-  const requestedOffset = Number(params.offset)
-  const offset =
-    Number.isSafeInteger(requestedOffset) && requestedOffset > 0
-      ? Math.min(requestedOffset, 100000)
-      : 0
+  return (
+    <div className="max-w-4xl">
+      <AccountHeading title="Vender en Marketplace V2" />
+      <Suspense
+        fallback={
+          <Skeleton className="h-96 w-full" aria-label="Cargando solicitud" />
+        }
+      >
+        <ApplicationFormSection />
+      </Suspense>
+      <Suspense
+        fallback={
+          <Skeleton
+            className="mt-10 h-20 w-full"
+            aria-label="Cargando novedades"
+          />
+        }
+      >
+        <ApplicationHistorySection searchParams={searchParams} />
+      </Suspense>
+    </div>
+  )
+}
+
+async function ApplicationFormSection() {
   const response = await getApplication()
   const editable =
     !response.applicant.existing_vendor_access &&
@@ -39,19 +58,14 @@ export default async function SellPage({
     editable ? getVerificationCode() : null,
   ])
   return (
-    <div className="max-w-4xl">
-      <AccountHeading
-        title="Vender en Marketplace V2"
-        description="Un nuevo espacio para tu negocio, con la cuenta que ya tienes."
-      />
+    <>
       {form ? (
         <ApplicationWizard
           key={response.application?.id ?? "new"}
           response={response}
           customer={form.customer}
-          addresses={form.addresses}
+          resources={form.resources}
           options={form.options}
-          categories={form.categories}
           hasCode={Boolean(verificationCode)}
         />
       ) : (
@@ -60,25 +74,20 @@ export default async function SellPage({
           vendorUrl={vendorLoginUrl(process.env.NEXT_PUBLIC_VENDOR_URL)}
         />
       )}
-      <Suspense
-        key={offset}
-        fallback={
-          <div
-            role="status"
-            className="mt-10 space-y-4 border-t border-border pt-8"
-          >
-            <p className="text-sm text-muted-foreground">Cargando novedades…</p>
-            <Skeleton className="h-20 w-full" />
-          </div>
-        }
-      >
-        <ApplicationHistorySection offset={offset} />
-      </Suspense>
-    </div>
+    </>
   )
 }
 
-async function ApplicationHistorySection({ offset }: { offset: number }) {
+async function ApplicationHistorySection({
+  searchParams,
+}: {
+  searchParams: Promise<{ offset?: string }>
+}) {
+  const requestedOffset = Number((await searchParams).offset)
+  const offset =
+    Number.isSafeInteger(requestedOffset) && requestedOffset > 0
+      ? Math.min(requestedOffset, 100000)
+      : 0
   const history = await getApplicationNotifications(offset).catch(() => null)
   if (history) return <ApplicationHistory data={history} />
   return (

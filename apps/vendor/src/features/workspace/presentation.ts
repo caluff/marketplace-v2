@@ -1,3 +1,7 @@
+import { intlFormat } from "date-fns/intlFormat";
+import { isValid } from "date-fns/isValid";
+import { parseISO } from "date-fns/parseISO";
+
 export const PAGE_SIZE = 20;
 
 export function listInput(params: { q?: string; page?: string }) {
@@ -30,13 +34,13 @@ export function formatMoney(value: unknown, currency: string) {
 
 export function formatDate(value: Date | string | undefined) {
   if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "—"
-    : new Intl.DateTimeFormat("es-UY", {
-        dateStyle: "medium",
-        timeZone: "America/Montevideo",
-      }).format(date);
+  const date = typeof value === "string" ? parseISO(value) : value;
+  if (!isValid(date)) return "—";
+  return intlFormat(
+    date,
+    { dateStyle: "medium", timeZone: "America/Montevideo" },
+    { locale: "es-UY" },
+  );
 }
 
 const statuses: Record<string, string> = {

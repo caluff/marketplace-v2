@@ -17,12 +17,21 @@ test("validates credentials without revealing operator accounts", () => {
     email: "Ingresa un correo electrónico válido.",
     password: "La contraseña debe tener entre 8 y 256 caracteres.",
   });
-  assert.deepEqual(validateCredentials("operator@example.com", "strong-password"), {});
+  assert.deepEqual(
+    validateCredentials("operator@example.com", "strong-password"),
+    {},
+  );
 });
 
 test("accepts only safe dashboard return paths", () => {
-  assert.equal(safeRedirectPath("/dashboard/orders?id=1", "/dashboard"), "/dashboard/orders?id=1");
-  assert.equal(safeRedirectPath("https://evil.example", "/dashboard"), "/dashboard");
+  assert.equal(
+    safeRedirectPath("/dashboard/orders?id=1", "/dashboard"),
+    "/dashboard/orders?id=1",
+  );
+  assert.equal(
+    safeRedirectPath("https://evil.example", "/dashboard"),
+    "/dashboard",
+  );
   assert.equal(safeRedirectPath("//evil.example", "/dashboard"), "/dashboard");
   assert.equal(safeRedirectPath("/\\evil.example", "/dashboard"), "/dashboard");
   assert.equal(safeRedirectPath("/login", "/dashboard"), "/dashboard");
@@ -46,7 +55,8 @@ test("wires invalid credentials, reset, restoration and local logout", async () 
   assert.match(actions, /auth\.resetPassword\("user", "emailpass"/);
   assert.match(actions, /auth\.updateProvider\("user", "emailpass"/);
   assert.match(actions, /finally[\s\S]*await clearAdminSession\(\)/);
-  assert.match(sdk, /retrieveAdminUser\(sdk\?\.admin\.user\)/);
+  assert.match(sdk, /retrieveAdminUser\(sdk\.admin\.user\)/);
+  assert.match(sdk, /const getAdminAccount = cache\(async/);
   assert.match(proxy, /pathname\.startsWith\("\/dashboard"\)/);
   assert.match(proxy, /response\.cookies\.delete\(ADMIN_SESSION_COOKIE\)/);
 });
@@ -55,7 +65,10 @@ test("keeps the forms accessible and prevents double submission", async () => {
   const forms = await read("src/components/admin/admin-auth-forms.tsx");
 
   assert.match(forms, /aria-live="polite"/);
-  assert.match(forms, /aria-label={visible \? "Ocultar contraseña" : "Mostrar contraseña"}/);
+  assert.match(
+    forms,
+    /aria-label={visible \? "Ocultar contraseña" : "Mostrar contraseña"}/,
+  );
   assert.match(forms, /autoComplete="email"/);
   assert.match(forms, /disabled={pending}/);
   assert.match(forms, /aria-disabled={pending}/);

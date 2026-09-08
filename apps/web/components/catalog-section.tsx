@@ -27,6 +27,7 @@ import {
 import type { StorefrontCatalogResult } from "@/lib/medusa"
 
 type CatalogSectionProps = {
+  categories: Promise<HttpTypes.StoreProductCategory[]>
   result: Promise<StorefrontCatalogResult>
   activeCategoryId: Promise<string | undefined>
   customer: Promise<HttpTypes.StoreCustomer | null>
@@ -128,7 +129,7 @@ export function CatalogSection(props: CatalogSectionProps) {
             >
               <Suspense fallback="El catálogo">
                 <CatalogTitle
-                  result={props.result}
+                  categories={props.categories}
                   activeCategoryId={props.activeCategoryId}
                 />
               </Suspense>
@@ -147,16 +148,15 @@ export function CatalogSection(props: CatalogSectionProps) {
 }
 
 async function CatalogTitle({
-  result,
+  categories,
   activeCategoryId,
-}: Pick<CatalogSectionProps, "result" | "activeCategoryId">) {
+}: Pick<CatalogSectionProps, "categories" | "activeCategoryId">) {
   const categoryId = await activeCategoryId
   if (!categoryId) return "El catálogo"
-  const catalog = await result
-  return catalog.status === "products" || catalog.status === "empty"
-    ? (catalog.categories.find((category) => category.id === categoryId)
-        ?.name ?? "El catálogo")
-    : "El catálogo"
+  return (
+    (await categories).find((category) => category.id === categoryId)?.name ??
+    "El catálogo"
+  )
 }
 
 async function CatalogCount({ result }: Pick<CatalogSectionProps, "result">) {
@@ -188,13 +188,7 @@ async function CatalogContent(props: CatalogSectionProps) {
     props.result,
     props.activeCategoryId,
   ])
-  const categories =
-    result.status === "products" || result.status === "empty"
-      ? result.categories
-      : []
-  const activeCategory = categories.find(
-    (category) => category.id === activeCategoryId,
-  )
+  const activeCategory = Boolean(activeCategoryId)
   return (
     <>
       {result.status === "products" ? (

@@ -53,7 +53,10 @@ test("outages propagate to the boundary and the same client can recover", async 
         return { user };
       },
     };
-    await assert.rejects(retrieveAdminUser(client), (thrown) => thrown === error);
+    await assert.rejects(
+      retrieveAdminUser(client),
+      (thrown) => thrown === error,
+    );
     unavailable = false;
     assert.equal(await retrieveAdminUser(client), user);
   }
@@ -64,7 +67,8 @@ test("login classifies failures at both the credentials and user verification re
   const originalUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL;
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL = "http://admin-backend.invalid";
   t.after(() => {
-    if (originalUrl === undefined) delete process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL;
+    if (originalUrl === undefined)
+      delete process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL;
     else process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL = originalUrl;
   });
 
@@ -76,41 +80,61 @@ test("login classifies failures at both the credentials and user verification re
     for (const status of [401, 403, 500, 503, "transport"] as const) {
       await t.test(`${stage}: ${status}`, async (subtest) => {
         const paths: string[] = [];
-        subtest.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
-          const url = new URL(input instanceof Request ? input.url : input);
-          assert.equal(url.origin, "http://admin-backend.invalid");
-          paths.push(url.pathname);
-          if (stage === "user" && paths.length === 1) {
-            return Response.json({ token: "test-token-only" });
-          }
-          if (status === "transport") throw new TypeError("fetch failed");
-          return Response.json({ message: "Private backend detail" }, { status });
-        });
+        subtest.mock.method(
+          globalThis,
+          "fetch",
+          async (input: string | URL | Request) => {
+            const url = new URL(input instanceof Request ? input.url : input);
+            assert.equal(url.origin, "http://admin-backend.invalid");
+            paths.push(url.pathname);
+            if (stage === "user" && paths.length === 1) {
+              return Response.json({ token: "test-token-only" });
+            }
+            if (status === "transport") throw new TypeError("fetch failed");
+            return Response.json(
+              { message: "Private backend detail" },
+              { status },
+            );
+          },
+        );
         const result = await loginAdminAction({ status: "idle" }, form);
         assert.deepEqual(result, {
           status: "error",
-          message: status === 401 || status === 403
-            ? INVALID_CREDENTIALS
-            : AUTH_SERVICE_UNAVAILABLE,
+          message:
+            status === 401 || status === 403
+              ? INVALID_CREDENTIALS
+              : AUTH_SERVICE_UNAVAILABLE,
         });
-        assert.deepEqual(paths, stage === "user"
-          ? ["/auth/user/emailpass", "/admin/users/me"]
-          : ["/auth/user/emailpass"]);
+        assert.deepEqual(
+          paths,
+          stage === "user"
+            ? ["/auth/user/emailpass", "/admin/users/me"]
+            : ["/auth/user/emailpass"],
+        );
       });
     }
   }
 });
 
 test("dashboard layout failures have a parent boundary and retry preserves the current URL", async () => {
-  const read = (path: string) => readFile(new URL(path, import.meta.url), "utf8");
+  const read = (path: string) =>
+    readFile(new URL(path, import.meta.url), "utf8");
   const boundary = await read("../src/app/error.tsx");
   const sdk = await read("../src/lib/auth-sdk.ts");
-  const currentAdmin = sdk.slice(sdk.indexOf("export async function getCurrentAdmin"));
+  const currentAdmin = sdk.slice(
+    sdk.indexOf("export async function getCurrentAdmin"),
+  );
+  const account = sdk.slice(
+    sdk.indexOf("const getAdminAccount = cache"),
+    sdk.indexOf("export async function requireAdminSdk"),
+  );
 
   assert.match(boundary, /"use client"/);
   assert.match(boundary, /<Card[^>]+role="alert"/);
   assert.match(boundary, /window\.location\.reload\(\)/);
-  assert.match(currentAdmin, /if \(!token\) return null/);
-  assert.match(currentAdmin, /return retrieveAdminUser\(sdk\?\.admin\.user\)/);
+  assert.match(account, /if \(!token\) return null/);
+  assert.match(account, /await retrieveAdminUser\(sdk\.admin\.user\)/);
+  assert.match(currentAdmin, /await getAdminAccount\(\)/);
+  assert.doesNotMatch(account, /clearAdminSession|\.delete\(|catch/);
   assert.doesNotMatch(currentAdmin, /clearAdminSession|\.delete\(|catch/);
 });

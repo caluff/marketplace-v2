@@ -3,6 +3,8 @@ import path from "path";
 import { loadEnv, MedusaError } from "@medusajs/framework/utils";
 import { withMercur } from "@mercurjs/core";
 import { getResendConfiguration } from "./src/modules/resend/configuration";
+import { getStripeConnectConfiguration } from "./src/lib/stripe-connect-configuration";
+import { getProductImageStorageConfiguration } from "./src/lib/file-storage-configuration";
 
 const findWorkspaceRoot = (start: string): string | undefined => {
   let current = path.resolve(start);
@@ -22,7 +24,9 @@ const findWorkspaceRoot = (start: string): string | undefined => {
 };
 
 const repositoryRoot =
-  findWorkspaceRoot(process.cwd()) ?? findWorkspaceRoot(__dirname) ?? process.cwd();
+  findWorkspaceRoot(process.cwd()) ??
+  findWorkspaceRoot(__dirname) ??
+  process.cwd();
 
 // Medusa's loader accepts a directory and chooses the environment-specific file.
 // Walking to the workspace root works from source and from .medusa/server builds.
@@ -121,6 +125,8 @@ if (
 
 const workerMode = requestedWorkerMode as "server" | "worker" | "shared";
 const resendConfiguration = getResendConfiguration();
+const stripeConfiguration = getStripeConnectConfiguration();
+const productImageStorageConfiguration = getProductImageStorageConfiguration();
 
 if (jwtSecret === cookieSecret) {
   throw new MedusaError(
@@ -168,6 +174,51 @@ module.exports = withMercur({
   modules: [
     { resolve: "./src/modules/vendor-onboarding" },
     { resolve: "./src/modules/inventory" },
+    { resolve: "./src/modules/commerce-automation" },
+    {
+      resolve: "./src/modules/catalog-media",
+      options: { storage_enabled: Boolean(productImageStorageConfiguration) },
+    },
+    {
+      resolve: "@mercurjs/core/modules/payout",
+      options: {
+        // Keep native timing defaults; opt in only after signed-webhook QA.
+        disabled: !stripeConfiguration?.jobsEnabled,
+        providers: stripeConfiguration
+          ? [
+              {
+                resolve: "@mercurjs/payout-stripe-connect",
+                id: "stripe-connect",
+                options: {
+                  apiKey: stripeConfiguration.apiKey,
+                  webhookSecret: stripeConfiguration.webhookSecret,
+                },
+              },
+            ]
+          : [],
+      },
+    },
+    ...(stripeConfiguration
+      ? [
+          {
+            resolve: "@medusajs/medusa/payment",
+            options: {
+              providers: [
+                {
+                  resolve: "@medusajs/medusa/payment-stripe",
+                  id: "stripe",
+                  options: {
+                    apiKey: stripeConfiguration.apiKey,
+                    webhookSecret: stripeConfiguration.paymentWebhookSecret,
+                    capture: false,
+                    automatic_payment_methods: true,
+                  },
+                },
+              ],
+            },
+          },
+        ]
+      : []),
     {
       resolve: "@medusajs/medusa/notification",
       options: {
@@ -177,11 +228,15 @@ module.exports = withMercur({
             id: "local",
             options: { channels: ["feed"] },
           },
-          ...(resendConfiguration ? [{
-            resolve: "./src/modules/resend",
-            id: "resend",
-            options: { channels: ["email"], ...resendConfiguration },
-          }] : []),
+          ...(resendConfiguration
+            ? [
+                {
+                  resolve: "./src/modules/resend",
+                  id: "resend",
+                  options: { channels: ["email"], ...resendConfiguration },
+                },
+              ]
+            : []),
         ],
       },
     },
@@ -205,7 +260,10 @@ module.exports = withMercur({
         // Wait on Redis's queue marker; new events wake the worker immediately.
         workerOptions: { drainDelay: 60 },
         // Auth delivery failures must be retried by the existing event bus.
-        jobOptions: { attempts: 5, backoff: { type: "exponential", delay: 5_000 } },
+        jobOptions: {
+          attempts: 5,
+          backoff: { type: "exponential", delay: 5_000 },
+        },
       },
     },
     {
@@ -248,16 +306,25 @@ module.exports = withMercur({
     {
       resolve: "@medusajs/medusa/file",
       options: {
-        providers: [
-          {
-            resolve: "@medusajs/medusa/file-local",
-            id: "local",
-            options: {
-              backend_url:
-                process.env.FILE_BACKEND_URL || "http://localhost:9000/static",
-            },
-          },
-        ],
+        providers: productImageStorageConfiguration
+          ? [
+              {
+                resolve: "./src/modules/product-media-file",
+                id: "product-media",
+                options: productImageStorageConfiguration,
+              },
+            ]
+          : [
+              {
+                resolve: "@medusajs/medusa/file-local",
+                id: "local",
+                options: {
+                  backend_url:
+                    process.env.FILE_BACKEND_URL ||
+                    "http://localhost:9000/static",
+                },
+              },
+            ],
       },
     },
   ],

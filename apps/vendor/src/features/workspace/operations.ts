@@ -1,5 +1,5 @@
 import type Medusa from "@medusajs/js-sdk";
-import type { InventoryLevelDTO } from "@medusajs/types";
+import type { InventoryLevelDTO, HttpTypes as MedusaHttpTypes } from "@medusajs/types";
 import type {
   CreateProductDTO,
   HttpTypes,
@@ -15,6 +15,8 @@ import {
   textField,
   websiteField,
 } from "./validation";
+import { createCatalogBody, selectedCategories, submittedImages } from "../catalog/validation";
+import { createMasterSku } from "../catalog/master-sku";
 
 export type AuthorizedVendor = { sdk: Medusa; membership: SellerMemberDTO };
 export type AuthorizeVendor = () => Promise<AuthorizedVendor>;
@@ -49,52 +51,22 @@ export function scopedClient({ sdk, membership }: AuthorizedVendor) {
   };
 }
 
-export async function visibleProduct(
-  client: ReturnType<typeof scopedClient>,
-  id: string,
-) {
-  resourceId(id);
-  const { products } = await client.get<HttpTypes.VendorProductListResponse>(
-    "/vendor/products",
-    { id, limit: 1, fields: "id" },
-  );
-  if (!products.some((product) => product.id === id))
-    throw new Error("El producto no está disponible para esta tienda.");
-}
-
 export function vendorOperations(authorize: AuthorizeVendor) {
   return {
-    async createLocation(form: FormData) {
-      const client = scopedClient(await authorize());
-      const country = textField(form, "country_code", true, 2).toLowerCase();
-      if (country !== "us")
-        throw new Error(
-          "Las direcciones de la tienda deben estar en Estados Unidos.",
-        );
-      return client.post<HttpTypes.VendorStockLocationResponse>(
-        "/vendor/stock-locations",
-        {
-          name: textField(form, "name", true, 200),
-          address: {
-            address_1: textField(form, "address_1", true),
-            city: textField(form, "city", true),
-            postal_code: textField(form, "postal_code", true, 30),
-            country_code: country,
-          },
-        },
+    async createLocation(_form: FormData) {
+      scopedClient(await authorize());
+      void _form;
+      throw new Error(
+        "El almacén se administra desde la solicitud aprobada. Consulta al operador para corregir su configuración.",
       );
     },
     async createProduct(form: FormData) {
       const client = scopedClient(await authorize());
-      const status = textField(form, "status", true);
-      if (status !== "proposed")
-        throw new Error("Los nuevos productos deben enviarse a aprobación.");
-      const body = {
-        title: textField(form, "title", true, 200),
-        subtitle: textField(form, "subtitle", false, 200),
-        description: textField(form, "description", false, 10000),
-        status,
-      } satisfies CreateProductDTO;
+      const body = createCatalogBody(form, (variant, index) =>
+        createMasterSku(
+          `${variant.title}-${Object.values(variant.options).join("-")}-${index + 1}`,
+        ),
+      );
       return client.post<HttpTypes.VendorProductResponse>(
         "/vendor/products",
         body,
@@ -107,8 +79,9 @@ export function vendorOperations(authorize: AuthorizeVendor) {
         title: textField(form, "title", true, 200),
         subtitle: textField(form, "subtitle", false, 200),
         description: textField(form, "description", false, 10000),
-      } satisfies Pick<CreateProductDTO, "title" | "subtitle" | "description">;
-      await visibleProduct(client, id);
+        ...(form.has("categories_present") ? { categories: selectedCategories(form) } : {}),
+        ...(form.has("images") ? { images: submittedImages(form) } : {}),
+      } satisfies Pick<CreateProductDTO, "title" | "subtitle" | "description"> & Pick<MedusaHttpTypes.AdminUpdateProduct, "categories">;
       return client.post<{ product_change: ProductChangeDTO }>(
         `/vendor/products/${id}`,
         body,

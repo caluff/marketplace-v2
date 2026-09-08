@@ -105,5 +105,17 @@ test("route IDs cannot inject another API path and dates handle missing values",
     assert.equal(isApplicationId(id), false);
   assert.equal(applicationDate(null), "—");
   assert.equal(applicationDate("invalid"), "—");
+  assert.equal(applicationDate("2026-02-30T12:00:00Z"), "—");
   assert.notEqual(applicationDate("2026-09-04T12:00:00Z"), "—");
+});
+
+test("application timestamps keep the UTC day across explicit offsets", () => {
+  assert.equal(
+    applicationDate("2026-09-03T20:30:00-04:00"),
+    "4 sept 2026, 0:30",
+  );
+  assert.equal(
+    applicationDate("2026-09-03T20:30:00-04:00"),
+    applicationDate("2026-09-04T00:30:00Z"),
+  );
 });

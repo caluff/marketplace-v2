@@ -1,0 +1,33 @@
+diff --git a/dist/index.js b/dist/index.js
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -193,7 +193,27 @@
+     );
+     switch (event.type) {
+-      case "account.updated":
+-        return this.getWebhookResultFromAccount_(event.data.object);
++      case "account.updated": {
++        const snapshot = event.data.object;
++        const accountId = snapshot.metadata?.account_id;
++        if (event.livemode !== false || typeof snapshot.id !== "string" ||
++            !snapshot.id.startsWith("acct_") || event.account !== snapshot.id ||
++            typeof accountId !== "string" || !accountId) {
++          throw new MedusaError(
++            MedusaError.Types.INVALID_DATA,
++            "Invalid Stripe test account event."
++          );
++        }
++        // Re-read current account state so delayed snapshots cannot reactivate it.
++        const account = await this.stripe_.accounts.retrieve(snapshot.id);
++        if (account.deleted || account.id !== snapshot.id ||
++            account.metadata?.account_id !== accountId) {
++          throw new MedusaError(
++            MedusaError.Types.INVALID_DATA,
++            "Stripe webhook account identity mismatch."
++          );
++        }
++        return this.getWebhookResultFromAccount_(account);
++      }
+       default:
+         return { action: "not_supported" };
+     }

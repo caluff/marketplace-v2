@@ -6,6 +6,7 @@ import type { ReactNode } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { FavoriteButton } from "@/features/account/components/favorite-button"
+import { isOptimizableProductImage } from "@/lib/product-image-config"
 
 type ProductCardProps = {
   product: HttpTypes.StoreProduct
@@ -95,11 +96,14 @@ function getProductImage(product: HttpTypes.StoreProduct) {
 
     return {
       source: url.toString(),
-      // Only the configured HTTPS backend is allow-listed for optimization.
-      // CDN URLs still render directly without opening the optimizer to every
-      // hostname returned by catalog data.
       unoptimized:
-        url.protocol !== "https:" || url.origin !== configuredBackendOrigin,
+        !(
+          url.protocol === "https:" && url.origin === configuredBackendOrigin
+        ) &&
+        !isOptimizableProductImage(
+          url,
+          process.env.NEXT_PUBLIC_PRODUCT_IMAGE_URL,
+        ),
     }
   } catch {
     return null

@@ -2,6 +2,9 @@ import type {
   ApplicationStatus,
   ReviewApplicationBody,
 } from "@marketplace-v2/vendor-onboarding-contracts";
+import { intlFormat } from "date-fns/intlFormat";
+import { isValid } from "date-fns/isValid";
+import { parseISO } from "date-fns/parseISO";
 
 export const APPLICATION_STATUS_LABELS = {
   draft: "Borrador",
@@ -117,11 +120,11 @@ export function parseReviewInput(
 
 export function applicationDate(value: string | null) {
   if (!value) return "—";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("es", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  }).format(date);
+  const date = parseISO(value);
+  if (!isValid(date)) return "—";
+  return intlFormat(
+    date,
+    { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" },
+    { locale: "es" },
+  );
 }

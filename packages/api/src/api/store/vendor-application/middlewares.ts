@@ -5,6 +5,12 @@ import { SaveApplicationBodySchema, SubmitApplicationBodySchema, ReviewApplicati
 import { vendorLiveGuard, managedSellerGuard } from "../../../lib/vendor-onboarding/native-guards";
 import { onboardingHttp } from "../../../lib/vendor-onboarding/http";
 import { OnboardingError } from "../../../lib/vendor-onboarding/errors";
+import { enableReadOnlyAccessScope } from "../../../lib/vendor-onboarding/access";
+
+function readOnlyAccessScope(req: AuthenticatedMedusaRequest, _res: MedusaResponse, next: MedusaNextFunction) {
+  if (req.method === "GET" || req.method === "HEAD") enableReadOnlyAccessScope(req.scope);
+  next();
+}
 
 function humanReviewer(req: AuthenticatedMedusaRequest, res: MedusaResponse, next: MedusaNextFunction) {
   return onboardingHttp(res, async () => {
@@ -13,7 +19,7 @@ function humanReviewer(req: AuthenticatedMedusaRequest, res: MedusaResponse, nex
   });
 }
 export const vendorApplicationMiddlewares: MiddlewareRoute[] = [
-  { matcher: /^\/store\/vendor-application(?:\/.*)?$/, bodyParser: { sizeLimit: "32kb" }, middlewares: [authenticate("customer", ["session", "bearer"])] },
+  { matcher: /^\/store\/vendor-application(?:\/.*)?$/, bodyParser: { sizeLimit: "32kb" }, middlewares: [authenticate("customer", ["session", "bearer"]), readOnlyAccessScope] },
   { matcher: "/store/vendor-application", method: "POST", middlewares: [validateAndTransformBody(SaveApplicationBodySchema)] },
   { matcher: "/store/vendor-application/submit", method: "POST", middlewares: [validateAndTransformBody(SubmitApplicationBodySchema)] },
   { matcher: "/store/vendor-application/verification", method: "POST", middlewares: [validateAndTransformBody(z.strictObject({}))] },

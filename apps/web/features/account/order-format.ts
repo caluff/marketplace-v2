@@ -1,4 +1,7 @@
 import type { HttpTypes } from "@medusajs/types"
+import { intlFormat } from "date-fns/intlFormat"
+import { isValid } from "date-fns/isValid"
+import { parseISO } from "date-fns/parseISO"
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: "En proceso",
@@ -59,15 +62,14 @@ export function formatOrderAmount(amount: number, currencyCode: string) {
 }
 
 export function formatOrderDate(value: HttpTypes.StoreOrder["created_at"]) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return "Fecha no disponible"
+  const date = typeof value === "string" ? parseISO(value) : value
+  if (!isValid(date)) return "Fecha no disponible"
 
-  return new Intl.DateTimeFormat("es-UY", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date)
+  return intlFormat(
+    date,
+    { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
+    { locale: "es-UY" },
+  )
 }
 
 export function getOrderStatusLabel(status: string) {

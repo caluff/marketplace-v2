@@ -5,6 +5,7 @@ import { MercurModules } from "@mercurjs/types";
 import { onboardingService } from "../../lib/vendor-onboarding/access";
 import { DraftDataSchema } from "../../lib/vendor-onboarding/schemas";
 import { OnboardingError } from "../../lib/vendor-onboarding/errors";
+import { reconcileVendorWarehouse } from "./provision-vendor-warehouse";
 
 // Final compensation also reconciles writes whose database commit succeeded but response was lost.
 export async function reconcileVendorApplication(container: MedusaContainer, operationId: string) {
@@ -13,6 +14,7 @@ export async function reconcileVendorApplication(container: MedusaContainer, ope
   const application = await service.retrieveVendorApplication(mutation.application_id);
   if (application.approval_operation_id !== operationId || mutation.state !== "processing" || application.version !== mutation.expected_version) throw new OnboardingError("approval_in_progress");
   if (application.status === "approved") throw new OnboardingError("approval_recovery_required");
+  await reconcileVendorWarehouse(container, operationId);
   const native = container.resolve<InstanceType<typeof SellerModule.service>>(MercurModules.SELLER);
   const data = DraftDataSchema.parse(application.submitted_data);
   const sellers = await native.listSellers({ external_id: `vendor-application:${application.id}` });

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { FetchError } from "@medusajs/js-sdk";
-import type { HttpTypes } from "@mercurjs/types";
+import type { HttpTypes, ProductDTO } from "@mercurjs/types";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import {
@@ -11,9 +11,9 @@ import {
 } from "@/lib/auth-sdk";
 import {
   scopedClient,
-  visibleProduct,
   type AuthorizedVendor,
 } from "./operations";
+import { resourceId } from "./validation";
 
 // Native order reads can expand fulfillments; compose the published contracts.
 export type VendorOrderDetailResponse = {
@@ -77,31 +77,15 @@ export async function resultOf<T>(
 
 export async function productDetail(id: string) {
   const { client } = await workspace();
-  await visibleProduct(client, id);
-  return client.get<HttpTypes.VendorProductResponse>(`/vendor/products/${id}`, {
-    fields:
-      "id,title,subtitle,description,status,handle,variants.id,variants.title,variants.sku,changes.id,changes.status,changes.created_by,changes.created_at,changes.external_note,changes.declined_reason",
-  });
-}
-
-export async function inventoryLevels(
-  client: ReturnType<typeof scopedClient>,
-  id: string,
-) {
-  const levels: HttpTypes.VendorInventoryLevel[] = [];
-  for (let offset = 0; ; offset += 100) {
-    const response =
-      await client.get<HttpTypes.VendorInventoryLevelListResponse>(
-        `/vendor/inventory-items/${id}/location-levels`,
-        { limit: 100, offset },
-      );
-    levels.push(...response.inventory_levels);
-    if (
-      !response.inventory_levels.length ||
-      offset + response.inventory_levels.length >= response.count
-    )
-      return levels;
-  }
+  // The API guards detail and catalog-options with the same catalog visibility rules.
+  resourceId(id);
+  const [detail, axes] = await Promise.all([
+    client.get<HttpTypes.VendorProductResponse>(`/vendor/products/${id}`, {
+      fields: "id,title,subtitle,description,status,handle,images.id,images.url,categories.id,categories.name,product_attribute_values.id,product_attribute_values.name,product_attribute_values.attribute.id,product_attribute_values.attribute.name,product_attribute_values.attribute.is_variant_axis,scoped_attributes.id,scoped_attributes.name,scoped_attributes.is_variant_axis,scoped_attributes.values.id,scoped_attributes.values.name,changes.id,changes.status,changes.created_by,changes.created_at,changes.external_note,changes.declined_reason",
+    }),
+    client.get<Pick<ProductDTO, "options" | "variants">>(`/vendor/products/${id}/catalog-options`),
+  ]);
+  return { product: { ...detail.product, ...axes } };
 }
 
 export const ORDER_FIELDS =

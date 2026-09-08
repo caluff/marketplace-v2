@@ -2,6 +2,7 @@ import Medusa from "@medusajs/js-sdk";
 import type { HttpTypes } from "@medusajs/types";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { retrieveAdminUser } from "@/lib/auth-service";
 import {
@@ -50,14 +51,19 @@ export function createAdminSdk(token?: string) {
   });
 }
 
-export async function requireAdminSdk() {
+const getAdminAccount = cache(async () => {
   const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
-  if (!token) redirect("/login?reason=expired&next=%2Fdashboard");
+  if (!token) return null;
   const sdk = createAdminSdk(token);
   if (!sdk) throw new Error("Admin backend is not configured");
   const user = await retrieveAdminUser(sdk.admin.user);
-  if (!user) redirect("/login?reason=expired&next=%2Fdashboard");
-  return sdk;
+  return user ? { user, sdk } : null;
+});
+
+export async function requireAdminSdk() {
+  const account = await getAdminAccount();
+  if (!account) redirect("/login?reason=expired&next=%2Fdashboard");
+  return account.sdk;
 }
 
 const secure = process.env.NODE_ENV === "production";
@@ -139,8 +145,5 @@ export async function clearAdminReset() {
 }
 
 export async function getCurrentAdmin(): Promise<HttpTypes.AdminUser | null> {
-  const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
-  if (!token) return null;
-  const sdk = createAdminSdk(token);
-  return retrieveAdminUser(sdk?.admin.user);
+  return (await getAdminAccount())?.user ?? null;
 }

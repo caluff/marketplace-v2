@@ -7,11 +7,20 @@ import type {
 } from "@marketplace-v2/vendor-onboarding-contracts"
 import {
   applicationNavigation,
+  formatApplicationEventDate,
   APPLICATION_LOGIN_PATH,
   STATUS_LABELS,
   vendorLoginUrl,
 } from "./presentation"
 import { safeRedirectPath } from "../../lib/auth-utils"
+
+test("history formats UTC instants and handles invalid calendar dates without throwing", () => {
+  for (const value of ["", "invalid", "2026-02-30T12:00:00Z"])
+    assert.equal(formatApplicationEventDate(value), "Fecha no disponible")
+  const utc = formatApplicationEventDate("2026-09-04T00:30:00Z")
+  assert.match(utc, /UTC$/)
+  assert.equal(formatApplicationEventDate("2026-09-03T20:30:00-04:00"), utc)
+})
 
 test("vendor login uses only a configured trusted origin and never transfers tokens", () => {
   assert.equal(

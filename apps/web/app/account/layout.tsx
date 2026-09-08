@@ -1,12 +1,17 @@
 import { ArrowLeft, LogOut } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
-import type { ReactNode } from "react"
+import { Suspense, type ReactNode } from "react"
+import type { HttpTypes } from "@medusajs/types"
 import { logoutCustomerAction } from "@/app/auth-actions"
 import { ModeToggle } from "@/components/mode-toggle"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
-import { AccountNav } from "@/features/account/components/account-nav"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  AccountNav,
+  AccountVendorLink,
+} from "@/features/account/components/account-nav"
 import { CustomerMenu } from "@/features/account/components/customer-menu"
 import { getAccount } from "@/features/account/data"
 import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
@@ -23,7 +28,7 @@ export default async function AccountLayout({
   children: ReactNode
 }) {
   const { customer } = await getAccount()
-  const vendorApplication = await getApplicationNavigation()
+  const vendorApplication = getApplicationNavigation()
   return (
     <>
       <a
@@ -45,12 +50,19 @@ export default async function AccountLayout({
               <Link href="/#catalog">Seguir explorando</Link>
             </Button>
             <ModeToggle />
-            <CustomerMenu
-              first_name={customer.first_name}
-              last_name={customer.last_name}
-              email={customer.email}
-              vendorApplication={vendorApplication}
-            />
+            <Suspense
+              fallback={
+                <Skeleton
+                  className="size-11 rounded-full"
+                  aria-label="Cargando menú de cuenta"
+                />
+              }
+            >
+              <AccountMenu
+                customer={customer}
+                application={vendorApplication}
+              />
+            </Suspense>
           </div>
         </div>
       </header>
@@ -62,7 +74,20 @@ export default async function AccountLayout({
           <p className="mt-2 mb-7 text-sm text-muted-foreground">
             Tu espacio, a tu manera.
           </p>
-          <AccountNav vendorApplication={vendorApplication} />
+          <AccountNav
+            vendorApplicationSlot={
+              <Suspense
+                fallback={
+                  <Skeleton
+                    className="h-12 w-full"
+                    aria-label="Cargando estado de vendedor"
+                  />
+                }
+              >
+                <AccountNavigation application={vendorApplication} />
+              </Suspense>
+            }
+          />
           <form
             action={logoutCustomerAction}
             className="mt-6 border-t border-border pt-4"
@@ -91,4 +116,29 @@ export default async function AccountLayout({
       <SiteFooter categories={[]} />
     </>
   )
+}
+
+async function AccountMenu({
+  customer,
+  application,
+}: {
+  customer: HttpTypes.StoreCustomer
+  application: ReturnType<typeof getApplicationNavigation>
+}) {
+  return (
+    <CustomerMenu
+      first_name={customer.first_name}
+      last_name={customer.last_name}
+      email={customer.email}
+      vendorApplication={await application}
+    />
+  )
+}
+
+async function AccountNavigation({
+  application,
+}: {
+  application: ReturnType<typeof getApplicationNavigation>
+}) {
+  return <AccountVendorLink vendorApplication={await application} />
 }

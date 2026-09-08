@@ -49,7 +49,7 @@ const routeIcons = {
   settings: Settings2,
 } satisfies Record<VendorRouteId, typeof LayoutDashboard>;
 
-function Brand() {
+function Brand({ sellerName }: { sellerName: string }) {
   return (
     <Link
       href="/seller"
@@ -59,8 +59,8 @@ function Brand() {
         <Store className="size-[18px]" aria-hidden="true" />
       </span>
       <span className="min-w-0">
-        <span className="block font-display text-lg leading-5">
-          Marketplace V2
+        <span className="block truncate font-display text-lg leading-5" title={sellerName}>
+          {sellerName}
         </span>
         <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/55">
           Portal vendedor
@@ -87,7 +87,7 @@ function SidebarContent({
         className="flex h-16 shrink-0 items-center border-b border-sidebar-border px-5"
         data-testid="vendor-sidebar-brand"
       >
-        <Brand />
+        <Brand sellerName={identity.sellerName} />
       </div>
       <nav
         aria-label="Navegación del vendedor"

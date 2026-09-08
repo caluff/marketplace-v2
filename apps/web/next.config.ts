@@ -1,7 +1,9 @@
 import type { NextConfig } from "next"
+import { productImagePattern } from "./lib/product-image-config"
 
 function getServerActionAllowedOrigins() {
-  const configured = process.env.SERVER_ACTIONS_ALLOWED_ORIGINS?.split(",") ?? []
+  const configured =
+    process.env.SERVER_ACTIONS_ALLOWED_ORIGINS?.split(",") ?? []
   const candidates = [
     process.env.RAILWAY_PUBLIC_DOMAIN,
     ...configured,
@@ -11,34 +13,34 @@ function getServerActionAllowedOrigins() {
       : undefined,
   ]
 
-  return candidates.flatMap((candidate) => {
-    const value = candidate?.trim()
-    if (!value) return []
+  return candidates
+    .flatMap((candidate) => {
+      const value = candidate?.trim()
+      if (!value) return []
 
-    try {
-      const url = new URL(value.includes("://") ? value : `https://${value}`)
-      if (
-        !["http:", "https:"].includes(url.protocol) ||
-        url.username ||
-        url.password ||
-        url.pathname !== "/" ||
-        url.search ||
-        url.hash
-      ) {
+      try {
+        const url = new URL(value.includes("://") ? value : `https://${value}`)
+        if (
+          !["http:", "https:"].includes(url.protocol) ||
+          url.username ||
+          url.password ||
+          url.pathname !== "/" ||
+          url.search ||
+          url.hash
+        ) {
+          return []
+        }
+        return [url.host]
+      } catch {
         return []
       }
-      return [url.host]
-    } catch {
-      return []
-    }
-  }).filter((origin, index, origins) => origins.indexOf(origin) === index)
+    })
+    .filter((origin, index, origins) => origins.indexOf(origin) === index)
 }
 
 function getBackendImagePatterns() {
   try {
-    const backendUrl = new URL(
-      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? "",
-    )
+    const backendUrl = new URL(process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? "")
 
     if (backendUrl.protocol !== "https:") {
       return []
@@ -65,7 +67,12 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: getBackendImagePatterns(),
+    remotePatterns: [
+      ...getBackendImagePatterns(),
+      ...[
+        productImagePattern(process.env.NEXT_PUBLIC_PRODUCT_IMAGE_URL),
+      ].flatMap((pattern) => (pattern ? [pattern] : [])),
+    ],
   },
 }
 

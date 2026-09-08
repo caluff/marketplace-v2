@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeVendor, errorMessage } from "./data";
 import { vendorOperations } from "./operations";
 import type { MutationState } from "./presentation";
+import { resourceId, textField } from "./validation";
 
 const operations = vendorOperations(authorizeVendor);
 
@@ -30,7 +31,8 @@ export async function createProductAction(
 ): Promise<MutationState> {
   try {
     const { product } = await operations.createProduct(form);
-    revalidatePath("/seller", "layout");
+    revalidatePath("/seller");
+    revalidatePath("/seller/catalog");
     return {
       status: "success",
       message: "Producto enviado a aprobación. Todavía no está publicado.",
@@ -47,7 +49,8 @@ export async function editProductAction(
 ): Promise<MutationState> {
   try {
     const { product_change } = await operations.editProduct(form);
-    revalidatePath("/seller/catalog", "layout");
+    revalidatePath(`/seller/catalog/${resourceId(textField(form, "id", true))}`);
+    revalidatePath("/seller/catalog");
     return {
       status: "success",
       message: `Cambios enviados para aprobación (${product_change.id}). Los datos actuales del producto se conservan hasta que se aprueben.`,
@@ -63,7 +66,8 @@ export async function updateStockAction(
 ): Promise<MutationState> {
   try {
     await operations.updateStock(form);
-    revalidatePath("/seller", "layout");
+    revalidatePath("/seller/inventory");
+    revalidatePath("/seller");
     return { status: "success", message: "Existencias actualizadas." };
   } catch (error) {
     return { status: "error", message: errorMessage(error) };
@@ -89,7 +93,8 @@ export async function updateAddressAction(
 ): Promise<MutationState> {
   try {
     await operations.updateAddress(form);
-    revalidatePath("/seller", "layout");
+    revalidatePath("/seller/settings");
+    revalidatePath("/seller");
     return { status: "success", message: "Dirección comercial actualizada." };
   } catch (error) {
     return { status: "error", message: errorMessage(error) };
@@ -102,7 +107,7 @@ export async function updateCompanyAction(
 ): Promise<MutationState> {
   try {
     await operations.updateCompany(form);
-    revalidatePath("/seller", "layout");
+    revalidatePath("/seller/settings");
     return {
       status: "success",
       message: "Información de la empresa actualizada.",

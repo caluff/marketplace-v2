@@ -3,25 +3,17 @@
 import type { ApplicationNotificationsResponse } from "@marketplace-v2/vendor-onboarding-contracts"
 import Link from "next/link"
 import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { FeedbackToast } from "@/components/feedback-toast"
 import { readApplicationNotificationsAction } from "../actions"
-import { STATUS_LABELS } from "../presentation"
+import { formatApplicationEventDate, STATUS_LABELS } from "../presentation"
 import type { Feedback } from "../types"
-
-const dateFormatter = new Intl.DateTimeFormat("es-US", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-})
 
 export function ApplicationHistory({
   data,
 }: {
   data: ApplicationNotificationsResponse
 }) {
-  const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const unread = data.notifications
@@ -46,7 +38,6 @@ export function ApplicationHistory({
                     notification_ids: unread,
                   })
                   setFeedback(result)
-                  if (result.status === "success") router.refresh()
                 } catch {
                   setFeedback({
                     status: "error",
@@ -78,7 +69,7 @@ export function ApplicationHistory({
                 dateTime={item.created_at}
                 className="mt-1 block text-xs text-muted-foreground"
               >
-                {dateFormatter.format(new Date(item.created_at))} UTC
+                {formatApplicationEventDate(item.created_at)}
               </time>
               {item.reason ? (
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-6">

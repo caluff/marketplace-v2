@@ -1,12 +1,133 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
+import { createElement, type ReactNode } from "react";
+import { renderToPipeableStream } from "react-dom/server";
+import { PassThrough } from "node:stream";
 import Medusa from "@medusajs/js-sdk";
 import type { SellerMemberDTO } from "@mercurjs/types";
 import { vendorOperations, type AuthorizedVendor } from "./operations";
-import { formatMoney, listInput } from "./presentation";
+import { formatDate, formatMoney, listInput } from "./presentation";
 import { resourceId, stockQuantity } from "./validation";
 import { sellerApplicationUrl } from "../../lib/storefront-url";
 import { safeRedirectPath } from "../../lib/auth-utils";
+import { offerConfiguration } from "../offers/data";
+
+function productReadHarness(respond: (path: string) => Promise<unknown>) {
+  const exports = {} as typeof import("./data");
+  const nativeRequire = createRequire(import.meta.url);
+  const calls: string[] = [];
+  const sdk = new Medusa({ baseUrl: "https://api.example.invalid", auth: { type: "jwt", jwtTokenStorageMethod: "nostore" } });
+  sdk.client.fetch = async <T>(path: Parameters<Medusa["client"]["fetch"]>[0], init?: Parameters<Medusa["client"]["fetch"]>[1]) => {
+    calls.push(String(path));
+    assert.equal(init?.headers && (init.headers as Record<string, string>)["x-seller-id"], "seller_current");
+    assert.equal(init?.cache, "no-store");
+    return await respond(String(path)) as T;
+  };
+  const membership = { seller: { id: "seller_current", status: "open" }, member: { is_active: true } } as SellerMemberDTO;
+  runInNewContext(ts.transpileModule(readFileSync(new URL("./data.ts", import.meta.url), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, {
+    exports,
+    require: (id: string) => {
+      if (id === "server-only") return {};
+      if (id === "@/lib/auth-sdk") return {
+        createVendorSdk: () => sdk,
+        getVendorToken: async () => "test-token",
+        getVendorContext: async () => ({ status: "authenticated", membership }),
+      };
+      return nativeRequire(id);
+    },
+  });
+  return { calls, detail: exports.productDetail, configuration: async () => offerConfiguration((await exports.workspace()).client) };
+}
+
+describe("parallel vendor detail reads", () => {
+  it("starts detail, axes, profiles and warehouse without a visibility preflight or read waterfall", async () => {
+    const release = Promise.withResolvers<void>();
+    const h = productReadHarness(async (path) => {
+      await release.promise;
+      return path.endsWith("catalog-options") ? { options: [], variants: [{ id: "variant_1" }] }
+        : path === "/vendor/products/prod_1" ? { product: { id: "prod_1", title: "Product" } }
+          : path === "/vendor/stock-locations" ? { count: 1, stock_locations: [{ id: "loc_1" }] }
+            : { count: 1, shipping_profiles: [{ id: "profile_1" }] };
+    });
+    const detail = h.detail("prod_1");
+    const configuration = h.configuration();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.deepEqual([...h.calls].sort(), ["/vendor/products/prod_1", "/vendor/products/prod_1/catalog-options", "/vendor/shipping-profiles", "/vendor/stock-locations"].sort());
+    release.resolve();
+    const [result] = await Promise.all([detail, configuration]);
+    assert.equal(result.product.id, "prod_1");
+    assert.equal(result.product.variants?.[0].id, "variant_1");
+  });
+
+  it("propagates API visibility denial without a fallback read and rejects malformed IDs before HTTP", async () => {
+    const denied = new Error("Product not visible");
+    const h = productReadHarness(async () => { throw denied; });
+    await assert.rejects(h.detail("prod_1"), (error) => error === denied);
+    assert.equal(h.calls.length, 2);
+    await assert.rejects(h.detail("../foreign"), /identificador/);
+    assert.equal(h.calls.length, 2);
+  });
+});
+
+it("streams the dashboard shell and each metric without waiting for other services", async () => {
+  const nativeRequire = createRequire(import.meta.url);
+  const pending = new Map<string, ReturnType<typeof Promise.withResolvers<unknown>>>();
+  const exports = {} as { default: () => Promise<ReactNode> };
+  runInNewContext(ts.transpileModule(readFileSync(new URL("../../app/seller/(workspace)/page.tsx", import.meta.url), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText, {
+    exports,
+    require: (id: string) => {
+      if (id === "next/link") return { default: "a" };
+      if (id === "@/components/ui/card") return { Card: "section", CardHeader: "header", CardContent: "div", CardTitle: "h2" };
+      if (id === "@/components/vendor/recent-orders") return { RecentOrders: () => "Orders resolved" };
+      if (id === "@/features/workspace/components") return { PageHeading: ({ title }: { title: string }) => createElement("h1", {}, title) };
+      if (id === "@/features/workspace/data") return {
+        ORDER_LIST_FIELDS: "id",
+        resultOf: async (request: Promise<unknown>) => ({ data: await request }),
+        workspace: async () => ({
+          membership: { member: { first_name: "Daniel" }, seller: { name: "Store" } },
+          client: { get: (path: string) => { const request = Promise.withResolvers<unknown>(); pending.set(path, request); return request.promise; } },
+        }),
+      };
+      return nativeRequire(id);
+    },
+  });
+  const tree = await exports.default();
+  assert.equal(pending.size, 4, "independent data loads start together and orders are shared");
+  let html = "";
+  const sink = new PassThrough();
+  sink.on("data", (chunk: Buffer) => { html += chunk.toString(); });
+  const ready = Promise.withResolvers<void>();
+  const complete = Promise.withResolvers<void>();
+  const stream = renderToPipeableStream(tree, {
+    onShellReady() { stream.pipe(sink); ready.resolve(); },
+    onAllReady() { complete.resolve(); },
+    onError(error) { ready.reject(error); complete.reject(error); },
+  });
+  try {
+    await ready.promise;
+    assert.match(html, /Hola, Daniel/);
+    assert.match(html, /Cargando total/);
+    assert.match(html, /Preparación de la tienda/);
+    pending.get("/vendor/products")!.resolve({ count: 17 });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.match(html, />17</);
+    assert.doesNotMatch(html, /Orders resolved/);
+    pending.get("/vendor/orders")!.resolve({ count: 0, orders: [] });
+    pending.get("/vendor/inventory-items")!.resolve({ count: 0 });
+    pending.get("/vendor/onboarding")!.resolve({ checks: [] });
+    await complete.promise;
+  } finally {
+    stream.abort();
+  }
+});
 
 function form(values: Record<string, string>) {
   const data = new FormData();
@@ -108,42 +229,45 @@ describe("product moderation", () => {
     );
     assert.equal(context.calls.length, 0);
     await context.operations.createProduct(
-      form({ title: "Product", status: "proposed" }),
+      form({ title: "Product", status: "proposed", categories_present: "true", axes: "[]", variants: JSON.stringify([{ title: "Unique", sku: "MASTER-1", options: {} }]) }),
     );
     assert.deepEqual(context.calls[0].init?.body, {
       title: "Product",
       subtitle: "",
       description: "",
       status: "proposed",
+      attributes: [],
+      images: [],
+      categories: [],
+      variants: [{ title: "Unique", sku: "MASTER-1", options: {} }],
     });
   });
 
-  it("rejects inaccessible product IDs before staging changes", async () => {
-    const context = harness({ respond: () => ({ products: [] }) });
+  it("propagates the backend visibility denial without retrying or preflight reads", async () => {
+    const denied = Object.assign(new Error("Product not available"), { status: 403 });
+    const context = harness({ respond: () => { throw denied; } });
     await assert.rejects(
       context.operations.editProduct(
         form({ id: "prod_other", title: "Product" }),
       ),
-      /no está disponible/,
+      (error) => error === denied,
     );
     assert.equal(context.calls.length, 1);
-    assert.equal(context.calls[0].init?.method, undefined);
+    assert.equal(context.calls[0].init?.method, "POST");
   });
 
   it("preserves a native pending product_change response instead of reporting a live product", async () => {
     const change = { id: "change_1", status: "pending" };
     const context = harness({
-      respond: (path) =>
-        path === "/vendor/products"
-          ? { products: [{ id: "prod_1" }] }
-          : { product_change: change },
+      respond: () => ({ product_change: change }),
     });
     const response = await context.operations.editProduct(
       form({ id: "prod_1", title: "New title" }),
     );
     assert.deepEqual(response, { product_change: change });
-    assert.equal(context.calls[1].path, "/vendor/products/prod_1");
-    assert.equal(context.calls[1].init?.method, "POST");
+    assert.equal(context.calls.length, 1);
+    assert.equal(context.calls[0].path, "/vendor/products/prod_1");
+    assert.equal(context.calls[0].init?.method, "POST");
   });
 });
 
@@ -194,7 +318,6 @@ describe("seller profile and location operations", () => {
   it("rejects countries outside the approved US market without writes", async () => {
     const context = harness();
     for (const operation of [
-      context.operations.createLocation,
       context.operations.updateAddress,
     ]) {
       await assert.rejects(
@@ -231,9 +354,9 @@ describe("seller profile and location operations", () => {
     );
   });
 
-  it("creates only the requested stock location, without shipping configuration", async () => {
+  it("rejects free warehouse creation without writes even with a valid US address", async () => {
     const context = harness();
-    await context.operations.createLocation(
+    await assert.rejects(context.operations.createLocation(
       form({
         name: "Warehouse",
         address_1: "Street",
@@ -241,18 +364,9 @@ describe("seller profile and location operations", () => {
         country_code: "US",
         postal_code: "10000",
       }),
-    );
-    assert.equal(context.calls.length, 1);
-    assert.equal(context.calls[0].path, "/vendor/stock-locations");
-    assert.deepEqual(context.calls[0].init?.body, {
-      name: "Warehouse",
-      address: {
-        address_1: "Street",
-        city: "City",
-        country_code: "us",
-        postal_code: "10000",
-      },
-    });
+    ), /solicitud aprobada/);
+    assert.equal(context.authorizations(), 1);
+    assert.equal(context.calls.length, 0);
   });
 
   it("rejects invalid email and unsafe website URLs", async () => {
@@ -276,6 +390,15 @@ describe("seller profile and location operations", () => {
 });
 
 describe("presentation and navigation", () => {
+  it("preserves the existing display zone and rejects impossible ISO dates", () => {
+    for (const value of [undefined, "", "invalid", "2026-02-30T12:00:00Z", new Date(NaN)])
+      assert.equal(formatDate(value), "—");
+    assert.equal(formatDate("2026-09-04T01:00:00Z"), "3 set. 2026");
+    const date = new Date("2026-09-03T22:00:00-03:00");
+    assert.equal(formatDate(date), formatDate("2026-09-04T01:00:00Z"));
+    assert.equal(date.toISOString(), "2026-09-04T01:00:00.000Z");
+  });
+
   it("formats Medusa amounts in display units, including serialized decimal strings", () => {
     assert.equal(
       formatMoney(49.99, "USD"),

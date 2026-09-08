@@ -1,4 +1,5 @@
 import { FetchError } from "@medusajs/js-sdk";
+import { cache } from "react";
 import type {
   AdminApplicationListResponse,
   AdminApplicationResponse,
@@ -15,12 +16,30 @@ import {
 export async function listVendorApplications(
   filters: ReturnType<typeof parseApplicationFilters>,
 ) {
-  const sdk = await requireAdminSdk();
-  return sdk.client.fetch<AdminApplicationListResponse>(
-    "/admin/vendor-applications",
-    { query: filters, cache: "no-store" },
+  return getApplicationList(
+    filters.status,
+    filters.q,
+    filters.offset,
+    filters.limit,
   );
 }
+
+// Primitive arguments allow the sidebar and default review queue to share the
+// same read within this render only. Authorization is never cached globally.
+const getApplicationList = cache(
+  async (
+    status: ReturnType<typeof parseApplicationFilters>["status"],
+    q: string,
+    offset: number,
+    limit: number,
+  ) => {
+    const sdk = await requireAdminSdk();
+    return sdk.client.fetch<AdminApplicationListResponse>(
+      "/admin/vendor-applications",
+      { query: { status, q, offset, limit }, cache: "no-store" },
+    );
+  },
+);
 
 export async function retrieveVendorApplication(id: string) {
   if (!isApplicationId(id))

@@ -2,6 +2,7 @@
 
 import { unstable_rethrow } from "next/navigation";
 import { listVendorApplications } from "./data";
+import { APPLICATION_PAGE_SIZE } from "./helpers";
 import {
   pendingStatusFromCount,
   type PendingApplicationStatus,
@@ -13,7 +14,7 @@ export async function getPendingApplicationStatus(): Promise<PendingApplicationS
       status: "submitted",
       q: "",
       offset: 0,
-      limit: 1,
+      limit: APPLICATION_PAGE_SIZE,
     });
     return pendingStatusFromCount(count);
   } catch (error) {

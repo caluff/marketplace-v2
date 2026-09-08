@@ -38,6 +38,8 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: getServerActionAllowedOrigins(),
+      // Group images within the API's 5 MiB payload cap, plus multipart overhead.
+      bodySizeLimit: "6mb",
     },
   },
 };

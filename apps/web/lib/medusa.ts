@@ -1,5 +1,6 @@
-import Medusa from "@medusajs/js-sdk"
 import type { HttpTypes } from "@medusajs/types"
+import { cache } from "react"
+import { createCatalogSdk } from "@/lib/catalog-sdk"
 
 import {
   classifyCatalogError,
@@ -13,37 +14,18 @@ const CATALOG_LIMIT = 12
 const STORE_API_TIMEOUT_MS = 8_000
 
 const storefrontConfiguration = validateStorefrontEnvironment({
-  NEXT_PUBLIC_MEDUSA_BACKEND_URL:
-    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL,
+  NEXT_PUBLIC_MEDUSA_BACKEND_URL: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL,
   NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:
     process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
 })
 
-/**
- * The single SDK instance used by the storefront. Built-in Store API routes
- * are called through their typed SDK methods; future custom routes should use
- * sdk.client.fetch instead of the platform fetch API.
- */
-export const sdk =
-  storefrontConfiguration.status === "valid"
-    ? new Medusa({
-        baseUrl: storefrontConfiguration.config.baseUrl,
-        publishableKey: storefrontConfiguration.config.publishableKey,
-        debug: process.env.NODE_ENV === "development",
-      })
-    : null
-
-type CatalogData = {
-  categories: HttpTypes.StoreProductCategory[]
-}
-
 export type StorefrontCatalogResult =
-  | ({
+  | {
       status: "products"
       products: HttpTypes.StoreProduct[]
       count: number
-    } & CatalogData)
-  | ({ status: "empty"; products: []; count: 0 } & CatalogData)
+    }
+  | { status: "empty"; products: []; count: 0 }
   | {
       status: "configuration_missing"
       missing: Array<"backend_url" | "publishable_key">
@@ -76,28 +58,19 @@ export async function getStorefrontCatalog(options?: {
 }): Promise<StorefrontCatalogResult> {
   const invalidConfiguration = configurationFailure()
 
-  if (invalidConfiguration || !sdk) {
+  if (invalidConfiguration || storefrontConfiguration.status !== "valid") {
     return invalidConfiguration ?? { status: "store_api_error" }
   }
 
   const categoryId = options?.categoryId?.trim()
+  const deadline = Date.now() + STORE_API_TIMEOUT_MS
 
   try {
+    const region = await getCatalogRegion()
+    const config = storefrontConfiguration.config
     const result = await withTimeout(
-      (async () => {
-        const [regionResponse, categoryResponse] = await Promise.all([
-          sdk.store.region.list({
-            limit: 1,
-            fields: "id,currency_code",
-          }),
-          sdk.store.category.list({
-            limit: 7,
-            parent_category_id: null,
-            fields: "id,name,handle,parent_category_id",
-          }),
-        ])
-
-        const region = regionResponse.regions[0]
+      async (signal) => {
+        const sdk = createCatalogSdk(config, signal)
         const query: HttpTypes.StoreProductListParams = {
           limit: CATALOG_LIMIT,
           fields: region
@@ -118,10 +91,9 @@ export async function getStorefrontCatalog(options?: {
         return {
           products: productResponse.products,
           count: productResponse.count,
-          categories: categoryResponse.product_categories,
         }
-      })(),
-      STORE_API_TIMEOUT_MS,
+      },
+      Math.max(1, deadline - Date.now()),
     )
 
     if (getCatalogContentStatus(result.products) === "empty") {
@@ -129,7 +101,6 @@ export async function getStorefrontCatalog(options?: {
         status: "empty",
         products: [],
         count: 0,
-        categories: result.categories,
       }
     }
 
@@ -137,9 +108,47 @@ export async function getStorefrontCatalog(options?: {
       status: "products",
       products: result.products,
       count: result.count,
-      categories: result.categories,
     }
   } catch (error: unknown) {
     return { status: classifyCatalogError(error) }
   }
 }
+
+// Request-scoped reuse only. Admin and Store are independent deployments;
+// persistent caching needs a cross-app invalidation contract before adoption.
+const getCatalogRegion = cache(async () => {
+  if (storefrontConfiguration.status !== "valid") return undefined
+  const config = storefrontConfiguration.config
+  return withTimeout(async (signal) => {
+    const { regions } = await createCatalogSdk(
+      config,
+      signal,
+    ).store.region.list({
+      limit: 1,
+      fields: "id,currency_code",
+    })
+    return regions[0]
+  }, STORE_API_TIMEOUT_MS)
+})
+
+export const getStorefrontCategories = cache(
+  async (): Promise<HttpTypes.StoreProductCategory[]> => {
+    if (storefrontConfiguration.status !== "valid") return []
+    const config = storefrontConfiguration.config
+    try {
+      return await withTimeout(async (signal) => {
+        const response = await createCatalogSdk(
+          config,
+          signal,
+        ).store.category.list({
+          limit: 7,
+          parent_category_id: null,
+          fields: "id,name,handle,parent_category_id",
+        })
+        return response.product_categories
+      }, STORE_API_TIMEOUT_MS)
+    } catch {
+      return []
+    }
+  },
+)

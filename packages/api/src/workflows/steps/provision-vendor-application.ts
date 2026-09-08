@@ -6,6 +6,8 @@ import { MercurModules, type CreateSellerDTO, type UpdateSellerAddressDTO, type 
 import { onboardingService, loadApplicant, requireReviewer } from "../../lib/vendor-onboarding/access";
 import { validateSubmission } from "../../lib/vendor-onboarding/validation";
 import { OnboardingError } from "../../lib/vendor-onboarding/errors";
+import { provisionVendorWarehouse } from "./provision-vendor-warehouse";
+import { requireSellerWarehouse } from "../../lib/vendor-warehouse/access";
 
 type NativeSellerService = InstanceType<typeof SellerModule.service>;
 
@@ -48,7 +50,11 @@ export const prepareVendorMemberStep = createStep("prepare-vendor-member", async
 });
 
 export const journalVendorSellerStep = createStep("journal-vendor-seller", async (input: { operation_id: string; seller_id: string }, { container }) => {
-  await onboardingService(container).fenceApproval(input.operation_id, { seller_id: input.seller_id });
+  const service = onboardingService(container);
+  const { application } = await service.fenceApproval(input.operation_id, { seller_id: input.seller_id });
+  await provisionVendorWarehouse(container, { ...input, application_id: application.id });
+  const [claim] = await service.listVendorWarehouses({ seller_id: input.seller_id });
+  await service.fenceApproval(input.operation_id, { warehouse_id: claim.id, warehouse_ready: true });
   return new StepResponse(input);
 });
 
@@ -88,6 +94,8 @@ export const bindVendorIdentityStep = createStep("bind-vendor-identity", async (
 export const finalizeVendorApprovalStep = createStep("finalize-vendor-approval", async (input: { operation_id: string }, { container }) => {
   const service = onboardingService(container);
   const claimed = await service.fenceApproval(input.operation_id, {});
+  if (!claimed.mutation.seller_id || !claimed.mutation.warehouse_id || !claimed.mutation.warehouse_ready) throw new OnboardingError("approval_recovery_required");
+  await requireSellerWarehouse(container, claimed.mutation.seller_id);
   const live = await loadApplicant(container, claimed.application);
   await requireReviewer(container, claimed.mutation.actor_id, "update");
   if (!live.emailVerified || live.email !== claimed.application.applicant_email || !live.member || live.member.id !== claimed.mutation.member_id || !live.member.is_active || !live.memberships.some(membership => membership.seller_id === claimed.mutation.seller_id && membership.is_owner)) throw new OnboardingError("identity_changed");

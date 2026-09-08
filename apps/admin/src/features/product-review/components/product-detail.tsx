@@ -11,6 +11,7 @@ import {
 import type { retrieveProductForReview } from "@/features/product-review/data";
 import { PRODUCT_STATUS_LABELS } from "@/features/product-review/helpers";
 import { ProductModerationForm } from "@/features/product-review/components/review-form";
+import { ProductChangeDetails } from "./image-change-preview";
 
 export function ProductReviewDetail({
   product,
@@ -91,9 +92,7 @@ export function ProductReviewDetail({
                     <h3 className="mb-2 text-sm font-semibold">
                       {action.action}
                     </h3>
-                    <pre className="max-h-72 overflow-auto rounded-md border border-border bg-muted p-4 text-xs">
-                      {JSON.stringify(action.details, null, 2)}
-                    </pre>
+                    <ProductChangeDetails details={action.details} />
                   </li>
                 ))}
             </ol>

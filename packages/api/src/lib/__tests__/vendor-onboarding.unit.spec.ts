@@ -103,10 +103,11 @@ function accessFixture() {
   return { container, auth, graph };
 }
 describe("live applicant authorization", () => {
-  it("rejects an actor mismatch before customer retrieval", async () => {
+  it("rejects an actor mismatch without returning the parallel customer read or continuing verification", async () => {
     const f = accessFixture();
     await expect(loadApplicant(f.container, { customer_id: "cus_foreign", auth_identity_id: "auth_one" })).rejects.toMatchObject({ code: "identity_changed" });
-    expect(f.graph).not.toHaveBeenCalled();
+    expect(f.graph).toHaveBeenCalledTimes(1);
+    expect(f.auth.listAuthVerifications).not.toHaveBeenCalled();
   });
   it("checks the exact auth identity, provider email and entity type", async () => {
     const f = accessFixture();
@@ -138,7 +139,7 @@ describe("live applicant authorization", () => {
 });
 
 describe("native route isolation", () => {
-  it.each(["/vendor/products/foreign", "/vendor/products/foreign/preview", "/vendor/products/foreign/variants", "/vendor/products/foreign/variants/variant_one"])("blocks foreign draft read and write through %s", async originalUrl => {
+  it.each(["/vendor/products/foreign", "/vendor/products/foreign/preview", "/vendor/products/foreign/variants", "/vendor/products/foreign/variants/variant_one", "/vendor/products/foreign/catalog-options", "/vendor/products/foreign/attributes/batch"])("blocks foreign draft read and write through %s", async originalUrl => {
     const container = createMedusaContainer();
     container.register({ query: asValue({ graph: jest.fn(async ({ entity }) => ({ data: entity === "product" ? [{ id: "foreign", status: "draft" }] : [] })) }) });
     for (const method of ["GET", "POST", "DELETE"]) await expect(guardProductVisibility({ originalUrl, method, scope: container } as MedusaRequest, "sel_one")).rejects.toMatchObject({ code: "product_not_found" });

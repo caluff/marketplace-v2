@@ -18,6 +18,9 @@ import {
 } from "../pending-status";
 
 const PendingContext = createContext<PendingApplicationStatus>("unknown");
+const SeedContext = createContext<(status: PendingApplicationStatus) => void>(
+  () => {},
+);
 export const PENDING_APPLICATIONS_CHANGED =
   "marketplace:pending-applications-changed";
 
@@ -31,12 +34,19 @@ export function PendingApplicationsProvider({
   const lastAttempt = useRef<number | null>(null);
   const inFlight = useRef(false);
   const needsRefresh = useRef(false);
+  const seeded = useRef(false);
+  const seed = useCallback((value: PendingApplicationStatus) => {
+    seeded.current = true;
+    lastAttempt.current = Date.now();
+    setStatus(value);
+  }, []);
   const refresh = useCallback((force = false) => {
     if (force && inFlight.current) {
       needsRefresh.current = true;
       return;
     }
     if (
+      !seeded.current ||
       document.visibilityState !== "visible" ||
       !shouldRefreshPendingStatus(
         Date.now(),
@@ -78,7 +88,21 @@ export function PendingApplicationsProvider({
   useEffect(() => {
     void refresh();
   }, [pathname, refresh]);
-  return <PendingContext value={status}>{children}</PendingContext>;
+  return (
+    <SeedContext value={seed}>
+      <PendingContext value={status}>{children}</PendingContext>
+    </SeedContext>
+  );
+}
+
+export function PendingApplicationsSeed({
+  status,
+}: {
+  status: PendingApplicationStatus;
+}) {
+  const seed = useContext(SeedContext);
+  useEffect(() => seed(status), [seed, status]);
+  return null;
 }
 
 export function PendingApplicationsIndicator() {

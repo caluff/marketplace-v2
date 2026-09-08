@@ -1,0 +1,152 @@
+diff --git a/.medusa/server/src/api/utils/ensure-seller-middleware.js b/.medusa/server/src/api/utils/ensure-seller-middleware.js
+index 5da074a05b02520c8348cfe445cbcce21679cf26..f4a42df3a16a59e0fbbb37a5d42d7ed88016be1d 100644
+--- a/.medusa/server/src/api/utils/ensure-seller-middleware.js
++++ b/.medusa/server/src/api/utils/ensure-seller-middleware.js
+@@ -14,12 +14,12 @@ async function ensureSellerMiddleware(req, res, next) {
+     const query = req.scope.resolve(utils_1.ContainerRegistrationKeys.QUERY);
+     const { data: sellerMembers } = await query.graph({
+         entity: "seller_member",
+-        fields: ["id", "seller_id", "member_id", "role_id", "seller.*"],
++        fields: ["id", "seller_id", "member_id", "role_id", "seller.*", "member.*"],
+         filters: {
+             seller_id: sellerId,
+             member_id: memberId,
+         },
+-    }, { cache: { enable: true } });
++    }, { cache: { enable: false } });
+     if (!sellerMembers.length) {
+         return next(new utils_1.MedusaError(utils_1.MedusaError.Types.NOT_ALLOWED, "You are not a member of this seller account"));
+     }
+@@ -33,7 +33,9 @@ async function ensureSellerMiddleware(req, res, next) {
+         return next();
+     }
+     const rbacService = req.scope.resolve(utils_1.Modules.RBAC);
+-    await (0, ensure_seller_default_roles_1.ensureSellerDefaultRoles)(rbacService);
++    // Bootstrap once per service/process; never restore revoked bindings on GET.
++    // Membership and effective policies are still read fresh for every request.
++    await (0, ensure_seller_default_roles_1.ensureSellerDefaultRolesReady)(rbacService);
+     req.auth_context.app_metadata = {
+         ...req.auth_context.app_metadata,
+         // Members predating RBAC have no role. Route policy checks reject an actor
+diff --git a/.medusa/server/src/api/vendor/products/helpers.d.ts b/.medusa/server/src/api/vendor/products/helpers.d.ts
+index e51b4c387cf4f216df3ae191f1aa9f0a1e9397d7..8dfc54cf564a89a72c01ba888f38b4cf64879fde 100644
+--- a/.medusa/server/src/api/vendor/products/helpers.d.ts
++++ b/.medusa/server/src/api/vendor/products/helpers.d.ts
+@@ -5,5 +5,5 @@ export declare const getSellerOwnedProductIds: (scope: MedusaContainer, sellerId
+  * NOT assigned to this seller — i.e. restricted to other sellers, so they must
+  * be hidden from this seller's product list.
+  */
+-export declare const getProductIdsRestrictedFromSeller: (scope: MedusaContainer, sellerId: string) => Promise<string[]>;
++export declare const getProductIdsRestrictedFromSeller: (scope: MedusaContainer, sellerId: string, productIds?: string[]) => Promise<string[]>;
+ export declare const ensureSellerOwnsProduct: (scope: MedusaContainer, sellerId: string, productIds: string[]) => Promise<void>;
+diff --git a/.medusa/server/src/api/vendor/products/helpers.js b/.medusa/server/src/api/vendor/products/helpers.js
+index c0c1a2836f05f1a4d807bf1663f76cbe79338a01..7f4ea79f604010ae5096a8b8c7c54ad1bb48bee9 100644
+--- a/.medusa/server/src/api/vendor/products/helpers.js
++++ b/.medusa/server/src/api/vendor/products/helpers.js
+@@ -22,11 +22,12 @@ exports.getSellerOwnedProductIds = getSellerOwnedProductIds;
+  * NOT assigned to this seller — i.e. restricted to other sellers, so they must
+  * be hidden from this seller's product list.
+  */
+-const getProductIdsRestrictedFromSeller = async (scope, sellerId) => {
++const getProductIdsRestrictedFromSeller = async (scope, sellerId, productIds) => {
+     const query = scope.resolve(utils_1.ContainerRegistrationKeys.QUERY);
+     const { data: links } = await query.graph({
+         entity: "product_seller",
+         fields: ["product_id", "seller_id"],
++        ...(productIds ? { filters: { product_id: productIds } } : {}),
+     });
+     const assigned = new Set();
+     const restricted = new Set();
+diff --git a/.medusa/server/src/api/vendor/products/middlewares.js b/.medusa/server/src/api/vendor/products/middlewares.js
+index f450c0c76732b6209e2249caa8d49fe19ac22591..2e6945364833f22aa506512721370b76762c3899 100644
+--- a/.medusa/server/src/api/vendor/products/middlewares.js
++++ b/.medusa/server/src/api/vendor/products/middlewares.js
+@@ -12,9 +12,15 @@ const validators_1 = require("./validators");
+ const utils_3 = require("@medusajs/framework/utils");
+ const applySellerProductLinkFilter = async (req, _res, next) => {
+     const sellerId = req.seller_context.seller_id;
++    const requestedId = req.filterableFields?.id;
++    const productIds = typeof requestedId === "string"
++        ? [requestedId]
++        : Array.isArray(requestedId) && requestedId.every((id) => typeof id === "string")
++            ? requestedId
++            : undefined;
+     const [ownProductIds, restrictedFromSellerIds] = await (0, utils_3.promiseAll)([
+         (0, helpers_1.getSellerOwnedProductIds)(req.scope, sellerId),
+-        (0, helpers_1.getProductIdsRestrictedFromSeller)(req.scope, sellerId),
++        (0, helpers_1.getProductIdsRestrictedFromSeller)(req.scope, sellerId, productIds),
+     ]);
+     req.filterableFields ??= {};
+     const existingAnd = req.filterableFields.$and ?? [];
+diff --git a/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.d.ts b/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.d.ts
+index c61b110e1528b1b04dd1f5ee9e05f284d8b19273..6286ba4e809bcabf2b2043ec9f01945badb51c9d 100644
+--- a/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.d.ts
++++ b/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.d.ts
+@@ -8,4 +8,5 @@ type SellerRoleDefinition = {
+ };
+ export declare const SELLER_ROLES: SellerRoleDefinition[];
+ export declare function ensureSellerDefaultRoles(rbacService: IRbacModuleService): Promise<RbacRoleDTO[]>;
++export declare function ensureSellerDefaultRolesReady(rbacService: IRbacModuleService): Promise<RbacRoleDTO[]>;
+ export {};
+diff --git a/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.js b/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.js
+index 3ac3ae6051585a5bd9b60a510b25d2dc8e288c71..a9b45d37bfd21f03b7b6c9393525ef1db6e561fc 100644
+--- a/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.js
++++ b/.medusa/server/src/modules/seller/utils/ensure-seller-default-roles.js
+@@ -2,6 +2,18 @@
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.SELLER_ROLES = void 0;
+ exports.ensureSellerDefaultRoles = ensureSellerDefaultRoles;
++exports.ensureSellerDefaultRolesReady = ensureSellerDefaultRolesReady;
++const initializedServices = new WeakMap();
++function ensureSellerDefaultRolesReady(rbacService) {
++    if (!initializedServices.has(rbacService)) {
++        const pending = ensureSellerDefaultRoles(rbacService);
++        initializedServices.set(rbacService, pending);
++        pending.catch(() => {
++            if (initializedServices.get(rbacService) === pending) initializedServices.delete(rbacService);
++        });
++    }
++    return initializedServices.get(rbacService);
++}
+ const types_1 = require("@mercurjs/types");
+ const CRUD_OPERATIONS = ["read", "create", "update", "delete"];
+ const crud = (resource) => CRUD_OPERATIONS.map((operation) => `${resource}:${operation}`);
+@@ -92,10 +104,15 @@ async function ensureSellerDefaultRoles(rbacService) {
+             roleById.set(role.id, role);
+         });
+     }
+-    const policies = await rbacService.listRbacPolicies({});
+-    const existingRolePolicies = await rbacService.listRbacRolePolicies({
+-        role_id: roleIds,
+-    });
++    // Both reads depend only on the completed role creation, not on each other.
++    const [policies, existingRolePolicies] = await Promise.all([
++        rbacService.listRbacPolicies({}, { select: ["id", "key"] }),
++        rbacService.listRbacRolePolicies({
++            role_id: roleIds,
++        }, {
++            select: ["role_id", "policy_id"],
++        }),
++    ]);
+     const policyByKey = new Map(policies.map((policy) => [policy.key, policy]));
+     const existingBindings = new Set(existingRolePolicies.map((rolePolicy) => `${rolePolicy.role_id}:${rolePolicy.policy_id}`));
+     const rolePoliciesToCreate = [];
+diff --git a/.medusa/server/src/subscribers/payout-webhook.js b/.medusa/server/src/subscribers/payout-webhook.js
+index 421ad74978a9bfe6b28456f541f71484e6d6cbf8..daee4b54067c5e7e02ced7a44a6cd8662e52f2c6 100644
+--- a/.medusa/server/src/subscribers/payout-webhook.js
++++ b/.medusa/server/src/subscribers/payout-webhook.js
+@@ -16,6 +16,14 @@ async function payoutWebhookHandler({ event, container, }) {
+         return;
+     }
+     const wfEngine = container.resolve(utils_1.Modules.WORKFLOW_ENGINE);
++    // Reconcile trusted account notifications under the same lock as manual refresh.
++    // Never persist an earlier webhook snapshot after a newer account restriction.
++    if (["account.activated", "account.restricted", "account.rejected"].includes(processedEvent.action)) {
++        await wfEngine.run("reconcile-stripe-account", {
++            input: { payout_account_id: processedEvent.data.id },
++        });
++        return;
++    }
+     await wfEngine.run(payout_1.processPayoutForWebhookWorkflowId, { input: processedEvent });
+ }
+ exports.config = {

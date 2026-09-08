@@ -2,6 +2,19 @@ import type {
   ApplicationResponse,
   ApplicationStatus,
 } from "@marketplace-v2/vendor-onboarding-contracts"
+import { intlFormat } from "date-fns/intlFormat"
+import { isValid } from "date-fns/isValid"
+import { parseISO } from "date-fns/parseISO"
+
+export function formatApplicationEventDate(value: string) {
+  const date = parseISO(value)
+  if (!isValid(date)) return "Fecha no disponible"
+  return `${intlFormat(
+    date,
+    { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" },
+    { locale: "es-US" },
+  )} UTC`
+}
 
 export const APPLICATION_PATH = "/account/sell"
 export const APPLICATION_LOGIN_PATH = "/login?next=%2Faccount%2Fsell"

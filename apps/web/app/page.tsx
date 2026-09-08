@@ -3,7 +3,7 @@ import { Hero } from "@/components/hero"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
-import { getStorefrontCatalog } from "@/lib/medusa"
+import { getStorefrontCatalog, getStorefrontCategories } from "@/lib/medusa"
 
 export const dynamic = "force-dynamic"
 
@@ -23,11 +23,7 @@ export default function Home({ searchParams }: HomeProps) {
     getStorefrontCatalog({ categoryId }),
   )
   const customer = getCurrentCustomer()
-  const categories = catalog.then((result) =>
-    result.status === "products" || result.status === "empty"
-      ? result.categories
-      : [],
-  )
+  const categories = getStorefrontCategories()
 
   return (
     <>
@@ -39,6 +35,7 @@ export default function Home({ searchParams }: HomeProps) {
       <main>
         <Hero />
         <CatalogSection
+          categories={categories}
           result={catalog}
           activeCategoryId={activeCategoryId}
           customer={customer}

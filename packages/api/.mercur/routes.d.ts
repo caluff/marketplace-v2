@@ -754,6 +754,7 @@ export type Routes = {
                 inventoryItems: {
                     batch: typeof import("@mercurjs/core/api/vendor/offers/[id]/inventory-items/batch/route");
                 };
+                price: typeof import("../src/api/vendor/offers/[id]/price/route");
             };
             batch: typeof import("@mercurjs/core/api/vendor/offers/batch/route");
         };
@@ -839,6 +840,7 @@ export type Routes = {
                 variants: typeof import("@mercurjs/core/api/vendor/products/[id]/variants/route") & {
                     $variantId: typeof import("@mercurjs/core/api/vendor/products/[id]/variants/[variant_id]/route");
                 };
+                catalogOptions: typeof import("../src/api/vendor/products/[id]/catalog-options/route");
             };
         };
         promotions: typeof import("@mercurjs/core/api/vendor/promotions/route") & {
@@ -937,7 +939,12 @@ export type Routes = {
         };
         stores: typeof import("@mercurjs/core/api/vendor/stores/route");
         uploads: typeof import("@mercurjs/core/api/vendor/uploads/route");
+        catalogImages: typeof import("../src/api/vendor/catalog-images/route");
         inventoryAdjustments: typeof import("../src/api/vendor/inventory-adjustments/route");
         onboarding: typeof import("../src/api/vendor/onboarding/route");
+        productSaleStatus: typeof import("../src/api/vendor/product-sale-status/route");
+        shippingConfiguration: typeof import("../src/api/vendor/shipping-configuration/route");
+        stripeAccountRefresh: typeof import("../src/api/vendor/stripe-account-refresh/route");
+        warehouse: typeof import("../src/api/vendor/warehouse/route");
     };
 };

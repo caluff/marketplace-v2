@@ -22,6 +22,15 @@ test("order dates remain stable across server time zones and reject invalid date
     /^4 de setiembre de 2026$/,
   )
   assert.equal(formatOrderDate("invalid"), "Fecha no disponible")
+  assert.equal(formatOrderDate("2026-02-30T12:00:00Z"), "Fecha no disponible")
+  assert.equal(formatOrderDate(new Date(NaN)), "Fecha no disponible")
+  assert.equal(
+    formatOrderDate("2026-09-03T20:00:00-04:00"),
+    formatOrderDate("2026-09-04T00:00:00Z"),
+  )
+  const date = new Date("2024-02-29T23:00:00Z")
+  assert.match(formatOrderDate(date), /^29 de febrero de 2024$/)
+  assert.equal(date.toISOString(), "2024-02-29T23:00:00.000Z")
 })
 
 test("order identifiers prioritize the configured display number", () => {

@@ -53,7 +53,11 @@ const navigationGroups: ReadonlyArray<{
     items: [
       { label: "Pedidos", icon: ShoppingCart },
       { label: "Atributos", icon: SlidersHorizontal },
-      { label: "Comisiones", icon: BadgePercent },
+      {
+        label: "Comisiones",
+        icon: BadgePercent,
+        href: "/dashboard/commissions",
+      },
     ],
   },
 ];
@@ -158,8 +162,9 @@ export function NavigationContent({ mobile = false }: { mobile?: boolean }) {
             </Badge>
           </div>
           <p className="text-xs leading-4 text-sidebar-muted">
-            Solicitudes y revisión del catálogo conectadas a Mercur. El resumen
-            y las demás secciones conservan sus datos de demostración.
+            Solicitudes, revisión del catálogo y comisiones conectadas a Mercur.
+            El resumen y las demás secciones conservan sus datos de
+            demostración.
           </p>
         </div>
 

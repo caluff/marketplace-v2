@@ -87,11 +87,17 @@ export async function getApplicationFormData() {
     }
     return addresses
   })()
-  const [options, categories, addresses] = await Promise.all([
-    optionsPromise,
-    categoriesPromise,
-    addressesPromise,
-  ])
+  // The first two steps do not consume these lists. Stream their settled
+  // result separately so a slow address/category page cannot block typing.
+  const resources = Promise.all([categoriesPromise, addressesPromise]).then(
+    ([categories, addresses]) => ({
+      status: "ready" as const,
+      categories,
+      addresses,
+    }),
+    () => ({ status: "error" as const }),
+  )
+  const options = await optionsPromise
   return {
     customer: {
       first_name: customer.first_name,
@@ -99,8 +105,7 @@ export async function getApplicationFormData() {
       phone: customer.phone,
     },
     options,
-    categories,
-    addresses,
+    resources,
   }
 }
 

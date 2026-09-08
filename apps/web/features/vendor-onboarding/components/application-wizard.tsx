@@ -8,13 +8,14 @@ import type {
 } from "@marketplace-v2/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
 import { ArrowLeft, ArrowRight, Check, LoaderCircle, Save } from "lucide-react"
-import { useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { FeedbackToast } from "@/components/feedback-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { saveApplicationAction, submitApplicationAction } from "../actions"
@@ -26,6 +27,7 @@ import {
   validateStep,
 } from "../validation"
 import type { ApplicationActionResult } from "../types"
+import type { getApplicationFormData } from "../data"
 import { ApplicationFields } from "./application-fields"
 import { ApplicationReview } from "./application-review"
 import { VerificationPanel } from "./verification-panel"
@@ -35,23 +37,42 @@ const UNAVAILABLE_OPTIONS_FEEDBACK = {
   message:
     "Faltan países o monedas habilitadas. Puedes guardar el borrador y continuar cuando estén disponibles.",
 }
+const RESOURCE_ERROR_FEEDBACK = {
+  status: "error",
+  message:
+    "No pudimos cargar las categorías y direcciones. Tus datos siguen en el formulario; puedes reintentar.",
+}
 
 export function ApplicationWizard({
   response,
   customer,
-  addresses,
+  resources,
   options,
-  categories,
   hasCode,
 }: {
   response: ApplicationResponse
   customer: Pick<HttpTypes.StoreCustomer, "first_name" | "last_name" | "phone">
-  addresses: HttpTypes.StoreCustomerAddress[]
+  resources: Awaited<ReturnType<typeof getApplicationFormData>>["resources"]
   options: ApplicationOptionsResponse
-  categories: HttpTypes.StoreProductCategory[]
   hasCode: boolean
 }) {
   const router = useRouter()
+  const [formResources, setFormResources] = useState<Awaited<
+    typeof resources
+  > | null>(null)
+  useEffect(() => {
+    let active = true
+    void resources.then((value) => {
+      if (active) setFormResources(value)
+    })
+    return () => {
+      active = false
+    }
+  }, [resources])
+  const categories =
+    formResources?.status === "ready" ? formResources.categories : []
+  const addresses =
+    formResources?.status === "ready" ? formResources.addresses : []
   const [draft, setDraft] = useState(
     () => response.application?.data ?? initialDraft(customer, options),
   )
@@ -71,6 +92,9 @@ export function ApplicationWizard({
   const feedbackRef = useRef<HTMLDivElement>(null)
   const index = STEPS.indexOf(step)
   const conflicted = result?.status === "conflict"
+  const needsResources = step === "activity" || step === "review"
+  const resourcesUnavailable =
+    needsResources && formResources?.status !== "ready"
   const unavailableOptions =
     !options.currency_codes.length || !options.country_codes.includes("us")
 
@@ -151,7 +175,6 @@ export function ApplicationWizard({
         showResult(next)
         if (next.status === "success") {
           mutation.current = null
-          router.refresh()
         }
       } catch {
         showResult({
@@ -252,7 +275,7 @@ export function ApplicationWizard({
             noValidate
             onSubmit={(event) => {
               event.preventDefault()
-              if (pending || conflicted) return
+              if (pending || conflicted || resourcesUnavailable) return
               if (step === "review") return submit()
               const fieldErrors = validateStep(
                 draft,
@@ -276,7 +299,33 @@ export function ApplicationWizard({
               disabled={pending || conflicted}
               className="min-w-0 space-y-6"
             >
-              {step === "review" ? (
+              {resourcesUnavailable ? (
+                <div role="status" className="space-y-4">
+                  {formResources?.status === "error" ? (
+                    <>
+                      <FeedbackToast feedback={RESOURCE_ERROR_FEEDBACK} />
+                      <p className="text-sm text-destructive">
+                        No pudimos cargar las categorías y direcciones. Tus
+                        datos siguen guardados en el formulario.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => router.refresh()}
+                      >
+                        Reintentar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Cargando opciones de este paso…
+                      </p>
+                      <Skeleton className="h-64 w-full" />
+                    </>
+                  )}
+                </div>
+              ) : step === "review" ? (
                 <>
                   <ApplicationReview
                     data={draft}
@@ -358,8 +407,9 @@ export function ApplicationWizard({
                 <Button
                   type="submit"
                   disabled={
-                    step === "review" &&
-                    (!acceptedTerms || !isVerified || unavailableOptions)
+                    resourcesUnavailable ||
+                    (step === "review" &&
+                      (!acceptedTerms || !isVerified || unavailableOptions))
                   }
                 >
                   {pending ? (

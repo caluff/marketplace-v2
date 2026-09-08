@@ -3,9 +3,12 @@ import { authenticate } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import type SellerModule from "@mercurjs/core/modules/seller";
 import { MercurModules, SellerRole } from "@mercurjs/types";
-import { requireVendorAccess, requireVendorMembership, onboardingService } from "./access";
+import { requireVendorAccess, requireVendorMembership, onboardingService, enableReadOnlyAccessScope, reuseNativeMembershipRead } from "./access";
 import { onboardingHttp } from "./http";
 import { OnboardingError } from "./errors";
+import { guardSellerWarehouse } from "../vendor-warehouse/native-guards";
+import { guardNativeStripeConnect } from "../stripe-connect/native-guards";
+import { guardSellerShipping } from "../vendor-shipping/native-guards";
 
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const path = (req: MedusaRequest) => req.originalUrl.split("?")[0].replace(/\/$/, "");
@@ -18,13 +21,18 @@ export async function vendorLiveGuard(req: MedusaRequest, res: MedusaResponse, n
     if (error) return next(error);
     return onboardingHttp(res, async () => {
       const authenticated = req as AuthenticatedMedusaRequest;
+      if (["GET", "HEAD"].includes(req.method)) enableReadOnlyAccessScope(req.scope);
       const identity = await req.scope.resolve(Modules.AUTH).retrieveAuthIdentity(authenticated.auth_context.auth_identity_id);
       if (identity.app_metadata?.member_id !== authenticated.auth_context.actor_id) throw new OnboardingError("member_identity_conflict");
       const selected = route === "/vendor/sellers/select" ? object(req.body).seller_id : req.get("x-seller-id");
+      reuseNativeMembershipRead(req.scope, authenticated.auth_context.actor_id, typeof selected === "string" ? selected : "", req.seller_context?.seller_member);
       const access = route === "/vendor/members/me" && req.method === "GET" ? requireVendorMembership : requireVendorAccess;
       const { seller, membership } = await access(req.scope, authenticated.auth_context.actor_id, typeof selected === "string" ? selected : "");
       authenticated.auth_context.app_metadata = { ...authenticated.auth_context.app_metadata, roles: [membership.role_id || SellerRole.SELLER_ADMINISTRATION] };
       if (object(req.body).external_id !== undefined) throw new OnboardingError("managed_seller_write_forbidden", 403);
+      await guardSellerWarehouse(req, seller.id);
+      await guardSellerShipping(req, seller.id);
+      await guardNativeStripeConnect(req, seller.id);
       await guardInventoryScope(req, seller.id);
       await guardProductVisibility(req, seller.id);
       next();
