@@ -7,13 +7,15 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
-    "test": "tsx --test lib/storefront.test.ts features/account/*.test.ts features/vendor-onboarding/*.test.ts",
+    "test": "tsx --test lib/storefront.test.ts features/account/*.test.ts features/vendor-onboarding/*.test.ts features/catalog/*.test.ts features/cart/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@marketplace-v2/theme-sync": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
+    "@stripe/react-stripe-js": "^6.9.0",
+    "@stripe/stripe-js": "^9.15.0",
     "class-variance-authority": "0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "4.4.0",
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
+    "@mercurjs/types": "2.3.3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "24.13.3",
     "@types/react": "^19",

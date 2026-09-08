@@ -14,6 +14,7 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:api:deploy",
       watchPatterns: [
         "/packages/api/**",
+        "/patches/**",
         "/.railway/**",
         "/blocks.json",
         "/.npmrc",
@@ -38,6 +39,10 @@ export default defineRailway((ctx) => {
       ADMIN_CORS: ctx.shared.ADMIN_CORS,
       VENDOR_CORS: ctx.shared.VENDOR_CORS,
       AUTH_CORS: ctx.shared.AUTH_CORS,
+      STRIPE_API_KEY: ctx.shared.STRIPE_API_KEY,
+      STRIPE_WEBHOOK_SECRET: ctx.shared.STRIPE_WEBHOOK_SECRET,
+      STRIPE_PAYOUT_WEBHOOK_SECRET: ctx.shared.STRIPE_PAYOUT_WEBHOOK_SECRET,
+      VENDOR_PUBLIC_URL: "https://marketplace-v2vendor-production.up.railway.app",
     },
   });
 
@@ -49,6 +54,7 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:worker:deploy",
       watchPatterns: [
         "/packages/api/**",
+        "/patches/**",
         "/.railway/**",
         "/blocks.json",
         "/.npmrc",
@@ -71,6 +77,10 @@ export default defineRailway((ctx) => {
       ADMIN_CORS: ctx.shared.ADMIN_CORS,
       VENDOR_CORS: ctx.shared.VENDOR_CORS,
       AUTH_CORS: ctx.shared.AUTH_CORS,
+      STRIPE_API_KEY: ctx.shared.STRIPE_API_KEY,
+      STRIPE_WEBHOOK_SECRET: ctx.shared.STRIPE_WEBHOOK_SECRET,
+      STRIPE_PAYOUT_WEBHOOK_SECRET: ctx.shared.STRIPE_PAYOUT_WEBHOOK_SECRET,
+      VENDOR_PUBLIC_URL: "https://marketplace-v2vendor-production.up.railway.app",
     },
   });
 
@@ -108,6 +118,8 @@ export default defineRailway((ctx) => {
         "https://api-production-ed23.up.railway.app",
       NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:
         ctx.shared.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
+        ctx.shared.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
       NEXT_PUBLIC_VENDOR_URL:
         "https://marketplace-v2vendor-production.up.railway.app",
     },

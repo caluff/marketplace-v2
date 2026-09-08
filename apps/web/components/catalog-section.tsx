@@ -193,6 +193,15 @@ async function CatalogContent(props: CatalogSectionProps) {
     <>
       {result.status === "products" ? (
         <>
+          {!result.hasRegion ? (
+            <p
+              role="status"
+              className="mb-7 border border-border bg-muted p-4 font-sans text-sm text-muted-foreground"
+            >
+              Los precios y las compras para Estados Unidos estarán disponibles
+              cuando la tienda habilite su región en USD.
+            </p>
+          ) : null}
           {activeCategory ? (
             <div className="mb-7 flex justify-end">
               <Button asChild variant="ghost" size="sm">
@@ -205,6 +214,9 @@ async function CatalogContent(props: CatalogSectionProps) {
               <ProductCard
                 key={product.id}
                 product={product}
+                offers={result.offers.filter(
+                  (offer) => offer.product_id === product.id,
+                )}
                 index={index}
                 favoriteAction={
                   <Suspense

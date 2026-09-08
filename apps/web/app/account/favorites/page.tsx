@@ -11,6 +11,7 @@ import {
   getPageNumber,
 } from "@/features/account/data"
 import { getFavoriteProductIds } from "@/features/account/favorites"
+import { getStorefrontOffers, getStorefrontRegion } from "@/lib/medusa"
 
 export default async function FavoritesPage({
   searchParams,
@@ -28,22 +29,17 @@ export default async function FavoritesPage({
     (page - 1) * ACCOUNT_PAGE_SIZE,
     page * ACCOUNT_PAGE_SIZE,
   )
-  const { regions } = pageIds.length
-    ? await sdk.store.region.list({ limit: 100, fields: "id,*countries" })
-    : { regions: [] }
-  const region = regions.find((entry) =>
-    entry.countries?.some((country) => country.iso_2 === "us"),
-  )
+  const region = pageIds.length ? await getStorefrontRegion() : null
   const { products } = pageIds.length
     ? await sdk.store.product.list({
         id: pageIds,
         limit: ACCOUNT_PAGE_SIZE,
         ...(region ? { region_id: region.id } : {}),
-        fields: region
-          ? "id,title,subtitle,description,handle,thumbnail,*images,*categories,*variants.calculated_price"
-          : "id,title,subtitle,description,handle,thumbnail,*images,*categories",
+        fields:
+          "id,title,subtitle,description,handle,thumbnail,*images,*categories",
       })
     : { products: [] }
+  const offers = region ? await getStorefrontOffers(pageIds, region.id) : []
   const productsById = new Map(products.map((product) => [product.id, product]))
   return (
     <>
@@ -71,6 +67,9 @@ export default async function FavoritesPage({
                 <ProductCard
                   key={id}
                   product={product}
+                  offers={offers.filter(
+                    (offer) => offer.product_id === product.id,
+                  )}
                   index={(page - 1) * ACCOUNT_PAGE_SIZE + index}
                   isFavorite
                   authenticated

@@ -134,22 +134,59 @@ test("catalog products resolve even while category navigation is still loading",
     else process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY = previousKey
   })
   let releaseCategories!: (response: Response) => void
+  let categoriesResolved = false
   const delayedCategories = new Promise<Response>((resolve) => {
     releaseCategories = resolve
   })
   context.mock.method(globalThis, "fetch", async (input: URL) => {
     if (input.pathname === "/store/product-categories") return delayedCategories
     if (input.pathname === "/store/regions")
-      return Response.json({ regions: [{ id: "reg_us" }] })
+      return Response.json({
+        regions: [
+          { id: "reg_eu", currency_code: "eur", countries: [{ iso_2: "fr" }] },
+          { id: "reg_us", currency_code: "usd", countries: [{ iso_2: "us" }] },
+        ],
+      })
+    if (input.pathname === "/store/offers") {
+      assert.equal(input.searchParams.get("region_id"), "reg_us")
+      assert.equal(input.searchParams.get("country_code"), "us")
+      assert.match(input.searchParams.get("fields") ?? "", /calculated_price/)
+      return Response.json({
+        offers: [
+          {
+            id: "offer_one",
+            product_id: "prod_one",
+            calculated_price: {
+              calculated_amount: 200,
+              original_amount: 200,
+              currency_code: "usd",
+            },
+          },
+        ],
+        count: 1,
+        offset: 0,
+        limit: 100,
+      })
+    }
     assert.equal(input.pathname, "/store/products")
     assert.equal(input.searchParams.get("region_id"), "reg_us")
     return Response.json({ products: [{ id: "prod_one" }], count: 1 })
   })
   const { getStorefrontCatalog, getStorefrontCategories } =
     await import("./medusa.ts")
-  const categories = getStorefrontCategories()
+  const categories = getStorefrontCategories().then((result) => {
+    categoriesResolved = true
+    return result
+  })
   try {
-    assert.equal((await getStorefrontCatalog()).status, "products")
+    const result = await getStorefrontCatalog()
+    assert.equal(result.status, "products")
+    assert.equal(categoriesResolved, false)
+    if (result.status === "products") {
+      assert.equal(result.hasRegion, true)
+      assert.equal(result.products[0]?.id, "prod_one")
+      assert.equal(result.offers[0]?.calculated_price?.calculated_amount, 200)
+    }
   } finally {
     releaseCategories(Response.json({ product_categories: [] }))
     await categories

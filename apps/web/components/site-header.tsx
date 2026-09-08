@@ -15,6 +15,7 @@ import {
   type ApplicationNavigation,
 } from "@/features/vendor-onboarding/presentation"
 import { cn } from "@/lib/utils"
+import { CartLink } from "@/features/cart/components/cart-link"
 
 type SiteHeaderProps = {
   categories:
@@ -186,6 +187,9 @@ export function SiteHeader({
             />
           </Suspense>
           <ModeToggle />
+          <Suspense fallback={<Skeleton className="mx-1 h-11 w-14" aria-label="Cargando carrito" />}>
+            <CartLink />
+          </Suspense>
           <Suspense
             fallback={
               <Skeleton

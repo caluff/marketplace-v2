@@ -15,6 +15,7 @@ const seller = (id = "seller_a") => ({
 function fixture() {
   const cart = {
     id: "cart_a", completed_at: null, currency_code: "usd",
+    shipping_address: { country_code: "us" },
     items: [{ id: "item_a", offer: { seller_id: "seller_a" } }],
   };
   const graph = jest.fn().mockResolvedValueOnce({ data: [cart] }).mockResolvedValue({ data: [seller()] });
@@ -97,6 +98,13 @@ it("rejects empty carts and non-USD carts", async () => {
   }
 });
 
+it.each(["ca", "uy", "", undefined])("rejects checkout without a US shipping country: %s", async (countryCode) => {
+  const { cart, graph, container } = fixture();
+  Object.assign(cart, { shipping_address: countryCode === undefined ? null : { country_code: countryCode } });
+  await expect(assertCartSellersReadyForSale(container, "cart_a")).rejects.toThrow("United States only");
+  expect(graph).toHaveBeenCalledTimes(1);
+});
+
 it("blocks new sales when test Stripe configuration is missing", async () => {
   const { container, graph } = fixture();
   jest.mocked(getStripeConnectConfiguration).mockReturnValue(null);
@@ -106,7 +114,7 @@ it("blocks new sales when test Stripe configuration is missing", async () => {
 
 it("preserves completion retry behavior after a sale without rechecking later restrictions", async () => {
   const { cart, graph, container } = fixture();
-  Object.assign(cart, { completed_at: "2026-09-06T00:00:00Z" });
+  Object.assign(cart, { completed_at: "2026-09-06T00:00:00Z", shipping_address: null });
   jest.mocked(getStripeConnectConfiguration).mockReturnValue(null);
   await expect(assertCartSellersReadyForSale(container, "cart_a")).resolves.toBeUndefined();
   expect(graph).toHaveBeenCalledTimes(1);
@@ -129,6 +137,15 @@ it("maps native payment collection to the current cart before checking seller re
     entity: "cart_payment_collection", fields: ["cart_id"], filters: { payment_collection_id: "paycol_a" },
   }, { cache: { enable: false } });
   expect(graph).toHaveBeenCalledTimes(3);
+});
+
+it("rejects initializing payment for a non-US shipping address", async () => {
+  const { cart, graph, container } = fixture();
+  cart.shipping_address.country_code = "ca";
+  graph.mockReset().mockResolvedValueOnce({ data: [{ cart_id: "cart_a" }] })
+    .mockResolvedValueOnce({ data: [cart] });
+  await expect(assertPaymentCollectionSellersReadyForSale(container, "paycol_a")).rejects.toThrow("United States only");
+  expect(graph).toHaveBeenCalledTimes(2);
 });
 
 it.each([{ data: [] }, { data: [{ cart_id: null }] }, { data: [{ cart_id: "cart_a" }, { cart_id: "cart_b" }] }])

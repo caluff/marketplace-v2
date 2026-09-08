@@ -25,7 +25,7 @@ export async function assertCartSellersReadyForSale(
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   const { data: carts } = await query.graph({
     entity: "cart",
-    fields: ["id", "completed_at", "currency_code", "items.id", "items.offer.seller_id"],
+    fields: ["id", "completed_at", "currency_code", "shipping_address.country_code", "items.id", "items.offer.seller_id"],
     filters: { id: cartId },
   }, { cache: { enable: false } });
   const cart = carts[0];
@@ -40,6 +40,9 @@ export async function assertCartSellersReadyForSale(
   }
   if (cart.currency_code !== "usd") {
     throw new MedusaError(MedusaError.Types.NOT_ALLOWED, "Checkout currently supports USD only.");
+  }
+  if (cart.shipping_address?.country_code !== "us") {
+    throw new MedusaError(MedusaError.Types.NOT_ALLOWED, "Checkout currently supports shipping within the United States only.");
   }
   if (!cart.items?.length) throw new MedusaError(MedusaError.Types.INVALID_DATA, "The cart is empty.");
 
