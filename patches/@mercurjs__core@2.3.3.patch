@@ -240,3 +240,91 @@ diff --git a/.medusa/server/src/api/store/carts/[id]/line-items/route.js b/.medu
 -    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, helpers_1.defaultStoreCartFields);
 +    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, req.queryConfig.fields);
      res.status(200).json({ cart });
+diff --git a/.medusa/server/src/workflows/cart/hooks/validate.js b/.medusa/server/src/workflows/cart/hooks/validate.js
+index 3950571..4af2ee2 100644
+--- a/.medusa/server/src/workflows/cart/hooks/validate.js
++++ b/.medusa/server/src/workflows/cart/hooks/validate.js
+@@ -16,23 +16,41 @@ core_flows_1.addToCartWorkflow.hooks.validate(async ({ input, cart }, { containe
+     if (!offerIds.length) {
+         return;
+     }
+-    const { data: offers } = await query.graph({
++    const [{ data: offers }, { data: cartItems }] = await (0, utils_1.promiseAll)([query.graph({
+         entity: "offer",
+         fields: utils_2.requiredOfferFieldsForInventoryConfirmation,
+         filters: { id: offerIds },
+-    });
++    }), query.graph({
++        entity: "line_item",
++        fields: ["id", "quantity", "offer.id", "metadata"],
++        filters: { cart_id: cart.id },
++    })]);
+     const foundIds = new Set(offers.map((o) => o.id));
+     const missing = offerIds.find((id) => !foundIds.has(id));
+     if (missing) {
+         throw new utils_1.MedusaError(utils_1.MedusaError.Types.NOT_FOUND, `Offer ${missing} not found`);
+     }
++    // The pricing-context cart omits items. Read their current quantities under
++    // the native cart lock and validate the resulting total, not only the delta.
++    const quantities = new Map(offerIds.map((id) => [id, 0]));
++    for (const item of cartItems) {
++        const offerId = item.offer?.id ?? item.metadata?.offer_id;
++        if (quantities.has(offerId)) {
++            quantities.set(offerId, utils_1.MathBN.sum(quantities.get(offerId), item.quantity));
++        }
++    }
++    for (const item of items) {
++        if (quantities.has(item.offer_id)) {
++            quantities.set(item.offer_id, utils_1.MathBN.sum(quantities.get(item.offer_id), item.quantity));
++        }
++    }
+     const { items: confirmInputs } = (0, utils_2.prepareOfferInventoryInput)({
+         input: {
+             sales_channel_id: cart.sales_channel_id ?? undefined,
+-            items: items.map((i) => ({
++            items: Array.from(quantities, ([offerId, quantity]) => ({
+                 id: undefined,
+-                quantity: i.quantity,
+-                offer: { id: i.offer_id },
++                quantity,
++                offer: { id: offerId },
+             })),
+             offers: offers,
+         },
+@@ -60,11 +78,11 @@ core_flows_1.updateLineItemInCartWorkflow.hooks.validate(async ({ input, cart },
+     const inventoryService = container.resolve(utils_1.Modules.INVENTORY);
+     const { data: cartLines } = await query.graph({
+         entity: "line_item",
+-        fields: ["id", "offer.id"],
+-        filters: { id: [input.item_id] },
++        fields: ["id", "quantity", "offer.id", "metadata"],
++        filters: { cart_id: cart.id },
+     });
+-    const offerId = cartLines[0]
+-        ?.offer?.id;
++    const targetLine = cartLines.find((item) => item.id === input.item_id);
++    const offerId = targetLine?.offer?.id ?? targetLine?.metadata?.offer_id;
+     if (!offerId) {
+         return;
+     }
+@@ -73,13 +91,19 @@ core_flows_1.updateLineItemInCartWorkflow.hooks.validate(async ({ input, cart },
+         fields: utils_2.requiredOfferFieldsForInventoryConfirmation,
+         filters: { id: [offerId] },
+     });
++    const totalQuantity = cartLines.reduce((quantity, item) => {
++        const existingOfferId = item.offer?.id ?? item.metadata?.offer_id;
++        return item.id !== input.item_id && existingOfferId === offerId
++            ? utils_1.MathBN.sum(quantity, item.quantity)
++            : quantity;
++    }, newQuantity);
+     const { items: confirmInputs } = (0, utils_2.prepareOfferInventoryInput)({
+         input: {
+             sales_channel_id: cart.sales_channel_id ?? undefined,
+             items: [
+                 {
+                     id: input.item_id,
+-                    quantity: newQuantity,
++                    quantity: totalQuantity,
+                     offer: { id: offerId },
+                 },
+             ],

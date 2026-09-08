@@ -2,8 +2,12 @@
 
 import { ShoppingBag } from "lucide-react"
 import Link from "next/link"
-import { useSyncExternalStore } from "react"
-import { getCartCount, subscribeCartUpdates } from "../cart-events"
+import { useEffect, useSyncExternalStore } from "react"
+import {
+  getCartCount,
+  publishCartSnapshot,
+  subscribeCartUpdates,
+} from "../cart-events"
 
 export function CartIndicator({
   initialCount,
@@ -17,6 +21,10 @@ export function CartIndicator({
     () => getCartCount(initialCount, snapshotAt),
     () => initialCount,
   )
+
+  useEffect(() => {
+    if (initialCount !== null) publishCartSnapshot(initialCount, snapshotAt)
+  }, [initialCount, snapshotAt])
 
   return (
     <Link

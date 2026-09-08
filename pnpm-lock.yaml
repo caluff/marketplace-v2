@@ -113,7 +113,7 @@ packageExtensionsChecksum: sha256-hHbEyOhSn6kwmlEJdN6bGzqkWxmGMZGmLwDSOLbHuFY=
 
 patchedDependencies:
   '@medusajs/framework@2.18.0': e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca
-  '@mercurjs/core@2.3.3': 9d6ae199ee6d874b6616275b88b7bac876708675ca0d61cd63c8a944f7adffb0
+  '@mercurjs/core@2.3.3': 0bf4fb78b23ed0824482b81937125301cd0b1396fe3ee34ca490985383cc1709
   '@mercurjs/payout-stripe-connect@2.3.3': d72be34f96ba913b114ea0d70916fcdaa7aaf13ba0b696e1717dbfea197d2ed7
 
 importers:
@@ -407,7 +407,7 @@ importers:
         version: 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@medusajs/framework@2.18.0(patch_hash=e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/test-utils@2.18.0)(@swc/core@1.16.1(@swc/helpers@0.5.23))(@types/node@24.13.3)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(awilix@8.0.1)(debug@4.4.3(supports-color@8.1.1))(lightningcss@1.32.0)(posthog-node@5.51.6(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@8.1.1)(typescript@5.9.3)(yalc@1.0.0-pre.53)
       '@mercurjs/core':
         specifier: 2.3.3
-        version: 2.3.3(patch_hash=9d6ae199ee6d874b6616275b88b7bac876708675ca0d61cd63c8a944f7adffb0)(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@medusajs/framework@2.18.0(patch_hash=e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/medusa@2.18.0)(@medusajs/test-utils@2.18.0)(express@4.22.2(supports-color@8.1.1))
+        version: 2.3.3(patch_hash=0bf4fb78b23ed0824482b81937125301cd0b1396fe3ee34ca490985383cc1709)(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@medusajs/framework@2.18.0(patch_hash=e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/medusa@2.18.0)(@medusajs/test-utils@2.18.0)(express@4.22.2(supports-color@8.1.1))
       '@mercurjs/payout-stripe-connect':
         specifier: 2.3.3
         version: 2.3.3(patch_hash=d72be34f96ba913b114ea0d70916fcdaa7aaf13ba0b696e1717dbfea197d2ed7)(@medusajs/framework@2.18.0(patch_hash=e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))
@@ -10936,7 +10936,7 @@ snapshots:
       - supports-color
       - tedious
 
-  '@mercurjs/core@2.3.3(patch_hash=9d6ae199ee6d874b6616275b88b7bac876708675ca0d61cd63c8a944f7adffb0)(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@medusajs/framework@2.18.0(patch_hash=e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/medusa@2.18.0)(@medusajs/test-utils@2.18.0)(express@4.22.2(supports-color@8.1.1))':
+  '@mercurjs/core@2.3.3(patch_hash=0bf4fb78b23ed0824482b81937125301cd0b1396fe3ee34ca490985383cc1709)(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@medusajs/framework@2.18.0(patch_hash=e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca)(@medusajs/cli@2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))(zod@4.4.3))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/medusa@2.18.0)(@medusajs/test-utils@2.18.0)(express@4.22.2(supports-color@8.1.1))':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/cli': 2.18.0(@types/node@24.13.3)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
