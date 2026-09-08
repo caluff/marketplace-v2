@@ -36,7 +36,6 @@ export function AddressStep({ cart }: { cart: HttpTypes.StoreCart }) {
         const result = await saveAddressAction(previous, formData)
         if (!result.error) {
           router.replace("/checkout?step=shipping")
-          router.refresh()
         }
         return result
       } catch {

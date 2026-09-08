@@ -55,6 +55,7 @@ function setup(context: TestContext, responses: Array<{ body: unknown; status?: 
 }
 
 test("adding to an existing cart uses one lean read and one native mutation", async (context) => {
+  context.mock.method(Date, "now", () => 1000)
   const state = setup(context, [
     { body: { cart: usCart } },
     { body: { cart: { id: usCart.id, items: [{ quantity: 3 }, { quantity: 2 }] } } },
@@ -63,6 +64,7 @@ test("adding to an existing cart uses one lean read and one native mutation", as
   assert.deepEqual(await addCartItem(input, state.context), {
     success: "Producto añadido al carrito.",
     cartCount: 5,
+    confirmedAt: 1000,
   })
   assert.equal(state.regionReads(), 0)
   assert.deepEqual(state.persistedIds, [])

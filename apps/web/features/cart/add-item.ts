@@ -7,8 +7,8 @@ const PREFLIGHT_FIELDS = "id,currency_code,completed_at,region.countries.iso_2"
 const COUNT_FIELDS = "id,items.quantity"
 
 export type AddCartItemResult =
-  | { success: string; cartCount: number; error?: never }
-  | { error: string; success?: never; cartCount?: never }
+  | { success: string; cartCount: number; confirmedAt: number; error?: never }
+  | { error: string; success?: never; cartCount?: never; confirmedAt?: never }
 
 type AddCartItemContext = {
   sdk: Medusa
@@ -90,6 +90,7 @@ export async function addCartItem(
     )
   return {
     success: "Producto añadido al carrito.",
+    confirmedAt: Date.now(),
     cartCount:
       updatedCart.items?.reduce((count, item) => count + item.quantity, 0) ?? 0,
   }

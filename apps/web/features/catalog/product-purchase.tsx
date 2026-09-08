@@ -49,7 +49,8 @@ export function ProductPurchase({
     FormData
   >(async (_previous, form) => {
     const result = await submitCartItem(form)
-    if (typeof result.cartCount === "number") notifyCartUpdated(result.cartCount)
+    if (typeof result.cartCount === "number")
+      notifyCartUpdated(result.cartCount, result.confirmedAt)
     return result
   }, null)
   const error = state && "error" in state ? state.error : undefined

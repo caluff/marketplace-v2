@@ -18,11 +18,12 @@ test("adding uses the storefront handler and returns the server-confirmed count"
       offer_id: "offer_available",
       quantity: 2,
     })
-    return Response.json({ success: "Producto añadido al carrito.", cartCount: 5 })
+    return Response.json({ success: "Producto añadido al carrito.", cartCount: 5, confirmedAt: 1000 })
   })
   assert.deepEqual(await submitCartItem(itemForm()), {
     success: "Producto añadido al carrito.",
     cartCount: 5,
+    confirmedAt: 1000,
   })
 })
 
@@ -55,7 +56,7 @@ test("malformed counts and unsuccessful HTTP responses cannot announce success",
     [500, 3],
   ] as const) {
     context.mock.method(globalThis, "fetch", async () =>
-      Response.json({ success: "Added", cartCount }, { status }),
+      Response.json({ success: "Added", cartCount, confirmedAt: 1000 }, { status }),
     )
     assert("error" in (await submitCartItem(itemForm())))
   }

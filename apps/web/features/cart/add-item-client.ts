@@ -28,9 +28,17 @@ export async function submitCartItem(form: FormData): Promise<AddCartItemResult>
         "cartCount" in result &&
         typeof result.cartCount === "number" &&
         Number.isSafeInteger(result.cartCount) &&
-        result.cartCount >= 0
+        result.cartCount >= 0 &&
+        "confirmedAt" in result &&
+        typeof result.confirmedAt === "number" &&
+        Number.isSafeInteger(result.confirmedAt) &&
+        result.confirmedAt > 0
       ) {
-        return { success: result.success, cartCount: result.cartCount }
+        return {
+          success: result.success,
+          cartCount: result.cartCount,
+          confirmedAt: result.confirmedAt,
+        }
       }
     }
     return { error: UNCONFIRMED }

@@ -20,7 +20,6 @@ export function PaymentReturn() {
       const result = await completeCheckoutAction()
       if (result.redirectTo) {
         router.replace(result.redirectTo)
-        router.refresh()
       } else {
         setMessage(
           result.error ??

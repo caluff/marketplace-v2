@@ -1,7 +1,8 @@
 import { getCart } from "../data"
 import { CartIndicator } from "./cart-indicator"
 
-export async function CartLink() {
+async function readCartCountSnapshot() {
+  const snapshotAt = Date.now()
   let count: number | null = null
   try {
     const cart = await getCart()
@@ -9,5 +10,10 @@ export async function CartLink() {
   } catch {
     /* Navigation stays available when the cart service is unavailable. */
   }
-  return <CartIndicator key={count ?? "unknown"} initialCount={count} />
+  return { initialCount: count, snapshotAt }
+}
+
+export async function CartLink() {
+  const snapshot = await readCartCountSnapshot()
+  return <CartIndicator {...snapshot} />
 }

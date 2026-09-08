@@ -2,20 +2,21 @@
 
 import { ShoppingBag } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState } from "react"
-import { CART_UPDATED_EVENT, cartCountFromEvent } from "../cart-events"
+import { useSyncExternalStore } from "react"
+import { getCartCount, subscribeCartUpdates } from "../cart-events"
 
-export function CartIndicator({ initialCount }: { initialCount: number | null }) {
-  const [count, setCount] = useState(initialCount)
-
-  useEffect(() => {
-    const update = (event: Event) => {
-      const confirmedCount = cartCountFromEvent(event)
-      if (confirmedCount !== null) setCount(confirmedCount)
-    }
-    window.addEventListener(CART_UPDATED_EVENT, update)
-    return () => window.removeEventListener(CART_UPDATED_EVENT, update)
-  }, [])
+export function CartIndicator({
+  initialCount,
+  snapshotAt,
+}: {
+  initialCount: number | null
+  snapshotAt: number
+}) {
+  const count = useSyncExternalStore(
+    subscribeCartUpdates,
+    () => getCartCount(initialCount, snapshotAt),
+    () => initialCount,
+  )
 
   return (
     <Link

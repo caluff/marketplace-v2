@@ -55,7 +55,6 @@ export function ShippingStep({
         const result = await saveShippingAction(previous, formData)
         if (!result.error) {
           router.replace("/checkout?step=payment")
-          router.refresh()
         }
         return result
       } catch {
