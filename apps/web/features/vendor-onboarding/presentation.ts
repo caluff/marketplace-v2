@@ -61,7 +61,7 @@ export function applicationNavigation(
   }
 }
 
-export function vendorLoginUrl(origin: string | undefined): string | null {
+export function vendorPanelUrl(origin: string | undefined): string | null {
   if (!origin) return null
   try {
     const url = new URL(origin)
@@ -75,7 +75,7 @@ export function vendorLoginUrl(origin: string | undefined): string | null {
       url.hash
     )
       return null
-    return new URL("/seller/login?next=%2Fseller", url.origin).toString()
+    return "/auth/vendor"
   } catch {
     return null
   }

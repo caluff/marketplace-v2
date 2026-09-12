@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
-    "test": "tsx --test lib/storefront.test.ts features/account/*.test.ts features/vendor-onboarding/*.test.ts features/catalog/*.test.ts features/cart/*.test.ts",
+    "test": "tsx --test lib/*.test.ts features/account/*.test.ts features/vendor-onboarding/*.test.ts features/catalog/*.test.ts features/cart/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -31,6 +31,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@marketplace-v2/api": "workspace:*",
     "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
     "@mercurjs/types": "2.3.3",
     "@tailwindcss/postcss": "^4",

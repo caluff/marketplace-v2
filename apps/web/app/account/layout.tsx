@@ -2,9 +2,7 @@ import { ArrowLeft, LogOut } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense, type ReactNode } from "react"
-import type { HttpTypes } from "@medusajs/types"
 import { logoutCustomerAction } from "@/app/auth-actions"
-import { ModeToggle } from "@/components/mode-toggle"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -12,7 +10,6 @@ import {
   AccountNav,
   AccountVendorLink,
 } from "@/features/account/components/account-nav"
-import { CustomerMenu } from "@/features/account/components/customer-menu"
 import { getAccount } from "@/features/account/data"
 import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
 
@@ -37,37 +34,8 @@ export default async function AccountLayout({
       >
         Saltar al contenido
       </a>
-      <header className="border-b border-border">
-        <div className="mx-auto flex min-h-20 max-w-[90rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-          <Link
-            href="/"
-            className="inline-flex min-h-11 items-center text-sm font-black tracking-[0.18em] uppercase"
-          >
-            Marketplace V2
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="hidden sm:inline-flex">
-              <Link href="/#catalog">Seguir explorando</Link>
-            </Button>
-            <ModeToggle />
-            <Suspense
-              fallback={
-                <Skeleton
-                  className="size-11 rounded-full"
-                  aria-label="Cargando menú de cuenta"
-                />
-              }
-            >
-              <AccountMenu
-                customer={customer}
-                application={vendorApplication}
-              />
-            </Suspense>
-          </div>
-        </div>
-      </header>
       <main className="mx-auto grid w-full max-w-[90rem] flex-1 gap-10 px-4 py-8 sm:px-6 sm:py-12 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-14 lg:px-10 lg:py-16">
-        <aside className="lg:sticky lg:top-8 lg:self-start">
+        <aside className="lg:sticky lg:top-28 lg:self-start">
           <p className="text-2xl font-medium tracking-tight">
             Hola, {customer.first_name || "de nuevo"}
           </p>
@@ -115,23 +83,6 @@ export default async function AccountLayout({
       </main>
       <SiteFooter categories={[]} />
     </>
-  )
-}
-
-async function AccountMenu({
-  customer,
-  application,
-}: {
-  customer: HttpTypes.StoreCustomer
-  application: ReturnType<typeof getApplicationNavigation>
-}) {
-  return (
-    <CustomerMenu
-      first_name={customer.first_name}
-      last_name={customer.last_name}
-      email={customer.email}
-      vendorApplication={await application}
-    />
   )
 }
 

@@ -228,7 +228,8 @@
           "enumItems": [
             "cancel",
             "capture",
-            "payout"
+            "payout",
+            "refund"
           ],
           "mappedType": "enum"
         },

@@ -4,11 +4,9 @@ import { FetchError } from "@medusajs/js-sdk"
 import type { HttpTypes as MercurHttpTypes } from "@mercurjs/types"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
-import {
-  accountFormValues,
-  normalizeUsPhone,
-  validateAddress,
-} from "@/features/account/validation"
+import { getCustomerAccount } from "@/features/account/data"
+import { accountFormValues } from "@/features/account/validation"
+import { saveCheckoutAddress } from "./checkout-address"
 import {
   CART_COOKIE,
   CART_FIELDS,
@@ -86,31 +84,19 @@ export async function saveAddressAction(
 ): Promise<CartActionState> {
   const values = accountFormValues(form)
   try {
-    const errors = validateAddress({ ...values, address_name: "Entrega" })
-    if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email ?? "") ||
-      values.email.length > 254
-    )
-      errors.email = "Ingresa un email válido."
-    if (Object.keys(errors).length)
-      return { error: Object.values(errors)[0], values }
-    const { sdk, cart } = await currentCart()
-    const address = {
-      first_name: values.first_name,
-      last_name: values.last_name,
-      address_1: values.address_1,
-      address_2: values.address_2 || "",
-      city: values.city,
-      province: values.province,
-      postal_code: values.postal_code,
-      country_code: "us",
-      phone: normalizeUsPhone(values.phone)!,
+    const [{ sdk, cart }, account] = await Promise.all([
+      currentCart(),
+      getCustomerAccount(),
+    ])
+    if (values.customer_id && values.customer_id !== account?.customer.id) {
+      throw new Error("Tu sesión cambió. Actualiza la página para continuar.")
     }
-    await sdk.store.cart.update(cart.id, {
-      email: values.email,
-      shipping_address: address,
-      billing_address: address,
+    await saveCheckoutAddress({
+      values,
+      customerClient: account?.sdk.store.customer ?? null,
+      updateCart: (body) => sdk.store.cart.update(cart.id, body),
     })
+    revalidatePath("/account", "layout")
     refreshCart()
     return { success: "Dirección guardada." }
   } catch (error) {
@@ -189,11 +175,30 @@ export async function initializePaymentAction(
           "El importe del carrito cambió. Revisa el pago existente antes de volver a intentarlo.",
         )
       }
-      return { clientSecret: existing.data.client_secret }
+      const methods = existing.data.payment_method_types
+      const hasRequestedMethods =
+        Array.isArray(methods) &&
+        methods.length === 2 &&
+        methods.includes("card") &&
+        methods.includes("link")
+      // Preserve payments already submitted; native session creation replaces
+      // only the unpaid session when its available methods need to change.
+      const isUnpaid =
+        existing.status === "pending" &&
+        ["requires_payment_method", "requires_confirmation"].includes(
+          String(existing.data.status),
+        )
+      if (hasRequestedMethods || !isUnpaid) {
+        return { clientSecret: existing.data.client_secret }
+      }
     }
     const { payment_collection } =
       await sdk.store.payment.initiatePaymentSession(cart, {
         provider_id: provider,
+        data: {
+          payment_method_types: ["card", "link"],
+          automatic_payment_methods: { enabled: false },
+        },
       })
     const session = payment_collection.payment_sessions?.find(
       (entry) =>

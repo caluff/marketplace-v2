@@ -10,6 +10,11 @@ const verificationSchema = z.object({
   expires_at: z.union([z.string().datetime({ offset: true }), z.date()]),
 });
 const resetSchema = z.object({ reset_url: actionUrl });
+const shipmentSchema = z.object({
+  order_number: z.string().min(1),
+  order_url: actionUrl,
+  tracking_numbers: z.array(z.string()),
+});
 const applicationSchema = z.object({
   application_id: z.string().trim().min(1),
   status: z.enum(["submitted", "changes_requested", "approved", "rejected"]),
@@ -40,6 +45,13 @@ function render(subject: string, paragraphs: string[], action?: { label: string;
 
 export function renderNotification(template: string, data: Record<string, unknown> | null | undefined) {
   switch (template) {
+    case "order-shipped": {
+      const input = shipmentSchema.parse(data);
+      return render(`Marketplace V2: tu pedido #${input.order_number} fue enviado`, [
+        "Se envió un paquete de tu pedido. Consultá los detalles y el seguimiento desde tu cuenta.",
+        ...input.tracking_numbers.map((number) => `Número de seguimiento: ${number}`),
+      ], { label: "Ver pedido", url: input.order_url });
+    }
     case "auth-email-verification": {
       const input = verificationSchema.parse(data);
       return render("Marketplace V2: verificá tu correo", [

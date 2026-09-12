@@ -8,10 +8,10 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-title"
-      className="relative isolate -mt-[4.0625rem] overflow-hidden border-b border-border pt-[4.0625rem]"
+      className="relative isolate overflow-hidden border-b border-border"
     >
       <HeroWaveBackground />
-      <div className="relative mx-auto flex min-h-[calc(clamp(42rem,86svh,54rem)-4.0625rem)] w-full max-w-[90rem] flex-col justify-center px-4 pt-20 pb-28 sm:px-6 sm:pt-24 sm:pb-32 lg:px-10">
+      <div className="relative mx-auto flex min-h-[clamp(38rem,78svh,50rem)] w-full max-w-[90rem] flex-col justify-center px-4 pt-20 pb-28 sm:px-6 sm:pt-24 sm:pb-32 lg:px-10">
         <div className="max-w-4xl">
           <h1
             id="hero-title"

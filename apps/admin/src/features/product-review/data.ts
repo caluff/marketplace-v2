@@ -16,7 +16,8 @@ export async function listProductsForReview(
         limit: filters.limit,
         offset: filters.offset,
         ...(filters.status === "all" ? {} : { status: [filters.status] }),
-        fields: "id,title,status,handle,updated_at,changes.id,changes.status",
+        fields:
+          "id,title,status,handle,thumbnail,updated_at,sellers.id,sellers.name,changes.id,changes.status",
       },
       cache: "no-store",
     },
@@ -33,7 +34,7 @@ export async function retrieveProductForReview(id: string) {
       {
         query: {
           fields:
-            "id,title,status,handle,description,subtitle,updated_at,categories.id,categories.name,variants.id,variants.title,changes.id,changes.status,changes.external_note,changes.created_at",
+            "id,title,status,handle,description,subtitle,thumbnail,material,weight,length,width,height,updated_at,images.id,images.url,sellers.id,sellers.name,categories.id,categories.name,variants.id,variants.title,variants.sku,changes.id,changes.status,changes.external_note,changes.created_at",
         },
         cache: "no-store",
       },

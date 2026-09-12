@@ -22,6 +22,16 @@ import {
 } from "@/features/workspace/data";
 import { formatDate, formatMoney } from "@/features/workspace/presentation";
 import { resourceId } from "@/features/workspace/validation";
+import { CatalogThumbnail } from "@/features/catalog/catalog-thumbnail";
+import { OrderManagement } from "@/features/orders/order-management";
+import { getOrderDisplayStatus } from "@/features/orders/status";
+
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  OrderFinanceRegion,
+  OrderFinanceSkeleton,
+} from "@/features/orders/finance-region";
 
 export const metadata: Metadata = { title: "Detalle de pedido" };
 export default async function OrderPage({
@@ -29,8 +39,27 @@ export default async function OrderPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { client } = await workspace();
   const id = resourceId((await params).id);
+  await workspace();
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Detalle del pedido</h1>
+      <Suspense
+        fallback={
+          <Skeleton className="h-96 w-full" aria-label="Cargando pedido" />
+        }
+      >
+        <OrderDetail id={id} />
+      </Suspense>
+      <Suspense fallback={<OrderFinanceSkeleton />}>
+        <OrderFinanceRegion id={id} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function OrderDetail({ id }: { id: string }) {
+  const { client } = await workspace();
   const result = await resultOf(
     client.get<VendorOrderDetailResponse>(`/vendor/orders/${id}`, {
       fields: ORDER_FIELDS,
@@ -42,11 +71,15 @@ export default async function OrderPage({
   return (
     <div className="space-y-6">
       <PageHeading
-        eyebrow="Pedidos"
         title={`Pedido #${order.display_id ?? order.id}`}
         description={`${formatDate(order.created_at)} · ${order.email || "Sin correo"}`}
       >
-        <StatusBadge status={order.status} />
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge status={getOrderDisplayStatus(order)} />
+          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            Pago de la compra <StatusBadge status={order.payment_status} />
+          </span>
+        </div>
       </PageHeading>
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <Card>
@@ -65,7 +98,12 @@ export default async function OrderPage({
             <TableBody>
               {order.items?.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.title}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <CatalogThumbnail src={item.thumbnail} />
+                      <span>{item.title}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{item.quantity}</TableCell>
                   <TableCell>
                     {formatMoney(item.unit_price, order.currency_code)}
@@ -87,36 +125,7 @@ export default async function OrderPage({
           </CardContent>
         </Card>
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Estado de preparación</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                {order.fulfillments?.length ? (
-                  order.fulfillments.map((fulfillment) => (
-                    <p key={fulfillment.id}>
-                      {fulfillment.canceled_at
-                        ? "Preparación cancelada"
-                        : fulfillment.delivered_at
-                          ? "Entregado"
-                          : fulfillment.shipped_at
-                            ? "Enviado"
-                            : fulfillment.packed_at
-                              ? "Empacado"
-                              : "En preparación"}
-                    </p>
-                  ))
-                ) : (
-                  <p>Sin preparaciones registradas</p>
-                )}
-              </div>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Consulta de solo lectura. La preparación y los envíos requieren
-                la configuración logística de la tienda.
-              </p>
-            </CardContent>
-          </Card>
+          <OrderManagement order={order} />
           <Card>
             <CardHeader>
               <CardTitle>Dirección de entrega</CardTitle>

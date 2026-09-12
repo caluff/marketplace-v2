@@ -49,7 +49,10 @@ async function readApplicant(container: MedusaContainer, input: ApplicantIdentit
   if (identity.app_metadata?.customer_id !== input.customer_id) throw new OnboardingError("identity_changed");
   const customer = customers[0];
   const provider = identity.provider_identities?.find((entry) => entry.provider === "emailpass");
-  if (!customer?.has_account || !provider?.entity_id || provider.entity_id.toLowerCase() !== customer.email?.toLowerCase()) throw new OnboardingError("identity_changed");
+  const google = identity.provider_identities?.find((entry) => entry.provider === "google");
+  const googleEmail = typeof google?.user_metadata?.email === "string" ? google.user_metadata.email : undefined;
+  const email = provider?.entity_id ?? (google?.entity_id ? googleEmail : undefined);
+  if (!customer?.has_account || !email || email.toLowerCase() !== customer.email?.toLowerCase()) throw new OnboardingError("identity_changed");
   const memberId = identity.app_metadata?.member_id;
   if (memberId != null && typeof memberId !== "string") throw new OnboardingError("member_identity_conflict");
   const sellerService = container.resolve<NativeSellerService>(MercurModules.SELLER);
@@ -59,11 +62,13 @@ async function readApplicant(container: MedusaContainer, input: ApplicantIdentit
     return { member, memberships };
   };
   const [verifications, { member, memberships }] = await Promise.all([
-    auth.listAuthVerifications({ auth_identity_id: identity.id, entity_type: "email", entity_id: provider.entity_id }),
+    auth.listAuthVerifications({ auth_identity_id: identity.id, entity_type: "email", entity_id: email }),
     membershipRead(),
   ]);
-  const emailVerified = verifications.some((entry) => !!entry.verified_at);
-  return { customer, identity, email: provider.entity_id, emailVerified, member, memberships };
+  // Native Google authentication accepts only a signed, verified email claim.
+  const googleVerified = !!google?.entity_id && googleEmail?.toLowerCase() === email.toLowerCase();
+  const emailVerified = googleVerified || verifications.some((entry) => !!entry.verified_at);
+  return { customer, identity, email, emailVerified, member, memberships };
 }
 
 export async function requireReviewer(container: MedusaContainer, userId: string, operation: "read" | "update") {

@@ -146,6 +146,7 @@ class CommerceAutomationService extends MedusaService({
       token: string;
       kind: CommerceOperationRecord["kind"];
       targetId: string;
+      result?: Record<string, unknown>;
     },
     @MedusaContext() context?: Context<EntityManager>,
   ): Promise<CommerceOperationRecord | null> {
@@ -174,6 +175,7 @@ class CommerceAutomationService extends MedusaService({
           target_id: input.targetId,
           kind: input.kind,
           state: "processing",
+          result: input.result ? JSON.stringify(input.result) : null,
           created_at: now,
           updated_at: now,
         })

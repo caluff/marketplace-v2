@@ -5,6 +5,8 @@ import { withMercur } from "@mercurjs/core";
 import { getResendConfiguration } from "./src/modules/resend/configuration";
 import { getStripeConnectConfiguration } from "./src/lib/stripe-connect-configuration";
 import { getProductImageStorageConfiguration } from "./src/lib/file-storage-configuration";
+import { getAlgoliaConfiguration } from "./src/modules/algolia/configuration";
+import { getGoogleAuthConfiguration } from "./src/lib/google-auth-configuration";
 
 const findWorkspaceRoot = (start: string): string | undefined => {
   let current = path.resolve(start);
@@ -127,6 +129,8 @@ const workerMode = requestedWorkerMode as "server" | "worker" | "shared";
 const resendConfiguration = getResendConfiguration();
 const stripeConfiguration = getStripeConnectConfiguration();
 const productImageStorageConfiguration = getProductImageStorageConfiguration();
+const algoliaConfiguration = getAlgoliaConfiguration();
+const googleAuthConfiguration = getGoogleAuthConfiguration();
 
 if (jwtSecret === cookieSecret) {
   throw new MedusaError(
@@ -162,6 +166,13 @@ module.exports = withMercur({
         "http://localhost:3000,http://localhost:7000,http://localhost:7001",
       jwtSecret,
       cookieSecret,
+      ...(googleAuthConfiguration ? {
+        authMethodsPerActor: {
+          customer: ["emailpass", "google"],
+          member: ["emailpass", "google"],
+          user: ["emailpass", "google-admin"],
+        },
+      } : {}),
     },
   },
   admin: {
@@ -172,6 +183,22 @@ module.exports = withMercur({
     seller_registration: false,
   },
   modules: [
+    ...(googleAuthConfiguration
+      ? [{
+          resolve: "@medusajs/medusa/auth",
+          options: {
+            mfa: { encryption_key: process.env.AUTH_MFA_ENCRYPTION_KEY },
+            providers: [
+              { resolve: "@medusajs/medusa/auth-emailpass", id: "emailpass" },
+              { resolve: "@medusajs/medusa/auth-google", id: "google", options: googleAuthConfiguration },
+              { resolve: "@medusajs/medusa/auth-google", id: "google-admin", options: googleAuthConfiguration },
+            ],
+          },
+        }]
+      : []),
+    ...(algoliaConfiguration
+      ? [{ resolve: "./src/modules/algolia", options: algoliaConfiguration }]
+      : []),
     { resolve: "./src/modules/vendor-onboarding" },
     { resolve: "./src/modules/inventory" },
     { resolve: "./src/modules/commerce-automation" },
@@ -205,7 +232,7 @@ module.exports = withMercur({
             options: {
               providers: [
                 {
-                  resolve: "@medusajs/medusa/payment-stripe",
+                  resolve: "./src/modules/stripe-allocated-payment",
                   id: "stripe",
                   options: {
                     apiKey: stripeConfiguration.apiKey,

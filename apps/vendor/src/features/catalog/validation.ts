@@ -2,6 +2,7 @@ import type { CreateProductDTO } from "@mercurjs/types";
 import { AttributeType } from "@mercurjs/types";
 import type { HttpTypes as MedusaHttpTypes } from "@medusajs/types";
 import { resourceId, textField } from "../workspace/validation";
+import { productSpecifications } from "./product-specifications";
 
 export type CatalogAxis = { title: string; values: string[] };
 export type CatalogVariant = {
@@ -147,6 +148,7 @@ export function createCatalogBody(
     title: textField(form, "title", true, 200),
     subtitle: textField(form, "subtitle", false, 200),
     description: textField(form, "description", false, 10000),
+    ...productSpecifications(form, "create"),
     status: "proposed",
     categories: selectedCategories(form),
     attributes: axes.map((axis) => ({

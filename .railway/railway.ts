@@ -42,6 +42,9 @@ export default defineRailway((ctx) => {
       ADMIN_CORS: ctx.shared.ADMIN_CORS,
       VENDOR_CORS: ctx.shared.VENDOR_CORS,
       AUTH_CORS: ctx.shared.AUTH_CORS,
+      GOOGLE_CLIENT_ID: ctx.shared.GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: ctx.shared.GOOGLE_CLIENT_SECRET,
+      GOOGLE_CALLBACK_URL: ctx.shared.GOOGLE_CALLBACK_URL,
       STRIPE_API_KEY: ctx.shared.STRIPE_API_KEY,
       STRIPE_WEBHOOK_SECRET: ctx.shared.STRIPE_WEBHOOK_SECRET,
       STRIPE_PAYOUT_WEBHOOK_SECRET: ctx.shared.STRIPE_PAYOUT_WEBHOOK_SECRET,
@@ -80,6 +83,9 @@ export default defineRailway((ctx) => {
       ADMIN_CORS: ctx.shared.ADMIN_CORS,
       VENDOR_CORS: ctx.shared.VENDOR_CORS,
       AUTH_CORS: ctx.shared.AUTH_CORS,
+      GOOGLE_CLIENT_ID: ctx.shared.GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: ctx.shared.GOOGLE_CLIENT_SECRET,
+      GOOGLE_CALLBACK_URL: ctx.shared.GOOGLE_CALLBACK_URL,
       STRIPE_API_KEY: ctx.shared.STRIPE_API_KEY,
       STRIPE_WEBHOOK_SECRET: ctx.shared.STRIPE_WEBHOOK_SECRET,
       STRIPE_PAYOUT_WEBHOOK_SECRET: ctx.shared.STRIPE_PAYOUT_WEBHOOK_SECRET,
@@ -125,6 +131,8 @@ export default defineRailway((ctx) => {
         ctx.shared.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
       NEXT_PUBLIC_VENDOR_URL:
         "https://marketplace-v2vendor-production.up.railway.app",
+      NEXT_PUBLIC_GOOGLE_CALLBACK_URL:
+        "https://marketplace-v2web-production.up.railway.app/auth/google/callback",
     },
   });
 
@@ -160,6 +168,8 @@ export default defineRailway((ctx) => {
       NODE_ENV: "production",
       NEXT_PUBLIC_MEDUSA_BACKEND_URL:
         "https://api-production-ed23.up.railway.app",
+      NEXT_PUBLIC_GOOGLE_CALLBACK_URL:
+        "https://marketplace-v2admin-production.up.railway.app/auth/google/callback",
     },
   });
 
@@ -197,6 +207,8 @@ export default defineRailway((ctx) => {
         "https://api-production-ed23.up.railway.app",
       NEXT_PUBLIC_STOREFRONT_URL:
         "https://marketplace-v2web-production.up.railway.app",
+      NEXT_PUBLIC_GOOGLE_CALLBACK_URL:
+        "https://marketplace-v2vendor-production.up.railway.app/auth/google/callback",
     },
   });
 

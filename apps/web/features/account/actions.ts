@@ -45,7 +45,7 @@ function actionError(
 
 function refreshAccount() {
   revalidatePath("/account", "layout")
-  revalidatePath("/")
+  revalidatePath("/", "layout")
 }
 
 export async function updateProfileAction(

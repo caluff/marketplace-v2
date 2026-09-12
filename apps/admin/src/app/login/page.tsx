@@ -12,6 +12,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getCurrentAdmin } from "@/lib/auth-sdk";
+import { GoogleLoginForm } from "@/components/admin/google-login-form";
+import { googleFeedback } from "@/lib/google-auth";
+import { getAdminMfa } from "@/lib/auth-sdk";
 import { safeRedirectPath } from "@/lib/auth-utils";
 
 export const metadata: Metadata = {
@@ -22,11 +25,13 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; reason?: string }>;
+  searchParams: Promise<{ next?: string; reason?: string; google?: string }>;
 }) {
   const params = await searchParams;
+  const mfa = params.google === "mfa" ? await getAdminMfa() : null;
+  const googleMessage = googleFeedback(params.google);
   const next = safeRedirectPath(params.next, "/dashboard");
-  if (await getCurrentAdmin()) redirect(next);
+  if (!mfa && await getCurrentAdmin()) redirect(next);
 
   return (
     <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-sidebar px-4 py-10 text-sidebar-foreground">
@@ -57,10 +62,13 @@ export default async function LoginPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6 pt-2">
+            {googleMessage ? <p role="status" className="mb-4 text-sm">{googleMessage}</p> : null}
             <AdminLoginForm
               next={next}
               expired={params.reason === "expired"}
+              mfaMethods={mfa?.methods}
             />
+            {!mfa ? <GoogleLoginForm next={next} /> : null}
           </CardContent>
         </Card>
       </div>

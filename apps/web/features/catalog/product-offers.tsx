@@ -1,4 +1,6 @@
 import type { HttpTypes } from "@medusajs/types"
+import { Suspense, type ReactNode } from "react"
+import { ProductPaymentMethods } from "./product-payment-methods"
 import { ProductPurchase } from "@/features/catalog/product-purchase"
 import {
   getOfferPrice,
@@ -10,9 +12,13 @@ import { getStorefrontOffers, getStorefrontRegion } from "@/lib/medusa"
 export async function ProductOffers({
   product,
   regionPromise,
+  summary,
+  overview,
 }: {
   product: HttpTypes.StoreProduct
   regionPromise: ReturnType<typeof getStorefrontRegion>
+  summary: ReactNode
+  overview?: ReactNode
 }) {
   let offers: StorefrontOffer[]
   let region: HttpTypes.StoreRegion | null
@@ -21,13 +27,19 @@ export async function ProductOffers({
     offers = region ? await getStorefrontOffers([product.id], region.id) : []
   } catch {
     return (
-      <p
-        role="alert"
-        className="mt-8 border border-border bg-muted p-5 font-sans text-sm"
-      >
-        No pudimos consultar el precio y la disponibilidad. Actualiza la página
-        para reintentar.
-      </p>
+      <>
+        <section className="min-w-0">
+          {summary}
+          <div className="mt-5">{overview}</div>
+        </section>
+        <p
+          role="alert"
+          className="border border-border bg-muted p-5 font-sans text-sm md:col-span-2 lg:col-span-1 lg:row-span-2"
+        >
+          No pudimos consultar el precio y la disponibilidad. Actualiza la
+          página para reintentar.
+        </p>
+      </>
     )
   }
   const structuredData = {
@@ -66,6 +78,21 @@ export async function ProductOffers({
         variants={product.variants ?? []}
         offers={offers}
         hasRegion={Boolean(region)}
+        summary={summary}
+        overview={overview}
+        paymentMethods={
+          region ? (
+            <Suspense
+              fallback={
+                <p className="mt-5 text-xs text-muted-foreground" role="status">
+                  Consultando medios de pago…
+                </p>
+              }
+            >
+              <ProductPaymentMethods regionId={region.id} />
+            </Suspense>
+          ) : null
+        }
       />
     </>
   )

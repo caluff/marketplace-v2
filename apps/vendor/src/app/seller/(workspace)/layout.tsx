@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { VendorShell } from "@/components/vendor/vendor-shell";
@@ -9,7 +10,10 @@ export default async function VendorWorkspaceLayout({
 }: {
   children: ReactNode;
 }) {
-  const context = await getVendorContext();
+  const [context, cookieStore] = await Promise.all([
+    getVendorContext(),
+    cookies(),
+  ]);
 
   if (context.status === "seller_unavailable") redirect("/seller/status");
 
@@ -50,6 +54,7 @@ export default async function VendorWorkspaceLayout({
 
   return (
     <VendorShell
+      defaultOpen={cookieStore.get("vendor_sidebar_state")?.value !== "false"}
       identity={{
         memberName,
         memberEmail: membership.member.email,

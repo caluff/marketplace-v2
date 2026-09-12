@@ -15,6 +15,7 @@ import {
   type CatalogVariant,
 } from "./validation";
 import { ProductImages, type ProductImagesHandle } from "./product-images";
+import { PRODUCT_MEASUREMENTS } from "./product-specifications";
 
 export function ProductForm({
   action,
@@ -144,27 +145,67 @@ export function ProductForm({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${prefix}-subtitle`}>Subtítulo</FieldLabel>
+            <FieldLabel htmlFor={`${prefix}-subtitle`}>Resumen breve</FieldLabel>
             <Input
               id={`${prefix}-subtitle`}
               name="subtitle"
+              aria-describedby={`${prefix}-subtitle-help`}
               maxLength={200}
               defaultValue={product?.subtitle ?? ""}
             />
+            <FieldDescription id={`${prefix}-subtitle-help`}>
+              Se muestra junto al nombre del producto. Hasta 200 caracteres.
+            </FieldDescription>
           </Field>
           <Field className="sm:col-span-2">
             <FieldLabel htmlFor={`${prefix}-description`}>
-              Descripción
+              Descripción detallada
             </FieldLabel>
             <Textarea
               id={`${prefix}-description`}
               name="description"
-              rows={5}
+              aria-describedby={`${prefix}-description-help`}
+              rows={8}
               maxLength={10000}
               defaultValue={product?.description ?? ""}
             />
+            <FieldDescription id={`${prefix}-description-help`}>
+              Describe sus características, uso y contenido. Separa las ideas en
+              párrafos; se conservarán los saltos de línea. Hasta 10.000 caracteres.
+            </FieldDescription>
           </Field>
         </div>
+        <fieldset className="space-y-4 border-t pt-5">
+          <legend className="px-1 text-sm font-semibold">Especificaciones del producto</legend>
+          <FieldDescription>
+            Opcionales. Completa solo los datos que conozcas: aparecerán en la ficha técnica.
+          </FieldDescription>
+          <Field>
+            <FieldLabel htmlFor={`${prefix}-material`}>Material</FieldLabel>
+            <Input
+              id={`${prefix}-material`}
+              name="material"
+              maxLength={200}
+              defaultValue={product?.material ?? ""}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {PRODUCT_MEASUREMENTS.map(({ name, label }) => (
+              <Field key={name}>
+                <FieldLabel htmlFor={`${prefix}-${name}`}>{label}</FieldLabel>
+                <Input
+                  id={`${prefix}-${name}`}
+                  name={name}
+                  type="number"
+                  inputMode="decimal"
+                  min="0.001"
+                  step="any"
+                  defaultValue={product?.[name] ?? ""}
+                />
+              </Field>
+            ))}
+          </div>
+        </fieldset>
         <fieldset className="space-y-3">
           <legend className="mb-2 text-sm font-medium">
             Categorías del catálogo

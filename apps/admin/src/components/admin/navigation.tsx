@@ -16,7 +16,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { SheetClose } from "@/components/ui/sheet";
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { PendingApplicationsIndicator } from "@/features/vendor-applications/components/pending-applications-provider";
 
@@ -44,14 +52,14 @@ const navigationGroups: ReadonlyArray<{
         icon: ClipboardCheck,
         href: "/dashboard/vendor-applications",
       },
-      { label: "Tiendas", icon: Store, href: "/dashboard#stores" },
+      { label: "Tiendas", icon: Store, href: "/dashboard/stores" },
       { label: "Catálogo", icon: Package, href: "/dashboard/product-review" },
     ],
   },
   {
     label: "Gestión",
     items: [
-      { label: "Pedidos", icon: ShoppingCart },
+      { label: "Pedidos", icon: ShoppingCart, href: "/dashboard/orders" },
       { label: "Atributos", icon: SlidersHorizontal },
       {
         label: "Comisiones",
@@ -62,130 +70,121 @@ const navigationGroups: ReadonlyArray<{
   },
 ];
 
-function NavigationLink({
-  item,
-  mobile,
-}: {
-  item: NavigationItem;
-  mobile: boolean;
-}) {
+function NavigationLink({ item }: { item: NavigationItem }) {
+  const { setOpenMobile } = useSidebar();
   const Icon = item.icon;
 
   if (!item.href) {
     return (
-      <div
-        aria-disabled="true"
-        className="flex h-9 cursor-not-allowed items-center gap-3 rounded-md px-2.5 text-sm text-sidebar-muted/70"
+      <SidebarMenuButton
+        disabled
+        tooltip={`${item.label}: próximo`}
+        aria-label={`${item.label}: próximo`}
+        className="h-11 text-sidebar-muted md:h-9"
       >
-        <Icon className="size-4" strokeWidth={1.8} aria-hidden="true" />
-        <span className="flex-1">{item.label}</span>
-        <span className="text-[10px] font-medium uppercase tracking-[0.08em]">
+        <Icon strokeWidth={1.8} aria-hidden="true" />
+        <span>{item.label}</span>
+        <span className="ml-auto text-[10px] font-medium uppercase tracking-[0.08em] group-data-[collapsible=icon]:hidden">
           Próximo
         </span>
-      </div>
+      </SidebarMenuButton>
     );
   }
 
-  const link = (
-    <Link
-      href={item.href}
-      aria-current={item.current ? "page" : undefined}
-      data-testid={`admin-nav-${item.label.toLowerCase()}`}
-      className={cn(
-        "group flex h-9 items-center gap-3 rounded-md px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-        item.current
-          ? "bg-sidebar-accent text-sidebar-foreground shadow-[inset_0_0_0_1px_oklch(1_0_0/0.06)]"
-          : "text-sidebar-muted hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
-      )}
+  return (
+    <SidebarMenuButton
+      asChild
+      isActive={item.current}
+      tooltip={item.label}
+      className="h-11 text-sidebar-muted data-[active=true]:text-sidebar-accent-foreground md:h-9"
     >
-      <Icon
-        className={cn(
-          "size-4",
-          item.current
-            ? "text-sidebar-primary"
-            : "text-sidebar-muted transition-colors group-hover:text-sidebar-foreground",
-        )}
-        strokeWidth={1.8}
-        aria-hidden="true"
-      />
-      <span>{item.label}</span>
-      {item.href === "/dashboard/vendor-applications" ? (
-        <PendingApplicationsIndicator />
-      ) : null}
-    </Link>
+      <Link
+        href={item.href}
+        aria-current={item.current ? "page" : undefined}
+        data-testid={`admin-nav-${item.label.toLowerCase()}`}
+        onNavigate={() => setOpenMobile(false)}
+      >
+        <Icon
+          className={cn(item.current && "text-sidebar-primary")}
+          strokeWidth={1.8}
+          aria-hidden="true"
+        />
+        <span className="group-data-[collapsible=icon]:sr-only">
+          {item.label}
+        </span>
+        {item.href === "/dashboard/vendor-applications" ? (
+          <span className="ml-auto group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:top-0">
+            <PendingApplicationsIndicator />
+          </span>
+        ) : null}
+      </Link>
+    </SidebarMenuButton>
   );
-
-  return mobile ? <SheetClose asChild>{link}</SheetClose> : link;
 }
 
-export function NavigationContent({ mobile = false }: { mobile?: boolean }) {
+export function NavigationContent() {
   const pathname = usePathname();
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <nav aria-label="Navegación principal" className="flex-1 px-3 py-5">
-        <div className="space-y-6">
-          {navigationGroups.map((group) => (
-            <div key={group.label}>
-              <p className="mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted/70">
-                {group.label}
-              </p>
-              <div className="space-y-0.5">
+    <>
+      <nav aria-label="Navegación principal" className="flex-1">
+        {navigationGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 {group.items.map((item) => (
-                  <NavigationLink
-                    key={item.label}
-                    item={{
-                      ...item,
-                      current:
-                        item.href === "/dashboard"
-                          ? pathname === "/dashboard"
-                          : Boolean(
-                              item.href &&
-                              !item.href.includes("#") &&
-                              pathname.startsWith(item.href),
-                            ),
-                    }}
-                    mobile={mobile}
-                  />
+                  <SidebarMenuItem key={item.label}>
+                    <NavigationLink
+                      item={{
+                        ...item,
+                        current:
+                          item.href === "/dashboard"
+                            ? pathname === "/dashboard"
+                            : Boolean(
+                                item.href &&
+                                !item.href.includes("#") &&
+                                (pathname === item.href ||
+                                  pathname.startsWith(`${item.href}/`)),
+                              ),
+                      }}
+                    />
+                  </SidebarMenuItem>
                 ))}
-              </div>
-            </div>
-          ))}
-        </div>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </nav>
 
-      <div className="px-3 pb-3">
-        <div className="mb-3 rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-3">
+      <SidebarGroup>
+        <div className="mb-3 rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:hidden">
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-xs font-semibold">Conexión por módulo</span>
-            <Badge className="border-white/10 bg-white/8 text-[10px] text-sidebar-foreground">
+            <Badge className="border-sidebar-border bg-sidebar-accent text-[10px] text-sidebar-foreground">
               Mercur
             </Badge>
           </div>
           <p className="text-xs leading-4 text-sidebar-muted">
-            Solicitudes, revisión del catálogo y comisiones conectadas a Mercur.
-            El resumen y las demás secciones conservan sus datos de
-            demostración.
+            Catálogo, tiendas y pedidos del marketplace. Las acciones respetan
+            los permisos de tu cuenta de operador.
           </p>
         </div>
-
-        <div className="space-y-0.5 border-t border-sidebar-border pt-3">
-          <div className="flex h-9 cursor-not-allowed items-center gap-3 rounded-md px-2.5 text-sm text-sidebar-muted/70">
-            <Settings className="size-4" strokeWidth={1.8} aria-hidden="true" />
-            <span className="flex-1">Configuración</span>
-            <span className="text-[10px] font-medium uppercase tracking-[0.08em]">
-              Próximo
-            </span>
-          </div>
-          <div className="flex h-9 cursor-not-allowed items-center gap-3 rounded-md px-2.5 text-sm text-sidebar-muted/70">
-            <CircleHelp
-              className="size-4"
-              strokeWidth={1.8}
-              aria-hidden="true"
-            />
-            <span>Ayuda</span>
-          </div>
-        </div>
-      </div>
-    </div>
+        <SidebarGroupContent className="border-t border-sidebar-border pt-3">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <NavigationLink
+                item={{ label: "Configuración", icon: Settings }}
+              />
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <NavigationLink item={{ label: "Ayuda", icon: CircleHelp }} />
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
   );
 }

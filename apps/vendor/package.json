@@ -8,7 +8,7 @@
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/demo-data.test.ts src/lib/feedback.test.ts src/features/workspace/workspace.test.ts src/features/catalog/catalog.test.ts src/features/offers/offers.test.ts src/features/inventory/inventory.test.ts src/features/stripe-connect/stripe-connect.test.ts src/features/shipping/shipping.test.ts"
+    "test": "tsx --test src/lib/demo-data.test.ts src/lib/feedback.test.ts src/lib/google-auth.test.ts src/lib/storefront-session.test.ts src/features/workspace/workspace.test.ts src/features/catalog/catalog.test.ts src/features/offers/offers.test.ts src/features/inventory/inventory.test.ts src/features/stripe-connect/stripe-connect.test.ts src/features/shipping/shipping.test.ts src/features/orders/orders.test.ts"
   },
   "dependencies": {
     "@marketplace-v2/theme-sync": "workspace:*",
@@ -28,6 +28,7 @@
     "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
+    "@marketplace-v2/api": "workspace:*",
     "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",

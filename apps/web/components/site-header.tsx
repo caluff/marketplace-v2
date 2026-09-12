@@ -1,193 +1,116 @@
-import type { HttpTypes } from "@medusajs/types"
-import { Menu, UserRound } from "lucide-react"
+import { Heart, UserRound } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
 
+import { HeaderSearch } from "@/components/header-search"
+import { CatalogMenu } from "@/components/catalog-menu"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CustomerMenu } from "@/features/account/components/customer-menu"
-import { ApplicationReminder } from "@/features/vendor-onboarding/components/application-reminder"
-import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
-import {
-  APPLICATION_LOGIN_PATH,
-  applicationNavigation,
-  type ApplicationNavigation,
-} from "@/features/vendor-onboarding/presentation"
-import { cn } from "@/lib/utils"
 import { CartLink } from "@/features/cart/components/cart-link"
+import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
+import { getCurrentCustomer } from "@/lib/auth-sdk"
+import { getStorefrontCategories } from "@/lib/medusa"
 
-type SiteHeaderProps = {
-  categories:
-    HttpTypes.StoreProductCategory[] | Promise<HttpTypes.StoreProductCategory[]>
-  activeCategoryId?: string | Promise<string | undefined>
-  customer?:
-    HttpTypes.StoreCustomer | null | Promise<HttpTypes.StoreCustomer | null>
-  vendorApplication?: ApplicationNavigation
-}
+async function CategoryLinks() {
+  const categories = await getStorefrontCategories()
 
-function categoryHref(categoryId: string) {
-  return `/?category_id=${encodeURIComponent(categoryId)}#catalog`
-}
-
-async function CategoryLinks({
-  categories,
-  activeCategoryId,
-  mobile = false,
-}: Pick<SiteHeaderProps, "categories" | "activeCategoryId"> & {
-  mobile?: boolean
-}) {
-  const [resolvedCategories, resolvedActiveCategoryId] = await Promise.all([
-    categories,
-    activeCategoryId,
-  ])
-
-  return resolvedCategories.slice(0, 5).map((category) => (
-    <Link
-      key={category.id}
-      href={categoryHref(category.id)}
-      aria-current={
-        resolvedActiveCategoryId === category.id ? "page" : undefined
-      }
-      className={cn(
-        mobile
-          ? "flex min-h-11 items-center border-b border-border px-3 font-sans text-sm font-semibold last:border-b-0 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-          : "inline-flex min-h-11 max-w-40 items-center truncate px-3 font-sans text-xs font-bold tracking-[0.1em] uppercase transition-colors hover:text-brand-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-        resolvedActiveCategoryId === category.id && "text-brand-accent",
-      )}
-    >
-      {category.name}
-    </Link>
+  return categories.map((category) => (
+    <DropdownMenuItem key={category.id} asChild className="min-h-11 px-3">
+      <Link href={`/search?category_id=${encodeURIComponent(category.id)}`}>
+        {category.name}
+      </Link>
+    </DropdownMenuItem>
   ))
 }
 
-type HeaderCustomerProps = {
-  customer: SiteHeaderProps["customer"]
-  vendorApplication: Promise<ApplicationNavigation>
-}
-
-async function HeaderApplicationReminder({
-  customer,
-  vendorApplication,
-  className,
-}: HeaderCustomerProps & { className: string }) {
-  const [resolvedCustomer, navigation] = await Promise.all([
-    customer,
-    vendorApplication,
-  ])
-
-  return (
-    <ApplicationReminder
-      navigation={navigation}
-      href={resolvedCustomer ? "/account/sell" : APPLICATION_LOGIN_PATH}
-      className={className}
-    />
-  )
-}
-
-async function HeaderCustomerMenu({
-  customer,
-  vendorApplication,
-}: HeaderCustomerProps) {
-  const resolvedCustomer = await customer
-
-  if (!resolvedCustomer) {
+async function HeaderCustomerMenu() {
+  let customer
+  try {
+    customer = await getCurrentCustomer()
+  } catch {
     return (
-      <Button asChild variant="ghost" className="hidden lg:inline-flex">
-        <Link href="/login">
-          <UserRound className="size-4" aria-hidden="true" />
-          Ingresar
+      <Button asChild variant="ghost" size="icon" className="size-11">
+        <Link href="/account" aria-label="Abrir mi cuenta">
+          <UserRound className="size-5" aria-hidden="true" />
         </Link>
       </Button>
     )
   }
 
+  if (!customer) {
+    return (
+      <Button asChild variant="ghost" size="icon" className="size-11">
+        <Link href="/login" aria-label="Iniciar sesión" title="Iniciar sesión">
+          <UserRound className="size-5" aria-hidden="true" />
+        </Link>
+      </Button>
+    )
+  }
+
+  const vendorApplication = await getApplicationNavigation()
+
   return (
     <CustomerMenu
-      first_name={resolvedCustomer.first_name}
-      last_name={resolvedCustomer.last_name}
-      email={resolvedCustomer.email}
-      vendorApplication={await vendorApplication}
+      first_name={customer.first_name}
+      last_name={customer.last_name}
+      email={customer.email}
+      vendorApplication={vendorApplication}
     />
   )
 }
 
-async function MobileAccountLink({
-  customer,
-}: Pick<SiteHeaderProps, "customer">) {
-  const resolvedCustomer = await customer
-
+export function SiteHeader() {
   return (
-    <Link
-      href={resolvedCustomer ? "/account" : "/login"}
-      className="flex min-h-11 items-center gap-2 border-b border-border px-3 font-sans text-sm font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-    >
-      <UserRound className="size-4" aria-hidden="true" />
-      {resolvedCustomer ? "Mi cuenta" : "Iniciar sesión"}
-    </Link>
-  )
-}
-
-export function SiteHeader({
-  categories,
-  activeCategoryId,
-  customer,
-  vendorApplication: suppliedVendorApplication,
-}: SiteHeaderProps) {
-  const vendorApplication = suppliedVendorApplication
-    ? Promise.resolve(suppliedVendorApplication)
-    : Promise.resolve(customer).then((resolvedCustomer) =>
-        resolvedCustomer
-          ? getApplicationNavigation()
-          : applicationNavigation(null),
-      )
-
-  return (
-    <header className="sticky top-0 z-40 border-b border-foreground/10 bg-background/55 backdrop-blur-xl backdrop-saturate-150">
-      <div className="mx-auto flex min-h-16 w-full max-w-[90rem] items-center justify-between gap-2 px-4 sm:gap-6 sm:px-6 lg:px-10">
+    <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-background">
+      <div className="mx-auto grid w-full max-w-[90rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 px-4 py-2 sm:gap-x-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-6 lg:px-10 lg:py-3">
         <Link
           href="/"
-          className="inline-flex min-h-11 items-center font-sans text-sm font-black tracking-[0.18em] uppercase outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+          aria-label="Marketplace V2, inicio"
+          className="inline-flex min-h-11 min-w-0 items-center font-sans text-xs leading-5 font-black tracking-[0.14em] uppercase outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:text-sm sm:tracking-[0.18em]"
         >
           Marketplace V2
         </Link>
 
-        <nav
-          aria-label="Navegación principal"
-          className="hidden items-center gap-1 lg:flex"
-        >
-          <Link
-            href="/"
-            className="inline-flex min-h-11 items-center px-3 font-sans text-xs font-bold tracking-[0.1em] uppercase transition-colors hover:text-brand-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            Inicio
-          </Link>
-          <Link
-            href="/#catalog"
-            className="inline-flex min-h-11 items-center px-3 font-sans text-xs font-bold tracking-[0.1em] uppercase transition-colors hover:text-brand-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            Catálogo
-          </Link>
-          <Suspense fallback={<Skeleton className="mx-3 h-4 w-24" />}>
-            <CategoryLinks
-              categories={categories}
-              activeCategoryId={activeCategoryId}
-            />
-          </Suspense>
-        </nav>
+        <div className="col-span-2 row-start-2 flex min-w-0 items-center gap-2 pb-1 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:pb-0">
+          <nav aria-label="Navegación principal" className="shrink-0">
+            <CatalogMenu>
+              <Suspense
+                fallback={
+                  <Skeleton
+                    className="m-3 h-5 w-40"
+                    aria-label="Cargando categorías"
+                  />
+                }
+              >
+                <CategoryLinks />
+              </Suspense>
+            </CatalogMenu>
+          </nav>
+          <HeaderSearch />
+        </div>
 
-        <div className="flex items-center gap-1">
+        <div className="col-start-2 row-start-1 flex items-center gap-0 sm:gap-1 lg:col-start-3">
+          <ModeToggle className="size-11" />
+          <Button asChild variant="ghost" size="icon" className="size-11">
+            <Link
+              href="/account/favorites"
+              aria-label="Favoritos"
+              title="Favoritos"
+            >
+              <Heart aria-hidden="true" className="size-5" strokeWidth={1.75} />
+            </Link>
+          </Button>
           <Suspense
-            fallback={<Skeleton className="mx-3 hidden h-4 w-24 xl:block" />}
+            fallback={
+              <Skeleton
+                className="mx-1 h-11 w-12"
+                aria-label="Cargando carrito"
+              />
+            }
           >
-            <HeaderApplicationReminder
-              customer={customer}
-              vendorApplication={vendorApplication}
-              className="hidden xl:flex"
-            />
-          </Suspense>
-          <ModeToggle />
-          <Suspense fallback={<Skeleton className="mx-1 h-11 w-14" aria-label="Cargando carrito" />}>
             <CartLink />
           </Suspense>
           <Suspense
@@ -199,59 +122,8 @@ export function SiteHeader({
               />
             }
           >
-            <HeaderCustomerMenu
-              customer={customer}
-              vendorApplication={vendorApplication}
-            />
+            <HeaderCustomerMenu />
           </Suspense>
-          <details className="group relative lg:hidden">
-            <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center gap-2 px-2 font-sans text-xs font-bold tracking-[0.1em] uppercase outline-none [&::-webkit-details-marker]:hidden focus-visible:ring-3 focus-visible:ring-ring/40">
-              <Menu aria-hidden="true" className="size-5" strokeWidth={1.75} />
-              <span className="sr-only sm:not-sr-only">Menú</span>
-            </summary>
-            <nav
-              aria-label="Navegación móvil"
-              className="absolute top-[calc(100%+0.65rem)] right-0 w-[min(22rem,calc(100vw-2rem))] border border-border bg-background p-2 shadow-[6px_6px_0_var(--foreground)]"
-            >
-              <Suspense fallback={<Skeleton className="m-3 h-5 w-36" />}>
-                <HeaderApplicationReminder
-                  customer={customer}
-                  vendorApplication={vendorApplication}
-                  className="flex justify-between"
-                />
-              </Suspense>
-              <Link
-                href="/"
-                className="flex min-h-11 items-center border-b border-border px-3 font-sans text-sm font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-              >
-                Inicio
-              </Link>
-              <Link
-                href="/#catalog"
-                className="flex min-h-11 items-center border-b border-border px-3 font-sans text-sm font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-              >
-                Todo el catálogo
-              </Link>
-              <Suspense fallback={<Skeleton className="m-3 h-5 w-28" />}>
-                <CategoryLinks
-                  categories={categories}
-                  activeCategoryId={activeCategoryId}
-                  mobile
-                />
-              </Suspense>
-              <Suspense
-                fallback={
-                  <Skeleton
-                    role="status"
-                    aria-label="Cargando cuenta"
-                    className="m-3 h-5 w-28"
-                  />
-                }
-              >
-                <MobileAccountLink customer={customer} />
-              </Suspense>
-            </nav>
-          </details>
         </div>
       </div>
     </header>

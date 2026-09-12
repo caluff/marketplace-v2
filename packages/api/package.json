@@ -5,11 +5,27 @@
   "description": "Mercur and Medusa backend for marketplace-v2.",
   "license": "MIT",
   "exports": {
+    "./auth-contracts": {
+      "types": "./.mercur/auth-contracts.d.ts"
+    },
+    "./finance-contracts": {
+      "types": "./.mercur/finance-contracts.d.ts"
+    },
+    "./search-contracts": {
+      "types": "./.mercur/search-contracts.d.ts"
+    },
     "./_generated": {
       "types": "./.mercur/routes.d.ts"
     }
   },
   "scripts": {
+    "auth:contracts:generate": "node scripts/generate-auth-contracts.cjs",
+    "auth:contracts:check": "node scripts/generate-auth-contracts.cjs --check",
+    "finance:contracts:generate": "node scripts/generate-finance-contracts.cjs",
+    "finance:contracts:check": "node scripts/generate-finance-contracts.cjs --check",
+    "search:contracts:generate": "node scripts/generate-search-contracts.cjs",
+    "search:contracts:check": "node scripts/generate-search-contracts.cjs --check",
+    "search:reindex": "medusa exec ./src/scripts/reindex-search.ts",
     "build": "medusa build",
     "build:deploy": "pnpm build && node scripts/prepare-deployment.cjs && cd .medusa/server && pnpm --lockfile-dir . install --prod --ignore-scripts && node -e \"for (const file of ['pnpm-lock.yaml', 'pnpm-workspace.yaml']) require('node:fs').rmSync(file, { force: true })\"",
     "start": "pnpm start:api",
@@ -39,6 +55,7 @@
     "@mercurjs/core": "2.3.3",
     "@mercurjs/payout-stripe-connect": "2.3.3",
     "@mercurjs/types": "2.3.3",
+    "algoliasearch": "5.56.0",
     "cross-env": "10.1.0",
     "date-fns": "4.4.0",
     "http-proxy-middleware": "3.0.7",

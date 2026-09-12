@@ -1,21 +1,15 @@
-import { ArrowUpRight, Package } from "lucide-react"
+import { ArrowUpRight, Package, Truck } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-
+import { Suspense } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { AccountHeading } from "@/features/account/components/account-heading"
 import { AccountEmptyState } from "@/features/account/components/empty-state"
 import { AccountPagination } from "@/features/account/components/pagination"
+import { OrderItems } from "@/features/account/components/order-items"
 import {
   ACCOUNT_PAGE_SIZE,
   getAccount,
@@ -26,102 +20,101 @@ import {
   formatOrderDate,
   formatOrderNumber,
   getOrderStatusLabel,
+  getPaymentStatusLabel,
   getShippingStatusLabel,
 } from "@/features/account/order-format"
 
 export const metadata: Metadata = { title: "Mis órdenes | Marketplace V2" }
+type Props = { searchParams: Promise<{ page?: string | string[] }> }
 
-export default async function OrdersPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string | string[] }>
-}) {
+async function OrderList({ searchParams }: Props) {
   const [{ sdk }, params] = await Promise.all([getAccount(), searchParams])
   const page = getPageNumber(params.page)
   const { orders, count } = await sdk.store.order.list({
     limit: ACCOUNT_PAGE_SIZE,
     offset: (page - 1) * ACCOUNT_PAGE_SIZE,
     order: "-created_at",
-    fields: "+items.id,+items.title,+items.quantity,+items.variant_title",
+    fields:
+      "+items.id,+items.title,+items.quantity,+items.variant_title,+items.thumbnail,+items.product_handle",
   })
   const lastPage = Math.max(1, Math.ceil(count / ACCOUNT_PAGE_SIZE))
-  if (page > lastPage) redirect(`/account/orders?page=${lastPage}`)
-
+  if (page > lastPage) redirect("/account/orders?page=" + lastPage)
   return (
     <>
-      <AccountHeading
-        title="Mis órdenes"
-        description="Los detalles de tus compras y el estado de cada entrega, en un solo lugar."
-      />
-      {orders.length === 0 ? (
+      {!orders.length ? (
         <AccountEmptyState
           icon={<Package aria-hidden="true" />}
-          title="Tu próxima compra empieza aquí"
+          title="Todavía no tienes órdenes"
         >
-          Todavía no tienes órdenes. Cuando realices una compra, podrás
-          consultar aquí todos sus detalles.
+          Tus compras aparecerán aquí.
         </AccountEmptyState>
       ) : (
         <div className="space-y-5">
-          {orders.map((order) => {
-            const items = order.items ?? []
-            const number = formatOrderNumber(order)
-            return (
-              <Card key={order.id} className="gap-4 bg-transparent">
-                <CardHeader className="gap-4 sm:flex sm:items-start sm:justify-between">
-                  <div className="space-y-2">
-                    <CardTitle className="text-lg font-medium">
-                      <h2>Orden #{number}</h2>
-                    </CardTitle>
-                    <CardDescription>
-                      {formatOrderDate(order.created_at)}
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline">
-                    {getOrderStatusLabel(order.status)}
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-1.5 text-sm">
-                    {items.slice(0, 2).map((item) => (
-                      <li key={item.id} className="flex gap-3">
-                        <span className="shrink-0 tabular-nums text-muted-foreground">
-                          {item.quantity} ×
-                        </span>
-                        <span className="min-w-0 truncate">{item.title}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {items.length > 2 && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Y {items.length - 2}{" "}
-                      {items.length === 3 ? "producto más" : "productos más"}
-                    </p>
-                  )}
-                  <p className="mt-4 text-xs text-muted-foreground">
-                    Entrega: {getShippingStatusLabel(order.fulfillment_status)}
+          {orders.map((order) => (
+            <article
+              key={order.id}
+              className="overflow-hidden border border-border bg-card"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/40 px-5 py-4">
+                <div>
+                  <h2 className="text-base font-semibold">
+                    Orden #{formatOrderNumber(order)}
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatOrderDate(order.created_at)}
                   </p>
-                </CardContent>
-                <CardFooter className="flex-wrap justify-between gap-4 border-t border-border pt-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total</p>
-                    <p className="mt-1 text-lg font-medium tabular-nums">
-                      {formatOrderAmount(order.total, order.currency_code)}
+                </div>
+                <Badge variant="outline">
+                  {getOrderStatusLabel(order.status)}
+                </Badge>
+              </div>
+              <div className="grid gap-5 p-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="min-w-0">
+                  <OrderItems
+                    items={(order.items ?? []).slice(0, 2)}
+                    currencyCode={order.currency_code}
+                    compact
+                  />
+                  {(order.items?.length ?? 0) > 2 ? (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      +{order.items!.length - 2} productos más
                     </p>
-                  </div>
-                  <Button asChild variant="outline">
-                    <Link
-                      href={`/account/orders/${encodeURIComponent(order.id)}`}
-                      aria-label={`Ver detalles de la orden ${number}`}
-                    >
-                      Ver detalles
-                      <ArrowUpRight className="size-4" aria-hidden="true" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            )
-          })}
+                  ) : null}
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-xs text-muted-foreground">
+                    Total del pedido
+                  </p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">
+                    {formatOrderAmount(order.total, order.currency_code)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {getPaymentStatusLabel(order.payment_status)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+                <p className="flex items-center gap-2 text-xs font-medium">
+                  <Truck
+                    className="size-4 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  {getShippingStatusLabel(order.fulfillment_status)}
+                </p>
+                <Button asChild variant="outline">
+                  <Link
+                    href={"/account/orders/" + order.id}
+                    aria-label={
+                      "Ver detalles de la orden " + formatOrderNumber(order)
+                    }
+                  >
+                    Ver pedido
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              </div>
+            </article>
+          ))}
         </div>
       )}
       <AccountPagination
@@ -130,6 +123,21 @@ export default async function OrdersPage({
         pageSize={ACCOUNT_PAGE_SIZE}
         href="/account/orders"
       />
+    </>
+  )
+}
+
+export default function OrdersPage(props: Props) {
+  return (
+    <>
+      <AccountHeading title="Mis órdenes" />
+      <Suspense
+        fallback={
+          <Skeleton className="h-64 w-full" aria-label="Cargando pedidos" />
+        }
+      >
+        <OrderList {...props} />
+      </Suspense>
     </>
   )
 }

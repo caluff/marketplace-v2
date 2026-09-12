@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff, LoaderCircle } from "lucide-react"
 import Link from "next/link"
-import { useActionState, useState } from "react"
+import { useActionState, useState, type ReactNode } from "react"
 
 import {
   confirmCustomerEmailAction,
@@ -42,6 +42,7 @@ function TextField({
   type = "text",
   autoComplete,
   error,
+  placeholder,
 }: {
   id: string
   name: string
@@ -49,11 +50,12 @@ function TextField({
   type?: string
   autoComplete?: string
   error?: string
+  placeholder?: string
 }) {
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="block font-sans text-sm font-bold">{label}</label>
-      <input id={id} name={name} type={type} autoComplete={autoComplete} required aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className="min-h-11 w-full border border-border bg-background px-3 font-sans text-base outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/25" />
+      <input id={id} name={name} type={type} autoComplete={autoComplete} placeholder={placeholder} required aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className="min-h-11 w-full border border-border bg-background px-3 font-sans text-base outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/25" />
       <div id={`${id}-error`}><FieldError message={error} /></div>
     </div>
   )
@@ -65,17 +67,22 @@ function PasswordField({
   label,
   autoComplete,
   error,
+  labelAction,
 }: {
   id: string
   name: string
   label: string
   autoComplete: string
   error?: string
+  labelAction?: ReactNode
 }) {
   const [visible, setVisible] = useState(false)
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block font-sans text-sm font-bold">{label}</label>
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor={id} className="block font-sans text-sm font-bold">{label}</label>
+        {labelAction}
+      </div>
       <div className="relative">
         <input id={id} name={name} type={visible ? "text" : "password"} autoComplete={autoComplete} required aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className="min-h-11 w-full border border-border bg-background px-3 pr-12 font-sans text-base outline-none focus:border-ring focus:ring-3 focus:ring-ring/25" />
         <button type="button" onClick={() => setVisible((value) => !value)} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} className="absolute inset-y-0 right-0 grid min-w-11 place-items-center text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/30">
@@ -91,8 +98,20 @@ function SubmitButton({ pending, children }: { pending: boolean; children: strin
   return <Button type="submit" className="w-full" disabled={pending} aria-disabled={pending}>{pending ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}{pending ? "Procesando…" : children}</Button>
 }
 
-export function CustomerLoginForm({ next, expired }: { next: string; expired?: boolean }) {
-  const [state, action, pending] = useActionState(loginCustomerAction, INITIAL_AUTH_STATE)
+export function CustomerLoginForm({
+  next,
+  expired,
+  initialState = INITIAL_AUTH_STATE,
+  isLinkingGoogle = false,
+  alternativeLogin,
+}: {
+  next: string
+  expired?: boolean
+  initialState?: AuthActionState
+  isLinkingGoogle?: boolean
+  alternativeLogin?: ReactNode
+}) {
+  const [state, action, pending] = useActionState(loginCustomerAction, initialState)
   const [mfaState, mfaAction, mfaPending] = useActionState(verifyCustomerMfaAction, INITIAL_AUTH_STATE)
 
   if (state.status === "mfa_required") {
@@ -108,18 +127,24 @@ export function CustomerLoginForm({ next, expired }: { next: string; expired?: b
   }
 
   return (
-    <form action={action} className="space-y-5" aria-label="Inicio de sesión de cliente">
-      <input type="hidden" name="next" value={next} />
-      {expired ? <FeedbackToast feedback={EXPIRED_SESSION_FEEDBACK} /> : null}
-      <TextField id="login-email" name="email" label="Correo electrónico" type="email" autoComplete="email" error={state.fieldErrors?.email} />
-      <div>
-        <PasswordField id="login-password" name="password" label="Contraseña" autoComplete="current-password" error={state.fieldErrors?.password} />
-        <Link href="/forgot-password" className="mt-2 inline-flex min-h-11 items-center font-sans text-xs font-bold text-muted-foreground underline underline-offset-4 hover:text-accent">¿Olvidaste tu contraseña?</Link>
-      </div>
-      <Status state={state} />
-      <SubmitButton pending={pending}>Iniciar sesión</SubmitButton>
-      <p className="text-center font-sans text-sm text-muted-foreground">¿Primera vez? <Link href="/register" className="inline-flex min-h-11 items-center font-bold text-foreground underline underline-offset-4 hover:text-accent">Crea tu cuenta</Link></p>
-    </form>
+    <div className="space-y-6">
+      <form action={action} className="space-y-6" aria-label={isLinkingGoogle ? "Confirmar cuenta para vincular Google" : "Inicio de sesión de cliente"}>
+        <input type="hidden" name="next" value={next} />
+        {expired ? <FeedbackToast feedback={EXPIRED_SESSION_FEEDBACK} /> : null}
+        <TextField id="login-email" name="email" label="Correo electrónico" type="email" autoComplete="email" placeholder="tu@correo.com" error={state.fieldErrors?.email} />
+        <PasswordField id="login-password" name="password" label="Contraseña" autoComplete="current-password" error={state.fieldErrors?.password} labelAction={
+          <Link href="/forgot-password" className="-my-3 inline-flex min-h-11 items-center text-right text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring">¿Olvidaste tu contraseña?</Link>
+        } />
+        <Status state={state} />
+        <SubmitButton pending={pending}>{isLinkingGoogle ? "Confirmar mi cuenta" : "Iniciar sesión"}</SubmitButton>
+      </form>
+      {alternativeLogin}
+      {isLinkingGoogle ? (
+        <Link href="/login" className="flex min-h-11 items-center justify-center font-sans text-sm font-bold underline underline-offset-4">Volver al inicio de sesión</Link>
+      ) : (
+        <p className="text-center font-sans text-sm text-muted-foreground">¿No tienes una cuenta? <Link href="/register" className="inline-flex min-h-11 items-center font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground">Regístrate</Link></p>
+      )}
+    </div>
   )
 }
 

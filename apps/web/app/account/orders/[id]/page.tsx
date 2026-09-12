@@ -1,245 +1,175 @@
-import type { HttpTypes } from "@medusajs/types"
-import { ArrowLeft, MapPin, Package } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-
-import { Badge } from "@/components/ui/badge"
+import { Suspense } from "react"
+import { ArrowLeft, CreditCard, FileText, MapPin, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { OrderItems } from "@/features/account/components/order-items"
+import { OrderTracking } from "@/features/account/components/order-tracking"
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { AccountHeading } from "@/features/account/components/account-heading"
-import { getAccount } from "@/features/account/data"
+  OrderAddress,
+  OrderTotals,
+} from "@/features/account/components/order-summary"
+import { getAccountOrder } from "@/features/account/order-data"
 import {
-  formatOrderAmount,
   formatOrderDate,
   formatOrderNumber,
   getOrderStatusLabel,
   getPaymentStatusLabel,
-  getShippingStatusLabel,
 } from "@/features/account/order-format"
 
 export const metadata: Metadata = {
   title: "Detalle de la orden | Marketplace V2",
 }
+type Props = { params: Promise<{ id: string }> }
 
-function OrderAddress({
-  address,
-}: {
-  address: HttpTypes.StoreOrderAddress | null | undefined
-}) {
-  if (!address)
-    return (
-      <p className="text-sm text-muted-foreground">
-        No hay una dirección registrada para esta orden.
-      </p>
-    )
-
-  return (
-    <address className="space-y-1 text-sm leading-6 not-italic">
-      <p className="font-medium">
-        {[address.first_name, address.last_name].filter(Boolean).join(" ")}
-      </p>
-      {address.company && <p>{address.company}</p>}
-      <p>{address.address_1}</p>
-      {address.address_2 && <p>{address.address_2}</p>}
-      <p>
-        {[address.city, address.province?.toUpperCase(), address.postal_code]
-          .filter(Boolean)
-          .join(", ")}
-      </p>
-      <p>
-        {address.country_code?.toLowerCase() === "us"
-          ? "Estados Unidos"
-          : address.country_code?.toUpperCase()}
-      </p>
-      {address.phone && (
-        <p className="pt-2 text-muted-foreground">{address.phone}</p>
-      )}
-    </address>
-  )
-}
-
-export default async function OrderPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const [{ sdk }, { id }] = await Promise.all([getAccount(), params])
-  // The list endpoint applies customer ownership; single-order retrieval is public.
-  const { orders } = await sdk.store.order.list({
-    id,
-    limit: 1,
-    fields:
-      "+items.*,+shipping_address.*,+billing_address.*,+shipping_methods.*,+original_item_subtotal,+original_shipping_subtotal,+tax_total,+discount_total,+discount_tax_total,+credit_line_total",
-  })
-  const order = orders[0]
+async function OrderContent({ params }: Props) {
+  const { id } = await params
+  const order = await getAccountOrder(id)
   if (!order) notFound()
-
-  const items = order.items ?? []
-  const formatAmount = (amount: number) =>
-    formatOrderAmount(amount, order.currency_code)
-  const discountSubtotal = order.discount_total - order.discount_tax_total
-
+  const canceled = order.status === "canceled"
+  const paid = order.payment_status === "captured"
   return (
     <>
-      <AccountHeading
-        title={`Orden #${formatOrderNumber(order)}`}
-        description={`Realizada el ${formatOrderDate(order.created_at)}.`}
-      />
-      <div className="mb-8 flex flex-wrap gap-3">
-        <Badge variant="outline">{getOrderStatusLabel(order.status)}</Badge>
-        <Badge variant="outline">
-          {getShippingStatusLabel(order.fulfillment_status)}
-        </Badge>
-      </div>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
-        <Card className="bg-transparent">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              <h2>Productos de tu orden</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-6">
-            {items.length === 0 ? (
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-5">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="break-all text-2xl font-semibold tracking-tight sm:text-3xl">
+              Pedido #{formatOrderNumber(order)}
+            </h2>
+            <span
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${canceled ? "bg-muted text-muted-foreground" : "bg-secondary text-secondary-foreground"}`}
+            >
+              <span
+                className="size-1.5 rounded-full bg-current"
+                aria-hidden="true"
+              />
+              {getOrderStatusLabel(order.status)}
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Realizado el {formatOrderDate(order.created_at)}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href={"/account/orders/" + id + "/invoice"}>
+              <FileText className="size-4" aria-hidden="true" />
+              Ver comprobante
+            </Link>
+          </Button>
+        </div>
+      </header>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+            <h2 className="text-base font-semibold">Resumen de tu compra</h2>
+            {order.seller?.name ? (
+              <p className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                <Store className="size-4 shrink-0" aria-hidden="true" />
+                <span>
+                  Vendido por{" "}
+                  <span className="font-medium text-foreground">
+                    {order.seller.name}
+                  </span>
+                </span>
+              </p>
+            ) : null}
+          </div>
+          <div className="p-5 sm:p-6">
+            {order.items?.length ? (
+              <OrderItems
+                items={order.items}
+                currencyCode={order.currency_code}
+              />
+            ) : (
               <p className="text-sm text-muted-foreground">
                 Los productos de esta orden no están disponibles.
               </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex gap-4 py-5 first:pt-0 last:pb-0"
-                  >
-                    <div className="flex size-12 shrink-0 items-center justify-center bg-muted text-muted-foreground">
-                      <Package className="size-5" aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-medium leading-6">
-                        {item.title}
-                      </h3>
-                      {item.variant_title &&
-                        item.variant_title !== "Default Variant" && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {item.variant_title}
-                          </p>
-                        )}
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Cantidad: {item.quantity} ·{" "}
-                        {formatAmount(item.unit_price)} por unidad
-                      </p>
-                      <p className="mt-2 text-sm font-medium tabular-nums">
-                        {formatAmount(item.total)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
             )}
-          </CardContent>
-        </Card>
-        <Card className="self-start bg-transparent">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              <h2>Resumen</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-4 text-sm">
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Productos</dt>
-                <dd className="tabular-nums">
-                  {formatAmount(order.original_item_subtotal)}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Envío</dt>
-                <dd className="tabular-nums">
-                  {formatAmount(order.original_shipping_subtotal)}
-                </dd>
-              </div>
-              {discountSubtotal > 0 && (
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Descuentos</dt>
-                  <dd className="tabular-nums">
-                    −{formatAmount(discountSubtotal)}
-                  </dd>
-                </div>
-              )}
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Impuestos</dt>
-                <dd className="tabular-nums">
-                  {formatAmount(order.tax_total)}
-                </dd>
-              </div>
-              {order.credit_line_total > 0 && (
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Créditos aplicados</dt>
-                  <dd className="tabular-nums">
-                    −{formatAmount(order.credit_line_total)}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </CardContent>
-          <CardFooter className="flex-col items-stretch gap-4 border-t border-border pt-5">
-            <div className="flex justify-between gap-3 text-lg font-medium">
-              <span>Total</span>
-              <span className="tabular-nums">{formatAmount(order.total)}</span>
+            <div className="mt-6">
+              <OrderTracking order={order} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Estado del pago: {getPaymentStatusLabel(order.payment_status)}
-            </p>
-          </CardFooter>
-        </Card>
-        <Card className="bg-transparent">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg font-medium">
-              <MapPin className="size-4" aria-hidden="true" />
-              <h2>Dirección de entrega</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-6">
-            <OrderAddress address={order.shipping_address} />
-            {!!order.shipping_methods?.length && (
-              <div className="mt-5 border-t border-border pt-4">
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Método de envío
-                </p>
-                {order.shipping_methods.map((method) => (
-                  <p key={method.id} className="text-sm leading-6">
-                    {method.name}
-                  </p>
-                ))}
+          </div>
+        </section>
+        <aside className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+          <h2 className="border-b border-border px-5 py-4 text-base font-semibold sm:px-6">
+            Detalles de tu pedido
+          </h2>
+          <div className="px-5 sm:px-6">
+            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-4 border-b border-border py-5">
+              <h3 className="text-xs font-semibold">Pago de la compra</h3>
+              <div className="flex items-center gap-3">
+                <CreditCard
+                  className="size-5 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${paid ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}
+                >
+                  {getPaymentStatusLabel(order.payment_status)}
+                </span>
               </div>
-            )}
-          </CardContent>
-        </Card>
-        {order.billing_address && (
-          <Card className="self-start bg-transparent">
-            <CardHeader>
-              <CardTitle className="text-lg font-medium">
-                <h2>Dirección de facturación</h2>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-6">
-              <OrderAddress address={order.billing_address} />
-            </CardContent>
-          </Card>
-        )}
+            </div>
+            <section className="grid grid-cols-[7rem_minmax(0,1fr)] items-start gap-4 border-b border-border py-5">
+              <h3 className="text-xs font-semibold leading-6">
+                Dirección de envío
+              </h3>
+              <div className="flex min-w-0 items-start gap-3">
+                <MapPin
+                  className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <div className="min-w-0 break-words">
+                  <OrderAddress address={order.shipping_address} />
+                </div>
+              </div>
+            </section>
+            <section className="py-5">
+              <h3 className="mb-4 text-base font-semibold">Resumen de pago</h3>
+              <OrderTotals order={order} highlighted />
+            </section>
+          </div>
+        </aside>
       </div>
-      <Button asChild variant="outline" className="mt-8">
-        <Link href="/account/orders">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Volver a mis órdenes
-        </Link>
-      </Button>
+    </>
+  )
+}
+
+export default function OrderPage(props: Props) {
+  return (
+    <>
+      <Link
+        href="/account/orders"
+        className="mb-5 inline-flex min-h-11 items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Volver a mis órdenes
+      </Link>
+      <h1 className="mb-3 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+        Detalle del pedido
+      </h1>
+      <Suspense
+        fallback={
+          <div
+            role="status"
+            aria-label="Cargando detalle del pedido"
+            className="space-y-8"
+          >
+            <div className="space-y-3">
+              <Skeleton className="h-9 w-64 max-w-full" />
+              <Skeleton className="h-5 w-48" />
+            </div>
+            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+              <Skeleton className="h-[32rem] rounded-xl sm:h-96" />
+              <Skeleton className="h-[32rem] rounded-xl" />
+            </div>
+          </div>
+        }
+      >
+        <OrderContent {...props} />
+      </Suspense>
     </>
   )
 }

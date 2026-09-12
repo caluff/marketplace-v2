@@ -72,8 +72,8 @@ function Submit({ pending, children }: { pending: boolean; children: string }) {
   return <Button type="submit" className="h-11 w-full" disabled={pending} aria-disabled={pending}>{pending ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}{pending ? "Procesando…" : children}</Button>;
 }
 
-export function AdminLoginForm({ next, expired }: { next: string; expired: boolean }) {
-  const [state, action, pending] = useActionState(withFeedbackToast(loginAdminAction), INITIAL_AUTH_STATE);
+export function AdminLoginForm({ next, expired, mfaMethods }: { next: string; expired: boolean; mfaMethods?: string[] }) {
+  const [state, action, pending] = useActionState(withFeedbackToast(loginAdminAction), mfaMethods ? { status: "mfa_required", mfaMethods, message: "Confirma el segundo factor para continuar." } satisfies AuthActionState : INITIAL_AUTH_STATE);
   const [mfaState, mfaAction, mfaPending] = useActionState(withFeedbackToast(verifyAdminMfaAction), INITIAL_AUTH_STATE);
   if (state.status === "mfa_required") {
     return (

@@ -8,18 +8,24 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
-import { LockKeyhole } from "lucide-react"
+import { Check, LockKeyhole, MapPin, Truck } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useActionState, useEffect, useState, type FormEvent } from "react"
+import { useTheme } from "next-themes"
+import { useEffect, useId, useRef, useState, type FormEvent } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   completeCheckoutAction,
   initializePaymentAction,
   type CartActionState,
 } from "@/features/cart/actions"
 import { formatMoney } from "@/features/cart/presentation"
+import {
+  paymentBillingDetails,
+  storefrontPaymentAppearance,
+} from "../payment-presentation"
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = publishableKey
@@ -41,7 +47,9 @@ export function PaymentStep({
   const availableProviders = providers.filter((provider) =>
     provider.id.startsWith("pp_stripe_"),
   )
-  const [providerId, setProviderId] = useState(availableProviders[0]?.id ?? "")
+  const [providerId, setProviderId] = useState(
+    availableProviders.length === 1 ? availableProviders[0].id : "",
+  )
   const [isStripeUnavailable, setIsStripeUnavailable] = useState(!stripePromise)
   useEffect(() => {
     let active = true
@@ -52,123 +60,210 @@ export function PaymentStep({
       active = false
     }
   }, [])
-  const [state, action, pending] = useActionState(
-    async (previous: CartActionState, formData: FormData) => {
-      try {
-        return await initializePaymentAction(previous, formData)
-      } catch {
-        return { error: "No pudimos preparar el pago. Inténtalo nuevamente." }
-      }
-    },
-    {},
-  )
-
   return (
     <section className="space-y-6" aria-labelledby="payment-title">
       <h2 id="payment-title" className="text-2xl font-medium tracking-tight">
         Revisar y pagar
       </h2>
-      <div className="border border-border p-4 text-sm leading-relaxed">
-        <p className="font-semibold">
-          {cart.shipping_address?.first_name} {cart.shipping_address?.last_name}
-        </p>
-        <p>
-          {cart.shipping_address?.address_1}
-          {cart.shipping_address?.address_2
-            ? `, ${cart.shipping_address.address_2}`
-            : ""}
-        </p>
-        <p>
-          {cart.shipping_address?.city},{" "}
-          {cart.shipping_address?.province?.toUpperCase()}{" "}
-          {cart.shipping_address?.postal_code}
-        </p>
-        <p>Estados Unidos</p>
-        <p className="mt-2 text-muted-foreground">{cart.email}</p>
-        <Link
-          href="/checkout?step=address"
-          className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4"
-        >
-          Editar dirección
-        </Link>
-        <div className="mt-2 border-t border-border pt-3">
-          {cart.shipping_methods?.map((method) => (
-            <p key={method.id}>
-              {method.name} · {formatMoney(method.amount, cart.currency_code)}
+      <div className="divide-y divide-border border border-border text-sm">
+        <div className="flex items-start gap-3 px-4 py-3">
+          <MapPin
+            aria-hidden="true"
+            className="mt-1 size-4 shrink-0 text-muted-foreground"
+          />
+          <div className="min-w-0 flex-1 leading-relaxed">
+            <p className="font-medium">
+              {cart.shipping_address?.first_name}{" "}
+              {cart.shipping_address?.last_name}
             </p>
-          ))}
+            <p className="text-muted-foreground">
+              {cart.shipping_address?.address_1}
+              {cart.shipping_address?.address_2
+                ? `, ${cart.shipping_address.address_2}`
+                : ""}
+              {" · "}
+              {cart.shipping_address?.city},{" "}
+              {cart.shipping_address?.province?.toUpperCase()}{" "}
+              {cart.shipping_address?.postal_code}
+            </p>
+            <p className="break-all text-muted-foreground">{cart.email}</p>
+          </div>
+          <Link
+            href="/checkout?step=address"
+            aria-label="Cambiar dirección"
+            className="-my-1 inline-flex min-h-11 shrink-0 items-center underline underline-offset-4"
+          >
+            Cambiar
+          </Link>
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2">
+          <Truck
+            aria-hidden="true"
+            className="size-4 shrink-0 text-muted-foreground"
+          />
+          <div className="min-w-0 flex-1 space-y-1">
+            {cart.shipping_methods?.map((method) => (
+              <p key={method.id}>
+                {method.name} · {formatMoney(method.amount, cart.currency_code)}
+              </p>
+            ))}
+          </div>
           <Link
             href="/checkout?step=shipping"
-            className="inline-flex min-h-11 items-center underline underline-offset-4"
+            aria-label="Cambiar envío"
+            className="inline-flex min-h-11 shrink-0 items-center underline underline-offset-4"
           >
-            Editar envío
+            Cambiar
           </Link>
         </div>
       </div>
-      {isStripeUnavailable || !availableProviders.length ? (
-        <p
-          role="status"
-          className="border border-border bg-muted/30 p-5 text-sm"
-        >
-          El pago no está disponible en este momento. Tu carrito queda guardado
-          para que puedas volver a intentarlo.
-        </p>
-      ) : state.clientSecret ? (
-        <Elements
-          key={state.clientSecret}
-          stripe={stripePromise}
-          options={{ clientSecret: state.clientSecret, locale: "es" }}
-        >
-          <StripePaymentForm cart={cart} clientSecret={state.clientSecret} />
-        </Elements>
-      ) : (
-        <form action={action} className="space-y-5" aria-busy={pending}>
-          <fieldset disabled={pending} className="space-y-3">
-            <legend className="mb-3 text-sm font-semibold">
-              Pago seguro con Stripe
-            </legend>
-            {availableProviders.map((provider, index) => (
-              <label
-                key={provider.id}
-                className="flex min-h-14 cursor-pointer items-center gap-3 border border-border p-4 has-checked:border-foreground"
-              >
-                <input
-                  type="radio"
-                  name="provider_id"
-                  value={provider.id}
-                  checked={providerId === provider.id}
-                  onChange={() => setProviderId(provider.id)}
-                  required
-                  className="size-4 accent-brand-accent"
-                />
-                <span className="text-sm font-medium">
-                  {availableProviders.length > 1
-                    ? `Stripe · opción ${index + 1}`
-                    : "Stripe"}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          {state.error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {state.error}
-            </p>
-          ) : null}
-          <Button
-            type="submit"
-            disabled={pending || !providerId}
-            className="w-full"
-            size="lg"
+      <div className="space-y-5 border border-border p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-lg font-medium tracking-tight">Método de pago</h3>
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <LockKeyhole aria-hidden="true" className="size-3.5 shrink-0" />
+            Pago seguro con Stripe
+          </p>
+        </div>
+        {isStripeUnavailable || !availableProviders.length ? (
+          <p
+            role="status"
+            className="border border-border bg-muted/30 p-5 text-sm"
           >
-            {pending ? "Preparando pago…" : "Introducir datos de pago"}
-          </Button>
-        </form>
-      )}
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <LockKeyhole aria-hidden="true" className="size-4 shrink-0" />
-        Los datos de pago se procesan de forma segura con Stripe.
-      </p>
+            El pago no está disponible en este momento. Tu carrito queda
+            guardado para que puedas volver a intentarlo.
+          </p>
+        ) : (
+          <>
+            {!providerId && availableProviders.length > 1 ? (
+              <fieldset className="space-y-3">
+                <legend className="mb-3 text-sm font-semibold">
+                  Pago seguro con Stripe
+                </legend>
+                {availableProviders.map((provider, index) => (
+                  <label
+                    key={provider.id}
+                    className="flex min-h-14 cursor-pointer items-center gap-3 border border-border p-4 has-checked:border-foreground"
+                  >
+                    <input
+                      type="radio"
+                      name="provider_id"
+                      value={provider.id}
+                      checked={providerId === provider.id}
+                      onChange={() => setProviderId(provider.id)}
+                      required
+                      className="size-4 accent-brand-accent"
+                    />
+                    <span className="text-sm font-medium">
+                      {availableProviders.length > 1
+                        ? `Stripe · opción ${index + 1}`
+                        : "Stripe"}
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            ) : null}
+            {providerId ? (
+              <PreparedPayment
+                key={providerId}
+                cart={cart}
+                providerId={providerId}
+              />
+            ) : null}
+          </>
+        )}
+      </div>
     </section>
+  )
+}
+
+function PaymentFormSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-label="Cargando formulario de pago seguro"
+      className="space-y-4"
+    >
+      <span className="sr-only">Cargando formulario de pago seguro…</span>
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <div className="grid grid-cols-2 gap-4">
+        <Skeleton className="h-12" />
+        <Skeleton className="h-12" />
+      </div>
+      <Skeleton className="h-12 w-full" />
+    </div>
+  )
+}
+
+function PreparedPayment({
+  cart,
+  providerId,
+}: {
+  cart: HttpTypes.StoreCart
+  providerId: string
+}) {
+  const { resolvedTheme } = useTheme()
+  const [attempt, setAttempt] = useState(0)
+  const [result, setResult] = useState<CartActionState | null>(null)
+  const request = useRef<{
+    attempt: number
+    promise: Promise<CartActionState>
+  } | null>(null)
+
+  useEffect(() => {
+    let active = true
+    // Share the pending mutation across Strict Mode's effect replay.
+    if (!request.current || request.current.attempt !== attempt) {
+      const form = new FormData()
+      form.set("provider_id", providerId)
+      request.current = {
+        attempt,
+        promise: initializePaymentAction({}, form).catch(() => ({
+          error: "No pudimos preparar el pago. Inténtalo nuevamente.",
+        })),
+      }
+    }
+    void request.current.promise.then((state) => {
+      if (active) setResult(state)
+    })
+    return () => {
+      active = false
+    }
+  }, [attempt, providerId])
+
+  if (!result) return <PaymentFormSkeleton />
+  if (!result.clientSecret)
+    return (
+      <div className="space-y-4">
+        <p role="alert" className="text-sm text-destructive">
+          {result.error ?? "No pudimos preparar el pago."}
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setResult(null)
+            setAttempt((value) => value + 1)
+          }}
+        >
+          Reintentar carga del formulario
+        </Button>
+      </div>
+    )
+  return (
+    <Elements
+      stripe={stripePromise}
+      options={{
+        clientSecret: result.clientSecret,
+        locale: "es",
+        appearance: {
+          theme: resolvedTheme === "dark" ? "night" : "stripe",
+          variables: { borderRadius: "0px" },
+        },
+      }}
+    >
+      <StripePaymentForm cart={cart} clientSecret={result.clientSecret} />
+    </Elements>
   )
 }
 
@@ -181,6 +276,10 @@ function StripePaymentForm({
 }) {
   const stripe = useStripe()
   const elements = useElements()
+  const { resolvedTheme } = useTheme()
+  const receiptId = useId()
+  const [sendReceipt, setSendReceipt] = useState(true)
+  const billingDetails = paymentBillingDetails(cart)
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [isReady, setIsReady] = useState(false)
@@ -190,6 +289,10 @@ function StripePaymentForm({
     "loading" | "ready" | "error"
   >("loading")
   const [verificationAttempt, setVerificationAttempt] = useState(0)
+
+  useEffect(() => {
+    if (elements) elements.update({ appearance: storefrontPaymentAppearance() })
+  }, [elements, resolvedTheme])
 
   useEffect(() => {
     if (!stripe) return
@@ -251,6 +354,14 @@ function StripePaymentForm({
               elements,
               confirmParams: {
                 return_url: `${window.location.origin}/checkout/return`,
+                payment_method_data: {
+                  billing_details: {
+                    email: billingDetails.email,
+                    phone: billingDetails.phone,
+                    address: billingDetails.address,
+                  },
+                },
+                receipt_email: sendReceipt ? (cart.email ?? "") : "",
               },
               redirect: "if_required",
             })
@@ -295,9 +406,7 @@ function StripePaymentForm({
       aria-busy={isPending || verification === "loading"}
     >
       {verification === "loading" ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          Consultando el estado del pago…
-        </p>
+        <PaymentFormSkeleton />
       ) : verification === "ready" && !hasSubmittedPayment ? (
         <>
           {!isReady ? (
@@ -306,6 +415,20 @@ function StripePaymentForm({
             </p>
           ) : null}
           <PaymentElement
+            options={{
+              layout: { type: "accordion", defaultCollapsed: false },
+              paymentMethodOrder: ["card", "link"],
+              wallets: { link: "auto", applePay: "auto", googlePay: "auto" },
+              fields: {
+                billingDetails: {
+                  name: "always",
+                  email: "never",
+                  phone: "never",
+                  address: "never",
+                },
+              },
+              defaultValues: { billingDetails },
+            }}
             onReady={() => setIsReady(true)}
             onLoadError={() =>
               setMessage(
@@ -313,6 +436,31 @@ function StripePaymentForm({
               )
             }
           />
+          <div className="space-y-3 border-t border-border pt-4 text-sm">
+            <p className="flex items-start gap-3">
+              <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              La facturación usa la dirección guardada en este pedido.
+            </p>
+            <label
+              htmlFor={receiptId}
+              className="flex min-h-11 cursor-pointer items-start gap-3 py-2"
+            >
+              <input
+                id={receiptId}
+                type="checkbox"
+                checked={sendReceipt}
+                onChange={(event) => setSendReceipt(event.target.checked)}
+                disabled={isPending}
+                className="mt-0.5 size-4 shrink-0 accent-brand-accent"
+              />
+              <span>
+                Enviarme un recibo del pago por correo electrónico
+                <span className="mt-1 block break-all text-xs text-muted-foreground">
+                  Stripe lo enviará a {cart.email} cuando se cobre el pago.
+                </span>
+              </span>
+            </label>
+          </div>
         </>
       ) : verification === "ready" ? (
         <p className="text-sm text-muted-foreground">

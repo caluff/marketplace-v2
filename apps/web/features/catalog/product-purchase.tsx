@@ -1,9 +1,18 @@
 "use client"
 
 import type { HttpTypes } from "@medusajs/types"
-import { LoaderCircle, ShoppingBag } from "lucide-react"
+import {
+  ArrowRight,
+  LoaderCircle,
+  Minus,
+  Package,
+  Plus,
+  ShoppingBag,
+  Store,
+} from "lucide-react"
 import Link from "next/link"
-import { useActionState, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useActionState, useId, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import type { AddCartItemResult } from "@/features/cart/add-item"
 import { submitCartItem } from "@/features/cart/add-item-client"
@@ -14,18 +23,78 @@ import {
   getOfferPrice,
   isOfferAvailable,
   type StorefrontOffer,
-} from "@/features/catalog/offers"
+} from "./offers"
 import { cn } from "@/lib/utils"
+import { ProductShipping } from "./product-shipping"
+
+function QuantityField({
+  maximum,
+  disabled,
+}: {
+  maximum: number
+  disabled: boolean
+}) {
+  const id = useId()
+  const [quantity, setQuantity] = useState("1")
+  const value = Number(quantity) || 1
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-xs font-semibold">
+        Cantidad
+      </label>
+      <div className="inline-flex h-11 border border-input bg-background">
+        <button
+          type="button"
+          aria-label="Reducir cantidad"
+          disabled={disabled || value <= 1}
+          onClick={() => setQuantity(String(Math.max(1, value - 1)))}
+          className="grid w-11 place-items-center hover:bg-muted disabled:opacity-35"
+        >
+          <Minus className="size-3.5" aria-hidden="true" />
+        </button>
+        <input
+          id={id}
+          name="quantity"
+          type="number"
+          min={1}
+          max={maximum}
+          step={1}
+          required
+          disabled={disabled}
+          value={quantity}
+          onChange={(event) => setQuantity(event.target.value)}
+          className="w-12 min-w-0 bg-transparent text-center text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        <button
+          type="button"
+          aria-label="Aumentar cantidad"
+          disabled={disabled || value >= maximum}
+          onClick={() => setQuantity(String(Math.min(maximum, value + 1)))}
+          className="grid w-11 place-items-center hover:bg-muted disabled:opacity-35"
+        >
+          <Plus className="size-3.5" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export function ProductPurchase({
   variants,
   offers,
   hasRegion,
+  summary,
+  overview,
+  paymentMethods,
 }: {
   variants: HttpTypes.StoreProductVariant[]
   offers: StorefrontOffer[]
   hasRegion: boolean
+  summary: ReactNode
+  overview?: ReactNode
+  paymentMethods?: ReactNode
 }) {
+  const router = useRouter()
   const [variantId, setVariantId] = useState(
     variants.length === 1 ? variants[0].id : "",
   )
@@ -49,189 +118,274 @@ export function ProductPurchase({
     FormData
   >(async (_previous, form) => {
     const result = await submitCartItem(form)
-    if (typeof result.cartCount === "number")
+    if (typeof result.cartCount === "number") {
       notifyCartUpdated(result.cartCount, result.confirmedAt)
+      if (form.get("intent") === "buy") router.push("/checkout")
+    }
     return result
   }, null)
   const error = state && "error" in state ? state.error : undefined
   const success = state && "success" in state ? state.success : undefined
+  const discount =
+    price &&
+    price.originalAmount !== null &&
+    price.originalAmount > price.amount
+      ? Math.round((1 - price.amount / price.originalAmount) * 100)
+      : 0
+  const availability = !hasRegion
+    ? "Precio no disponible para esta región"
+    : !variantId
+      ? "Selecciona una variante"
+      : !matchingOffers.length
+        ? "Sin ofertas disponibles"
+        : !selectedOffer
+          ? "Selecciona una tienda"
+          : available
+            ? selectedOffer.allow_backorder
+              ? "Disponible para pedido"
+              : "En stock"
+            : getOfferPrice(selectedOffer)
+              ? "Sin stock"
+              : "Precio no disponible"
+  const maximum =
+    selectedOffer?.manage_inventory && !selectedOffer.allow_backorder
+      ? Math.max(1, Math.min(99, selectedOffer.inventory_quantity ?? 0))
+      : 99
 
   return (
-    <div className="mt-8">
-      <div className="border-y border-border py-6" aria-live="polite">
-        <p className="font-sans text-xs font-bold tracking-[0.12em] text-muted-foreground uppercase">
-          {selectedOffer ? "Precio" : "Desde"}
-        </p>
-        <p className="mt-2 font-sans text-3xl font-black tracking-tight">
-          {price ? formatPrice(price.amount) : "Precio no disponible en USD"}
-        </p>
-        {price &&
-        price.originalAmount !== null &&
-        price.originalAmount > price.amount ? (
-          <p className="mt-2 font-sans text-muted-foreground line-through">
-            {formatPrice(price.originalAmount)}
-          </p>
-        ) : null}
-        <p className="mt-3 font-sans text-sm text-muted-foreground">
-          Envíos únicamente a Estados Unidos. El envío y los impuestos se
-          calculan al finalizar la compra.
-        </p>
-      </div>
-
-      {!hasRegion ? (
-        <p
-          role="status"
-          className="mt-6 border border-border bg-muted p-4 font-sans text-sm"
-        >
-          Las compras estarán disponibles cuando la tienda habilite los precios
-          para Estados Unidos en USD.
-        </p>
-      ) : null}
-
-      {variants.length > 1 ? (
-        <fieldset className="mt-7">
-          <legend className="mb-3 font-sans text-sm font-bold">Variante</legend>
-          <div className="flex flex-wrap gap-2">
-            {variants.map((variant) => (
-              <button
-                key={variant.id}
-                type="button"
-                aria-pressed={variantId === variant.id}
-                onClick={() => {
-                  setVariantId(variant.id)
-                  setOfferId("")
-                }}
-                className={cn(
-                  "min-h-11 border px-4 py-2 font-sans text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/40",
-                  variantId === variant.id
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border hover:border-foreground",
-                )}
-              >
-                {variant.options?.map((option) => option.value).join(" / ") ||
-                  variant.title}
-              </button>
-            ))}
+    <>
+      <section
+        className="min-w-0 font-sans"
+        aria-label="Información y opciones del producto"
+      >
+        {summary}
+        <div className="my-5 border-y border-border py-5" aria-live="polite">
+          {!selectedOffer && price ? (
+            <p className="mb-1 text-xs font-medium text-muted-foreground">
+              Desde
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <p
+              className={cn(
+                "font-bold tracking-tight",
+                price ? "text-3xl" : "text-base",
+              )}
+            >
+              {price
+                ? formatPrice(price.amount)
+                : "Precio no disponible en USD"}
+            </p>
+            {discount > 0 && price?.originalAmount ? (
+              <>
+                <span className="text-sm text-muted-foreground line-through">
+                  {formatPrice(price.originalAmount)}
+                </span>
+                <span className="bg-brand-accent/10 px-2 py-1 text-xs font-bold text-brand-accent">
+                  −{discount}%
+                </span>
+              </>
+            ) : null}
           </div>
-        </fieldset>
-      ) : null}
-
-      {variantId && matchingOffers.length > 0 ? (
-        <fieldset className="mt-7">
-          <legend className="mb-3 font-sans text-sm font-bold">
-            Vendido por
-          </legend>
-          <div className="space-y-2">
-            {matchingOffers.map((offer) => {
-              const offerPrice = getOfferPrice(offer)
-              return (
-                <label
-                  key={offer.id}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Precios en dólares estadounidenses.
+          </p>
+        </div>
+        {overview}
+        {variants.length > 1 ? (
+          <fieldset className="mt-5" disabled={isPending}>
+            <legend className="mb-3 text-sm font-semibold">
+              Selecciona una variante
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {variants.map((variant) => (
+                <button
+                  key={variant.id}
+                  type="button"
+                  aria-pressed={variantId === variant.id}
+                  onClick={() => {
+                    setVariantId(variant.id)
+                    setOfferId("")
+                  }}
                   className={cn(
-                    "flex min-h-14 cursor-pointer items-center gap-3 border p-4 font-sans text-sm",
-                    selectedOffer?.id === offer.id
-                      ? "border-foreground"
-                      : "border-border",
+                    "min-h-11 border px-3 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50",
+                    variantId === variant.id
+                      ? "border-brand-accent bg-brand-accent/5 text-brand-accent"
+                      : "border-border hover:border-foreground",
                   )}
                 >
-                  <input
-                    type="radio"
-                    name="seller_offer"
-                    value={offer.id}
-                    checked={selectedOffer?.id === offer.id}
-                    onChange={() => setOfferId(offer.id)}
-                    className="size-4 accent-current"
-                  />
-                  <span className="flex-1 font-semibold">
-                    {offer.seller?.name ?? "Tienda"}
-                  </span>
-                  <span>
-                    {offerPrice
-                      ? formatPrice(offerPrice.amount)
-                      : "Sin precio en USD"}
-                  </span>
-                </label>
-              )
-            })}
+                  {variant.options?.map((option) => option.value).join(" / ") ||
+                    variant.title}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
+        {variantId && matchingOffers.length > 1 ? (
+          <fieldset className="mt-5" disabled={isPending}>
+            <legend className="mb-3 text-sm font-semibold">
+              Elige la tienda{" "}
+              <span className="font-normal text-muted-foreground">
+                ({matchingOffers.length})
+              </span>
+            </legend>
+            <div className="space-y-2">
+              {matchingOffers.map((offer) => {
+                const offerPrice = getOfferPrice(offer)
+                return (
+                  <label
+                    key={offer.id}
+                    className={cn(
+                      "flex min-h-14 cursor-pointer items-center gap-3 border p-3 text-sm",
+                      selectedOffer?.id === offer.id
+                        ? "border-brand-accent bg-brand-accent/5"
+                        : "border-border",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="seller_offer"
+                      value={offer.id}
+                      checked={selectedOffer?.id === offer.id}
+                      onChange={() => setOfferId(offer.id)}
+                      className="size-4 shrink-0 accent-brand-accent"
+                    />
+                    <span className="min-w-0 flex-1 break-words font-medium">
+                      {offer.seller?.name ?? "Tienda"}
+                    </span>
+                    <span className="shrink-0 text-xs font-semibold">
+                      {offerPrice
+                        ? formatPrice(offerPrice.amount)
+                        : "Sin precio"}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
+        ) : null}
+        <a
+          href="#product-details"
+          className="mt-5 inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-brand-accent"
+        >
+          Ver descripción y ficha técnica{" "}
+          <ArrowRight className="size-3.5" aria-hidden="true" />
+        </a>
+      </section>
+      <aside
+        className="min-w-0 self-start border border-border bg-card p-5 font-sans shadow-sm md:col-span-2 lg:sticky lg:top-24 lg:col-span-1 lg:row-span-2"
+        aria-label="Comprar producto"
+      >
+        <div aria-live="polite" className="mb-5">
+          <p
+            className={cn(
+              "flex items-center gap-2 text-sm font-bold",
+              available ? "text-success" : "text-muted-foreground",
+            )}
+          >
+            <span
+              className="size-2 shrink-0 rounded-full bg-current"
+              aria-hidden="true"
+            />
+            {availability}
+          </p>
+          {selectedOffer && available ? (
+            <p className="mt-1 pl-4 text-xs text-muted-foreground">
+              {selectedOffer.manage_inventory &&
+              !selectedOffer.allow_backorder &&
+              typeof selectedOffer.inventory_quantity === "number"
+                ? selectedOffer.inventory_quantity + " unidades disponibles"
+                : "Disponibilidad confirmada por la tienda"}
+            </p>
+          ) : null}
+        </div>
+        <form
+          action={action}
+          className="space-y-3"
+          key={selectedOffer?.id ?? variantId}
+        >
+          <input
+            type="hidden"
+            name="offer_id"
+            value={selectedOffer?.id ?? ""}
+          />
+          <QuantityField maximum={maximum} disabled={!available || isPending} />
+          <Button
+            type="submit"
+            name="intent"
+            value="cart"
+            variant="accent"
+            disabled={!available || !hasRegion || isPending}
+            className="h-11 w-full text-sm"
+          >
+            {isPending ? (
+              <LoaderCircle
+                className="size-4 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <ShoppingBag className="size-4" aria-hidden="true" />
+            )}
+            {isPending ? "Agregando…" : "Agregar al carrito"}
+          </Button>
+          <Button
+            type="submit"
+            name="intent"
+            value="buy"
+            variant="outline"
+            disabled={!available || !hasRegion || isPending}
+            className="h-11 w-full border-brand-accent/20 bg-brand-accent/5 text-sm text-brand-accent"
+          >
+            Comprar ahora
+          </Button>
+          {error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+          {success ? (
+            <p role="status" className="text-sm text-success">
+              {success}{" "}
+              <Link href="/cart" className="underline underline-offset-4">
+                Ver carrito
+              </Link>
+            </p>
+          ) : null}
+        </form>
+        <div className="mt-5 space-y-4 border-t border-border pt-5 text-xs">
+          <ProductShipping
+            key={selectedOffer?.id ?? "no-offer"}
+            offerId={selectedOffer?.id}
+            sellerName={selectedOffer?.seller?.name}
+          />
+          <div className="flex gap-3">
+            <Store
+              className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="font-semibold">Vendido por</p>
+              <p className="mt-1 break-words text-muted-foreground">
+                {selectedOffer?.seller?.name ??
+                  "Selecciona una tienda para continuar"}
+              </p>
+            </div>
           </div>
-        </fieldset>
-      ) : null}
-
-      <div
-        className="mt-5 min-h-6 font-sans text-sm text-muted-foreground"
-        aria-live="polite"
-      >
-        {!variantId
-          ? "Selecciona una variante para continuar."
-          : !matchingOffers.length
-            ? "Esta variante no está disponible para comprar."
-            : !selectedOffer
-              ? "Selecciona una tienda para continuar."
-              : available
-                ? selectedOffer.allow_backorder
-                  ? "Disponible para pedido."
-                  : "Disponible"
-                : getOfferPrice(selectedOffer)
-                  ? "Sin stock por el momento."
-                  : "Esta tienda todavía no tiene un precio disponible en USD."}
-      </div>
-
-      <form
-        action={action}
-        className="mt-6 space-y-4"
-        key={selectedOffer?.id ?? variantId}
-      >
-        <input type="hidden" name="offer_id" value={selectedOffer?.id ?? ""} />
-        <label
-          className="block font-sans text-sm font-bold"
-          htmlFor="product-quantity"
-        >
-          Cantidad
-        </label>
-        <input
-          id="product-quantity"
-          name="quantity"
-          type="number"
-          min={1}
-          step={1}
-          max={
-            selectedOffer?.manage_inventory && !selectedOffer.allow_backorder
-              ? Math.max(1, selectedOffer.inventory_quantity ?? 0)
-              : undefined
-          }
-          defaultValue={1}
-          required
-          disabled={!available || isPending}
-          className="h-11 w-24 border border-input bg-background px-3 font-sans outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-        />
-        <Button
-          type="submit"
-          variant="accent"
-          size="lg"
-          disabled={!available || !hasRegion || isPending}
-          className="w-full"
-        >
-          {isPending ? (
-            <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
-          ) : (
-            <ShoppingBag className="size-5" aria-hidden="true" />
-          )}
-          {isPending ? "Agregando…" : "Agregar al carrito"}
-        </Button>
-        {error ? (
-          <p role="alert" className="font-sans text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
-        {success ? (
-          <p role="status" className="font-sans text-sm text-success">
-            {success}{" "}
-            <Link href="/cart" className="underline underline-offset-4">
-              Ver carrito
-            </Link>
-          </p>
-        ) : null}
-      </form>
-    </div>
+          <div className="flex gap-3">
+            <Package
+              className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="font-semibold">Revisa tu pedido</p>
+              <p className="mt-1 leading-5 text-muted-foreground">
+                Podrás revisar los productos y el total antes de pagar.
+              </p>
+            </div>
+          </div>
+        </div>
+        {paymentMethods}
+      </aside>
+    </>
   )
 }

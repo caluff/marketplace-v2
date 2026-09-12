@@ -2,6 +2,7 @@ import { asValue } from "@medusajs/framework/awilix";
 import { createMedusaContainer, PolicyOperation } from "@medusajs/framework/utils";
 import type { MedusaResponse } from "@medusajs/framework/http";
 import { sellerWarehouseView } from "../vendor-warehouse/read";
+import { guardSellerWarehouse } from "../vendor-warehouse/native-guards";
 import { GET } from "../../api/vendor/warehouse/route";
 import { VendorWarehouseQuery, vendorWarehouseMiddlewares } from "../../api/vendor/warehouse/middlewares";
 
@@ -27,6 +28,16 @@ function fixture() {
 }
 
 describe("approved warehouse projection", () => {
+  it.each(["sloc_own", "sloc_foreign"])("scopes native order fulfillment location %s before inventory mutation", async (locationId) => {
+    const f = fixture();
+    const check = guardSellerWarehouse({
+      scope: f.container, method: "POST", originalUrl: "/vendor/orders/order_one/fulfillments",
+      body: { location_id: locationId, items: [{ id: "ordli_one", quantity: 1 }] },
+    } as Parameters<typeof guardSellerWarehouse>[0], f.sellerId);
+    if (locationId === "sloc_own") await expect(check).resolves.toBeUndefined();
+    else await expect(check).rejects.toMatchObject({ code: "inventory_scope_forbidden", status: 403 });
+  });
+
   it("returns the projected address after fresh claim, existence and exclusive ownership checks", async () => {
     const f = fixture();
     expect(await sellerWarehouseView(f.container, f.sellerId)).toEqual({ stock_location: f.location });

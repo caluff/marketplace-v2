@@ -61,7 +61,7 @@ export default async function FavoritesPage({
             {ids.length === 1 ? "producto guardado" : "productos guardados"}
           </p>
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {pageIds.map((id, index) => {
+            {pageIds.map((id) => {
               const product = productsById.get(id)
               return product ? (
                 <ProductCard
@@ -70,7 +70,6 @@ export default async function FavoritesPage({
                   offers={offers.filter(
                     (offer) => offer.product_id === product.id,
                   )}
-                  index={(page - 1) * ACCOUNT_PAGE_SIZE + index}
                   isFavorite
                   authenticated
                 />

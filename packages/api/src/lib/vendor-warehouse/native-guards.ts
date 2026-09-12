@@ -10,6 +10,7 @@ export async function guardSellerWarehouse(req: MedusaRequest, sellerId: string)
   const match = route.match(/^\/vendor\/stock-locations\/([^/]+)(.*)$/);
   const ids: string[] = [];
   const inventoryMutation = !["GET", "HEAD"].includes(req.method) && /^\/vendor\/(?:inventory-items|inventory-adjustments|offers)(?:\/|$)/.test(route);
+  const fulfillmentMutation = req.method === "POST" && /^\/vendor\/orders\/[^/]+\/fulfillments$/.test(route);
   if (match) {
     ids.push(decodeURIComponent(match[1]));
     if (!match[2] && req.method === "DELETE") throw new OnboardingError("warehouse_managed_by_application", 403);
@@ -18,7 +19,7 @@ export async function guardSellerWarehouse(req: MedusaRequest, sellerId: string)
       if (body && ["address", "address_id", "metadata"].some(key => key in body)) throw new OnboardingError("warehouse_address_immutable", 403);
     }
   }
-  if (inventoryMutation) {
+  if (inventoryMutation || fulfillmentMutation) {
     const levelPath = route.match(/^\/vendor\/inventory-items\/[^/]+\/location-levels\/([^/]+)$/);
     if (levelPath && levelPath[1] !== "batch") ids.push(decodeURIComponent(levelPath[1]));
     function collect(value: unknown) {
@@ -31,5 +32,5 @@ export async function guardSellerWarehouse(req: MedusaRequest, sellerId: string)
     }
     collect(req.body);
   }
-  if (ids.length || inventoryMutation) await assertSellerWarehouseLocations(req.scope, sellerId, ids);
+  if (ids.length || inventoryMutation || fulfillmentMutation) await assertSellerWarehouseLocations(req.scope, sellerId, ids);
 }

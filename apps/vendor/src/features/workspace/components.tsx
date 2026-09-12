@@ -15,7 +15,7 @@ export function PageHeading({
   description,
   children,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description?: string;
   children?: ReactNode;
@@ -23,10 +23,16 @@ export function PageHeading({
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-          {eyebrow}
-        </p>
-        <h1 className="mt-2 font-display text-3xl tracking-tight">{title}</h1>
+        {eyebrow ? (
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+            {eyebrow}
+          </p>
+        ) : null}
+        <h1
+          className={`${eyebrow ? "mt-2 " : ""}font-display text-3xl tracking-tight`}
+        >
+          {title}
+        </h1>
         {description ? (
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
             {description}
@@ -96,9 +102,20 @@ export function StatusBadge({ status }: { status?: string }) {
   );
 }
 
-export function SearchForm({ q, label }: { q: string; label: string }) {
+export function SearchForm({
+  q,
+  label,
+  hidden,
+}: {
+  q: string;
+  label: string;
+  hidden?: Record<string, string>;
+}) {
   return (
     <form className="flex flex-wrap items-end gap-3">
+      {Object.entries(hidden ?? {}).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       <div className="w-full space-y-2 sm:max-w-sm">
         <Label htmlFor="search">{label}</Label>
         <Input
@@ -123,14 +140,16 @@ export function Pagination({
   page,
   count,
   q,
+  filters,
 }: {
   path: string;
   page: number;
   count: number;
   q?: string;
+  filters?: Record<string, string>;
 }) {
   const href = (value: number) =>
-    `${path}?${new URLSearchParams({ page: String(value), ...(q ? { q } : {}) })}`;
+    `${path}?${new URLSearchParams({ ...filters, page: String(value), ...(q ? { q } : {}) })}`;
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 px-6 py-4">
       <p className="text-xs text-muted-foreground">

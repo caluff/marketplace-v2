@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -11,7 +10,10 @@ import {
 import type { retrieveProductForReview } from "@/features/product-review/data";
 import { PRODUCT_STATUS_LABELS } from "@/features/product-review/helpers";
 import { ProductModerationForm } from "@/features/product-review/components/review-form";
-import { ProductChangeDetails } from "./image-change-preview";
+import {
+  ProductChangeDetails,
+  ProductReviewImages,
+} from "./image-change-preview";
 
 export function ProductReviewDetail({
   product,
@@ -22,9 +24,6 @@ export function ProductReviewDetail({
     : "";
   return (
     <div className="space-y-6">
-      <Button asChild variant="ghost" size="sm">
-        <Link href="/dashboard/product-review">← Revisión de productos</Link>
-      </Button>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -47,6 +46,30 @@ export function ProductReviewDetail({
         <CardContent>
           <dl className="grid gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
+              <dt className="text-xs text-muted-foreground">
+                Tiendas vinculadas
+              </dt>
+              <dd className="mt-1 flex flex-wrap gap-3 text-sm">
+                {product.sellers?.length
+                  ? product.sellers.map((seller) => (
+                      <Link
+                        key={seller.id}
+                        href={`/dashboard/stores/${encodeURIComponent(seller.id)}`}
+                        className="underline underline-offset-4"
+                      >
+                        {seller.name}
+                      </Link>
+                    ))
+                  : "No informadas en el catálogo"}
+              </dd>
+            </div>
+            {product.subtitle ? (
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-muted-foreground">Resumen breve</dt>
+                <dd className="mt-1 text-sm">{product.subtitle}</dd>
+              </div>
+            ) : null}
+            <div className="sm:col-span-2">
               <dt className="text-xs text-muted-foreground">Descripción</dt>
               <dd className="mt-1 whitespace-pre-wrap text-sm leading-6">
                 {product.description || "Sin descripción"}
@@ -63,11 +86,40 @@ export function ProductReviewDetail({
             <div>
               <dt className="text-xs text-muted-foreground">Variantes</dt>
               <dd className="mt-1 text-sm">
-                {product.variants?.map((variant) => variant.title).join(", ") ||
-                  "Sin variantes"}
+                {product.variants
+                  ?.map(
+                    (variant) =>
+                      `${variant.title}${variant.sku ? ` · ${variant.sku}` : ""}`,
+                  )
+                  .join(", ") || "Sin variantes"}
               </dd>
             </div>
+            {(
+              [
+                ["Material", product.material],
+                ["Peso (g)", product.weight],
+                ["Largo (mm)", product.length],
+                ["Ancho (mm)", product.width],
+                ["Alto (mm)", product.height],
+              ] as const
+            )
+              .filter(
+                ([, value]) =>
+                  value !== null && value !== undefined && value !== "",
+              )
+              .map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-xs text-muted-foreground">{label}</dt>
+                  <dd className="mt-1 text-sm">{value}</dd>
+                </div>
+              ))}
           </dl>
+          <div className="mt-6 border-t pt-6">
+            <ProductReviewImages
+              value={product.images}
+              label="Imágenes del producto"
+            />
+          </div>
         </CardContent>
       </Card>
       {productChange && (

@@ -8,7 +8,7 @@ import { createCustomerSdk, getCustomerSessionToken } from "@/lib/auth-sdk"
 export const CART_COOKIE = "marketplace_cart"
 export const RECEIPT_COOKIE = "marketplace_receipt"
 export const CART_FIELDS =
-  "*items,*items.variant,*items.variant.options,*items.offer,*region,*region.countries,*shipping_address,*billing_address,*shipping_methods,*payment_collection,*payment_collection.payment_sessions"
+  "*items,*items.variant,*items.variant.options,*items.variant.product,*items.variant.product.images,*items.offer,*items.offer.seller,*region,*region.countries,*shipping_address,*billing_address,*shipping_methods,*payment_collection,*payment_collection.payment_sessions"
 
 export async function cartSdk() {
   const sdk = createCustomerSdk(await getCustomerSessionToken())

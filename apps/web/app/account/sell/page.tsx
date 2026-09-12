@@ -11,7 +11,7 @@ import {
   getApplicationFormData,
   getApplicationNotifications,
 } from "@/features/vendor-onboarding/data"
-import { vendorLoginUrl } from "@/features/vendor-onboarding/presentation"
+import { vendorPanelUrl } from "@/features/vendor-onboarding/presentation"
 import { getVerificationCode } from "@/lib/auth-sdk"
 
 export const metadata: Metadata = {
@@ -22,11 +22,14 @@ export const metadata: Metadata = {
 export default function SellPage({
   searchParams,
 }: {
-  searchParams: Promise<{ offset?: string }>
+  searchParams: Promise<{ offset?: string; vendor?: string }>
 }) {
   return (
     <div className="max-w-4xl">
       <AccountHeading title="Vender en Marketplace V2" />
+      <Suspense fallback={null}>
+        <VendorSessionFeedback searchParams={searchParams} />
+      </Suspense>
       <Suspense
         fallback={
           <Skeleton className="h-96 w-full" aria-label="Cargando solicitud" />
@@ -71,11 +74,16 @@ async function ApplicationFormSection() {
       ) : (
         <ApplicationStatus
           response={response}
-          vendorUrl={vendorLoginUrl(process.env.NEXT_PUBLIC_VENDOR_URL)}
+          vendorUrl={vendorPanelUrl(process.env.NEXT_PUBLIC_VENDOR_URL)}
         />
       )}
     </>
   )
+}
+
+async function VendorSessionFeedback({ searchParams }: { searchParams: Promise<{ vendor?: string }> }) {
+  if ((await searchParams).vendor !== "unavailable") return null
+  return <p role="alert" className="mb-6 text-sm text-destructive">No pudimos abrir tu tienda. Vuelve a intentarlo; tu acceso puede haber cambiado.</p>
 }
 
 async function ApplicationHistorySection({

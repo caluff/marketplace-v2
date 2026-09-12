@@ -10,6 +10,7 @@ import type { SellerMemberDTO } from "@mercurjs/types";
 import { scopedClient } from "../workspace/operations";
 import { catalogCategories } from "./data";
 import { createCatalogBody, variantCombinations } from "./validation";
+import { productSpecifications } from "./product-specifications";
 import { validateCatalogImages } from "./media-validation";
 import { prepareCatalogImages, type CatalogAttachment } from "./image-submission";
 
@@ -256,6 +257,40 @@ function productForm() {
   return form;
 }
 describe("catalog proposals", () => {
+  it("submits native specifications and multiline copy without changing their units", () => {
+    const form = productForm();
+    form.set("subtitle", "Soft everyday shirt");
+    form.set("description", "First paragraph.\n\nSecond paragraph.");
+    form.set("material", " Cotton ");
+    form.set("weight", "250.5");
+    form.set("length", "700");
+    form.set("width", "500");
+    form.set("height", "20");
+    const body = createCatalogBody(form);
+    assert.equal(body.material, "Cotton");
+    assert.equal(body.weight, 250.5);
+    assert.equal(body.length, 700);
+    assert.equal(body.width, 500);
+    assert.equal(body.height, 20);
+    assert.equal(body.subtitle, "Soft everyday shirt");
+    assert.equal(body.description, "First paragraph.\n\nSecond paragraph.");
+    assert.equal(body.status, "proposed");
+  });
+  it("omits empty specifications on creation and clears only submitted fields on editing", () => {
+    const form = new FormData();
+    form.set("material", " ");
+    form.set("weight", "");
+    assert.deepEqual(productSpecifications(form, "create"), {});
+    assert.deepEqual(productSpecifications(form, "update"), { material: null, weight: null });
+    assert.deepEqual(productSpecifications(new FormData(), "update"), {});
+  });
+  it("rejects invalid measurements before creating a product proposal", () => {
+    for (const value of ["0", "-1", "Infinity", "NaN", "2kg", "1,5", "0x10", "1e3", "9007199254740992"]) {
+      const form = productForm();
+      form.set("weight", value);
+      assert.throws(() => createCatalogBody(form), /peso/);
+    }
+  });
   it("creates native variant-axis attributes and separate master SKUs without top-level options", () => {
     const form = productForm();
     form.append("category_id", "pcat_clothing");

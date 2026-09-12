@@ -1,7 +1,6 @@
 import { CatalogSection } from "@/components/catalog-section"
 import { Hero } from "@/components/hero"
 import { SiteFooter } from "@/components/site-footer"
-import { SiteHeader } from "@/components/site-header"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
 import { getStorefrontCatalog, getStorefrontCategories } from "@/lib/medusa"
 
@@ -27,11 +26,6 @@ export default function Home({ searchParams }: HomeProps) {
 
   return (
     <>
-      <SiteHeader
-        categories={categories}
-        activeCategoryId={activeCategoryId}
-        customer={customer}
-      />
       <main>
         <Hero />
         <CatalogSection

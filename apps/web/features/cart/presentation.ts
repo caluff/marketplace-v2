@@ -1,4 +1,7 @@
 import type { HttpTypes, ShippingOptionDTO } from "@medusajs/types"
+import type { StorefrontOffer } from "@/features/catalog/offers"
+
+const MAX_CART_QUANTITY = 99
 
 export function formatMoney(amount: number, currency = "usd") {
   return new Intl.NumberFormat("es-US", {
@@ -13,6 +16,43 @@ export function parseQuantity(value: FormDataEntryValue | null) {
     throw new Error("Selecciona una cantidad entre 1 y 99.")
   }
   return Number(text)
+}
+
+export function cartItemAvailability(
+  offer?: Pick<
+    StorefrontOffer,
+    "allow_backorder" | "inventory_quantity" | "manage_inventory"
+  >,
+) {
+  if (offer?.manage_inventory === false || offer?.allow_backorder === true) {
+    return {
+      maxQuantity: MAX_CART_QUANTITY,
+      availabilityLabel: "Disponible para pedido",
+    }
+  }
+
+  if (
+    typeof offer?.inventory_quantity !== "number" ||
+    !Number.isFinite(offer.inventory_quantity)
+  ) {
+    return {
+      maxQuantity: MAX_CART_QUANTITY,
+      availabilityLabel: "Disponibilidad no informada",
+    }
+  }
+
+  const availableQuantity = Math.max(
+    0,
+    Math.floor(offer.inventory_quantity),
+  )
+
+  return {
+    maxQuantity: Math.min(MAX_CART_QUANTITY, availableQuantity),
+    availabilityLabel:
+      availableQuantity === 1
+        ? "1 unidad disponible"
+        : `${availableQuantity} unidades disponibles`,
+  }
 }
 
 export function isUsCart(cart: HttpTypes.StoreCart) {

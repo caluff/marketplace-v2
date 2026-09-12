@@ -30,6 +30,7 @@
     "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
+    "@marketplace-v2/api": "workspace:*",
     "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
     "@mercurjs/types": "2.3.3",
     "@tailwindcss/postcss": "4.3.3",

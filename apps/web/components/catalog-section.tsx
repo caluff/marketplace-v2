@@ -210,14 +210,13 @@ async function CatalogContent(props: CatalogSectionProps) {
             </div>
           ) : null}
           <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
-            {result.products.map((product, index) => (
+            {result.products.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 offers={result.offers.filter(
                   (offer) => offer.product_id === product.id,
                 )}
-                index={index}
                 favoriteAction={
                   <Suspense
                     fallback={

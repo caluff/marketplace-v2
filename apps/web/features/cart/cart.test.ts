@@ -2,12 +2,55 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import type { HttpTypes, ShippingOptionDTO } from "@medusajs/types"
 import {
+  cartItemAvailability,
   hasShippingCoverage,
   isUsCart,
   parseQuantity,
   selectedShippingOptions,
   shippingGroups,
 } from "./presentation.ts"
+
+test("cart availability uses managed inventory as the quantity limit", () => {
+  assert.deepEqual(
+    cartItemAvailability({
+      manage_inventory: true,
+      allow_backorder: false,
+      inventory_quantity: 7.8,
+    }),
+    { maxQuantity: 7, availabilityLabel: "7 unidades disponibles" },
+  )
+  assert.deepEqual(
+    cartItemAvailability({
+      manage_inventory: true,
+      allow_backorder: false,
+      inventory_quantity: 1,
+    }),
+    { maxQuantity: 1, availabilityLabel: "1 unidad disponible" },
+  )
+})
+
+test("backorders, unmanaged and unknown inventory keep the cart safety limit", () => {
+  assert.equal(
+    cartItemAvailability({
+      manage_inventory: true,
+      allow_backorder: true,
+      inventory_quantity: 0,
+    }).maxQuantity,
+    99,
+  )
+  assert.equal(
+    cartItemAvailability({
+      manage_inventory: false,
+      allow_backorder: false,
+      inventory_quantity: 0,
+    }).maxQuantity,
+    99,
+  )
+  assert.deepEqual(cartItemAvailability(), {
+    maxQuantity: 99,
+    availabilityLabel: "Disponibilidad no informada",
+  })
+})
 
 test("cart quantities accept whole units within the supported range", () => {
   assert.equal(parseQuantity("1"), 1)

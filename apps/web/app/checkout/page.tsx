@@ -4,6 +4,8 @@ import { Suspense } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getCustomerAccount } from "@/features/account/data"
+import { listCheckoutAddresses } from "@/features/cart/checkout-address"
 import { OrderSummary } from "@/features/cart/components/order-summary"
 import {
   getCheckoutCart,
@@ -11,6 +13,7 @@ import {
   getShippingOptions,
 } from "@/features/cart/data"
 import { AddressStep } from "@/features/checkout/components/address-step"
+import { CheckoutAssurance } from "@/features/checkout/components/checkout-assurance"
 import { PaymentStep } from "@/features/checkout/components/payment-step"
 import { PaymentReturn } from "@/features/checkout/components/payment-return"
 import { RetryCheckout } from "@/features/checkout/components/retry-checkout"
@@ -34,9 +37,6 @@ export default function CheckoutPage({ searchParams }: CheckoutPageProps) {
         <h1 className="text-4xl font-medium tracking-tight sm:text-5xl">
           Finalizar compra
         </h1>
-        <p className="text-xs font-semibold tracking-wider uppercase">
-          Estados Unidos · USD
-        </p>
       </div>
       <Suspense fallback={<CheckoutSkeleton />}>
         <CheckoutContent searchParams={searchParams} />
@@ -120,7 +120,13 @@ async function CheckoutContent({ searchParams }: CheckoutPageProps) {
             ))}
           </ol>
         </nav>
-        {step === "address" ? <AddressStep key={cart.id} cart={cart} /> : null}
+        {step === "address" ? (
+          <Suspense
+            fallback={<StepSkeleton label="Cargando tus direcciones" />}
+          >
+            <AddressContent cart={cart} />
+          </Suspense>
+        ) : null}
         {step === "shipping" ? (
           <Suspense
             fallback={<StepSkeleton label="Cargando opciones de envío" />}
@@ -137,9 +143,38 @@ async function CheckoutContent({ searchParams }: CheckoutPageProps) {
         ) : null}
       </div>
       <aside className="lg:sticky lg:top-24">
-        <OrderSummary cart={cart} />
+        <OrderSummary cart={cart}>
+          <CheckoutAssurance />
+        </OrderSummary>
       </aside>
     </div>
+  )
+}
+
+async function AddressContent({
+  cart,
+}: {
+  cart: NonNullable<Awaited<ReturnType<typeof getCheckoutCart>>>
+}) {
+  let account: Awaited<ReturnType<typeof getCustomerAccount>>
+  let addresses: Awaited<ReturnType<typeof listCheckoutAddresses>>
+  try {
+    account = await getCustomerAccount()
+    addresses = account
+      ? await listCheckoutAddresses(account.sdk.store.customer)
+      : []
+  } catch {
+    return (
+      <LoadError message="No pudimos cargar tu cuenta y tus direcciones. Si tu sesión venció, vuelve a iniciar sesión." />
+    )
+  }
+  return (
+    <AddressStep
+      key={`${cart.id}_${account?.customer.id ?? "guest"}`}
+      cart={cart}
+      customer={account?.customer ?? null}
+      addresses={addresses}
+    />
   )
 }
 

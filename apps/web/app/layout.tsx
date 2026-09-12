@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { Geist_Mono, Public_Sans } from "next/font/google"
 import type { ReactNode } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SiteHeader } from "@/components/site-header"
+import { SiteHeaderVisibility } from "@/components/site-header-visibility"
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
@@ -37,6 +39,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           disableTransitionOnChange
           storageKey="marketplace-v2-theme"
         >
+          <SiteHeaderVisibility>
+            <SiteHeader />
+          </SiteHeaderVisibility>
           {children}
           <Toaster />
         </ThemeProvider>

@@ -1,5 +1,6 @@
 import type { HttpTypes } from "@mercurjs/types";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,12 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
 import {
   Table,
   TableBody,
@@ -38,18 +33,6 @@ export function ProductReviewList({
 }) {
   return (
     <div className="space-y-6">
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
-          Catálogo · Mercur
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Revisión de productos
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Publicación de nuevos productos y revisión de cambios. Las ofertas,
-          precios y existencias pertenecen a cada vendedor.
-        </p>
-      </div>
       <Card>
         <CardHeader>
           <CardTitle>Catálogo del marketplace</CardTitle>
@@ -59,46 +42,12 @@ export function ProductReviewList({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            action="/dashboard/product-review"
-            className="mb-6 grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]"
-          >
-            <Field>
-              <FieldLabel htmlFor="product-search">Buscar producto</FieldLabel>
-              <Input
-                id="product-search"
-                name="q"
-                maxLength={100}
-                defaultValue={filters.q}
-                placeholder="Título o identificador"
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="product-status">Estado</FieldLabel>
-              <NativeSelect
-                id="product-status"
-                name="status"
-                defaultValue={filters.status}
-              >
-                <NativeSelectOption value="all">
-                  Todos los estados
-                </NativeSelectOption>
-                {Object.entries(PRODUCT_STATUS_LABELS).map(([value, label]) => (
-                  <NativeSelectOption key={value} value={value}>
-                    {label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </Field>
-            <Button type="submit" variant="outline">
-              Filtrar
-            </Button>
-          </form>
           {result.products.length ? (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Producto</TableHead>
+                  <TableHead>Tiendas vinculadas</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Cambios</TableHead>
                   <TableHead>
@@ -110,10 +59,38 @@ export function ProductReviewList({
                 {result.products.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
-                      <p className="font-semibold">{product.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {product.handle}
-                      </p>
+                      <Link
+                        href={`/dashboard/product-review/${encodeURIComponent(product.id)}`}
+                        className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {product.thumbnail?.startsWith("https://") ? (
+                          <Image
+                            src={product.thumbnail}
+                            alt=""
+                            width={48}
+                            height={48}
+                            unoptimized
+                            className="size-12 shrink-0 rounded-md border object-contain"
+                          />
+                        ) : (
+                          <span className="flex size-12 shrink-0 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
+                            Sin foto
+                          </span>
+                        )}
+                        <span>
+                          <span className="block font-semibold">
+                            {product.title}
+                          </span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {product.handle}
+                          </span>
+                        </span>
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {product.sellers
+                        ?.map((seller) => seller.name)
+                        .join(", ") || "No informadas en el catálogo"}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -150,8 +127,7 @@ export function ProductReviewList({
             </Table>
           ) : (
             <p className="border border-dashed border-border px-6 py-12 text-center text-sm text-muted-foreground">
-              No hay productos con estos filtros. No se muestran datos de
-              demostración.
+              No hay productos con estos filtros.
             </p>
           )}
           <nav

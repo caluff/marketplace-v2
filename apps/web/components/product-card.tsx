@@ -16,7 +16,6 @@ import {
 
 type ProductCardProps = {
   product: HttpTypes.StoreProduct
-  index: number
   isFavorite?: boolean
   authenticated?: boolean
   favoriteAction?: ReactNode
@@ -25,7 +24,6 @@ type ProductCardProps = {
 
 export function ProductCard({
   product,
-  index,
   isFavorite = false,
   authenticated = false,
   favoriteAction,
@@ -70,9 +68,6 @@ export function ProductCard({
               </div>
             )}
           </Link>
-          <span className="pointer-events-none absolute top-3 left-3 grid size-9 place-items-center border border-border bg-background font-sans text-[0.68rem] font-black tracking-[0.08em]">
-            {String(index + 1).padStart(2, "0")}
-          </span>
           {isSale ? (
             <Badge variant="accent" className="absolute bottom-3 left-3">
               Oferta

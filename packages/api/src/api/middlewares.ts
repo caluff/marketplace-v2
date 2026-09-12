@@ -22,6 +22,11 @@ import { nativeStripePayoutWebhookGuard } from "../lib/stripe-connect/native-gua
 import { assertPaymentCollectionSellersReadyForSale } from "../lib/stripe-connect/sale-readiness";
 import { assertPaymentCollectionProductsNotPaused } from "../lib/catalog/sale-pause";
 import { vendorOfferPriceMiddlewares } from "./vendor/offers/[id]/price/middlewares";
+import { algoliaMiddlewares } from "./store/products/search/middlewares";
+import { vendorOrderStageMiddlewares } from "./vendor/orders/middlewares";
+import { orderFinanceMiddlewares } from "./order-finance-middlewares";
+import { googleAuthMiddlewares } from "./auth/google/complete/middlewares";
+import { vendorSessionMiddlewares } from "./auth/vendor-session/middlewares";
 
 async function requireReadyPaymentSellers(
   req: MedusaRequest,
@@ -54,7 +59,12 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
-    { matcher: /^\/(?:store|admin|vendor)(?:\/.*)?$/, middlewares: [performanceTrace] },
+    ...googleAuthMiddlewares,
+    ...vendorSessionMiddlewares,
+    {
+      matcher: /^\/(?:store|admin|vendor)(?:\/.*)?$/,
+      middlewares: [performanceTrace],
+    },
     ...vendorApplicationMiddlewares,
     ...vendorInventoryMiddlewares,
     ...vendorCatalogMiddlewares,
@@ -62,12 +72,15 @@ export default defineMiddlewares({
     ...vendorCatalogImageMiddlewares,
     ...vendorStripeAccountRefreshMiddlewares,
     ...vendorPaymentProtectionMiddlewares,
+    ...orderFinanceMiddlewares,
     ...vendorShippingConfigurationMiddlewares,
     ...vendorWarehouseMiddlewares,
+    ...vendorOrderStageMiddlewares,
     ...productSaleStatusMiddlewares,
     ...storeProductSaleStatusMiddlewares,
     ...customerAccountMiddlewares,
     ...favoriteMiddlewares,
+    ...algoliaMiddlewares,
     {
       matcher: "/store/payment-collections/:id/payment-sessions",
       method: "POST",

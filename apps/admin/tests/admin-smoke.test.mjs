@@ -37,15 +37,28 @@ test("ships the dashboard and functional operator login routes", async () => {
   const login = await read("src/app/login/page.tsx");
   const layout = await read("src/app/dashboard/layout.tsx");
   const actions = await read("src/app/auth-actions.ts");
+  const completeLogin = await read("src/lib/auth-login.ts");
 
   assert.match(dashboard, /Panorama del marketplace/);
-  assert.match(dashboard, /DEMO_SOURCE_LABEL/);
+  assert.match(dashboard, /OverviewMetric/);
+  assert.match(dashboard, /Suspense/);
+  assert.doesNotMatch(dashboard, /DEMO_SOURCE_LABEL|demo-data/);
   assert.match(login, /AdminLoginForm/);
   assert.match(layout, /getCurrentAdmin/);
   assert.match(layout, /redirect\("\/login\?reason=expired/);
   assert.match(actions, /sdk\.auth\.login\("user", "emailpass"/);
-  assert.match(actions, /authenticated\.admin\.user\.me\(\)/);
+  assert.match(completeLogin, /authenticated\.admin\.user\.me\(\)/);
   assert.doesNotMatch(login, /autenticación final no\s+está conectada/i);
+});
+
+test("links operational stores and orders to real routes", async () => {
+  const navigation = await read("src/components/admin/navigation.tsx");
+  assert.match(navigation, /href: "\/dashboard\/stores"/);
+  assert.match(navigation, /href: "\/dashboard\/orders"/);
+  assert.doesNotMatch(
+    navigation,
+    /\/dashboard#stores|conservan sus datos de demostración/,
+  );
 });
 
 test("does not expose public operator registration", async () => {

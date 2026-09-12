@@ -16,7 +16,7 @@ import { sellerApplicationUrl } from "../../lib/storefront-url";
 import { safeRedirectPath } from "../../lib/auth-utils";
 import { offerConfiguration } from "../offers/data";
 
-function productReadHarness(respond: (path: string) => Promise<unknown>) {
+function productReadHarness(respond: (path: string, query?: Record<string, unknown>) => Promise<unknown>) {
   const exports = {} as typeof import("./data");
   const nativeRequire = createRequire(import.meta.url);
   const calls: string[] = [];
@@ -25,7 +25,7 @@ function productReadHarness(respond: (path: string) => Promise<unknown>) {
     calls.push(String(path));
     assert.equal(init?.headers && (init.headers as Record<string, string>)["x-seller-id"], "seller_current");
     assert.equal(init?.cache, "no-store");
-    return await respond(String(path)) as T;
+    return await respond(String(path), init?.query) as T;
   };
   const membership = { seller: { id: "seller_current", status: "open" }, member: { is_active: true } } as SellerMemberDTO;
   runInNewContext(ts.transpileModule(readFileSync(new URL("./data.ts", import.meta.url), "utf8"), {
@@ -46,6 +46,28 @@ function productReadHarness(respond: (path: string) => Promise<unknown>) {
 }
 
 describe("parallel vendor detail reads", () => {
+  it("loads existing specifications for editing and preserves them in the submitted proposal", async () => {
+    const specifications = { material: "Cotton", weight: 250.5, length: 700, width: 500, height: 20 };
+    const stored = { id: "prod_1", title: "Shirt", ...specifications };
+    const reader = productReadHarness(async (path, query) => {
+      if (path.endsWith("catalog-options")) return { options: [], variants: [] };
+      const fields = String(query?.fields).split(",");
+      return { product: Object.fromEntries(Object.entries(stored).filter(([name]) => fields.includes(name))) };
+    });
+    const { product } = await reader.detail("prod_1");
+    for (const [name, value] of Object.entries(specifications)) {
+      assert.equal(product[name as keyof typeof specifications], value);
+    }
+    const submission = form({ id: product.id, title: "Updated shirt" });
+    for (const name of Object.keys(specifications) as (keyof typeof specifications)[]) {
+      submission.set(name, String(product[name] ?? ""));
+    }
+    const writer = harness();
+    await writer.operations.editProduct(submission);
+    assert.deepEqual(writer.calls[0].init?.body, {
+      title: "Updated shirt", subtitle: "", description: "", ...specifications,
+    });
+  });
   it("starts detail, axes, profiles and warehouse without a visibility preflight or read waterfall", async () => {
     const release = Promise.withResolvers<void>();
     const h = productReadHarness(async (path) => {
@@ -213,6 +235,19 @@ describe("vendor mutation authorization", () => {
 });
 
 describe("product moderation", () => {
+  it("sends specification changes and clearing through the moderated product endpoint", async () => {
+    const change = { id: "change_specs", status: "pending" };
+    const context = harness({ respond: () => ({ product_change: change }) });
+    const response = await context.operations.editProduct(form({
+      id: "prod_1", title: "Product", material: "Aluminium", weight: "250.5", length: "", width: "80", height: "120",
+    }));
+    assert.deepEqual(response, { product_change: change });
+    assert.equal(context.calls.length, 1);
+    assert.equal(context.calls[0].init?.method, "POST");
+    assert.deepEqual(context.calls[0].init?.body, {
+      title: "Product", subtitle: "", description: "", material: "Aluminium", weight: 250.5, length: null, width: 80, height: 120,
+    });
+  });
   it("allows only proposed creation, never client-requested publication", async () => {
     const context = harness();
     await assert.rejects(

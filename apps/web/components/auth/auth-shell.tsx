@@ -2,7 +2,6 @@ import { Store } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { ModeToggle } from "@/components/mode-toggle"
 import {
   Card,
   CardContent,
@@ -16,15 +15,16 @@ export function AuthShell({
   title,
   description,
   children,
+  variant = "split",
 }: {
   eyebrow: string
   title: string
   description: string
   children: ReactNode
+  variant?: "split" | "compact"
 }) {
   return (
-    <main className="relative grid min-h-dvh bg-background font-sans lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
-      <ModeToggle className="absolute top-4 right-4 z-10 size-11 bg-background" />
+    <main className="relative grid flex-1 bg-background font-sans lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
       <section className="relative hidden overflow-hidden bg-(--auth-sidebar) p-12 text-(--auth-sidebar-foreground) [--auth-sidebar:oklch(0.205_0_0)] [--auth-sidebar-foreground:oklch(0.985_0_0)] lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_20%_20%,color-mix(in_oklab,var(--brand-accent)_28%,transparent),transparent_28rem)]" aria-hidden="true" />
         <Link href="/" className="relative flex min-h-11 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-brand-accent">
@@ -44,6 +44,16 @@ export function AuthShell({
         <p className="relative text-xs text-(--auth-sidebar-foreground)/65">Tu cuenta, en un solo lugar.</p>
       </section>
       <section className="flex min-w-0 items-center justify-center px-5 pt-20 pb-10 sm:px-10 lg:py-20">
+        {variant === "compact" ? (
+          <div className="w-full max-w-sm space-y-8">
+            <div className="space-y-2 text-center">
+              <p className="sr-only">{eyebrow}</p>
+              <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+              <p className="text-sm text-balance text-muted-foreground">{description}</p>
+            </div>
+            {children}
+          </div>
+        ) : (
         <Card className="w-full max-w-md gap-0 rounded-xl border-border/80 shadow-sm">
           <CardHeader className="gap-1.5 pt-5 pb-4">
             <Link href="/" className="mb-2 flex min-h-11 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
@@ -60,6 +70,7 @@ export function AuthShell({
           </CardHeader>
           <CardContent className="pb-6">{children}</CardContent>
         </Card>
+        )}
       </section>
     </main>
   )

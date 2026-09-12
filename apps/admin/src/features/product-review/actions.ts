@@ -94,6 +94,7 @@ export async function reviewProductAction(
         },
       );
     }
+    revalidatePath("/dashboard");
     revalidatePath("/dashboard/product-review");
     revalidatePath(`/dashboard/product-review/${productId}`);
     return {

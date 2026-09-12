@@ -60,8 +60,7 @@ export function ApplicationStatus({
           {approved ? (
             <>
               <p className="text-sm leading-6">
-                Inicia sesión en el panel con el mismo correo y contraseña. El
-                acceso del vendedor se valida por separado.
+                Accede a tu tienda con la sesión actual de tu cuenta.
               </p>
               {canAccess && vendorUrl ? (
                 <Button asChild>

@@ -42,6 +42,7 @@ export function safeRedirectPath(value: FormDataEntryValue | string | null | und
     const base = new URL("https://vendor.invalid");
     const candidate = new URL(value, base);
     const authenticationRoutes = [
+      "/auth/google/callback",
       "/seller/login",
       "/seller/forgot-password",
       "/seller/reset-password",

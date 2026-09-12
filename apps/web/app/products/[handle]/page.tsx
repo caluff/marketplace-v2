@@ -1,13 +1,17 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Suspense } from "react"
+import { Suspense, type ReactNode } from "react"
 import { notFound } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
-import { SiteHeader } from "@/components/site-header"
+import { ArrowLeft, ChevronRight, Heart } from "lucide-react"
 import { SiteFooter } from "@/components/site-footer"
 import { Skeleton } from "@/components/ui/skeleton"
+import { FavoriteButton } from "@/features/account/components/favorite-button"
+import { getFavoriteProductIds } from "@/features/account/favorites"
 import { ProductGallery } from "@/features/catalog/product-gallery"
 import { ProductOffers } from "@/features/catalog/product-offers"
+import { ProductDetails } from "@/features/catalog/product-details"
+import { ProductSummary } from "@/features/catalog/product-summary"
+import { RelatedProducts } from "@/features/catalog/related-products"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
 import {
   getStorefrontCategories,
@@ -16,7 +20,6 @@ import {
 } from "@/lib/medusa"
 
 export const dynamic = "force-dynamic"
-
 type ProductPageProps = { params: Promise<{ handle: string }> }
 
 export async function generateMetadata({
@@ -36,21 +39,83 @@ export async function generateMetadata({
   }
 }
 
+const PRODUCT_GRID =
+  "grid items-start gap-6 md:grid-cols-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(17rem,0.8fr)]"
+
+function OfferSkeleton({
+  summary,
+  overview,
+}: {
+  summary: ReactNode
+  overview?: ReactNode
+}) {
+  return (
+    <>
+      <section className="min-w-0">
+        {summary}
+        <div
+          className="my-5 space-y-3 border-y border-border py-5"
+          aria-label="Cargando precio"
+        >
+          <Skeleton className="h-9 w-40" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        {overview}
+      </section>
+      <div
+        className="space-y-5 border border-border p-5 md:col-span-2 lg:col-span-1 lg:row-span-2"
+        aria-label="Cargando disponibilidad y opciones de compra"
+      >
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-11 w-32" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    </>
+  )
+}
+
 function ProductSkeleton() {
   return (
-    <div
-      aria-label="Cargando producto"
-      className="grid gap-8 md:grid-cols-[1.1fr_1fr] lg:gap-16"
-    >
-      <Skeleton className="aspect-[4/5] w-full" />
-      <div className="space-y-6 py-4">
-        <Skeleton className="h-14 w-4/5" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-16 w-1/2" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
+    <div aria-label="Cargando producto" className={PRODUCT_GRID}>
+      <Skeleton className="aspect-square w-full" />
+      <OfferSkeleton
+        summary={
+          <div className="space-y-3">
+            <Skeleton className="h-7 w-24" />
+            <Skeleton className="h-10 w-4/5" />
+            <Skeleton className="h-6 w-full" />
+          </div>
+        }
+      />
     </div>
+  )
+}
+
+async function ProductFavorite({ productId }: { productId: string }) {
+  let customer: Awaited<ReturnType<typeof getCurrentCustomer>>
+  try {
+    customer = await getCurrentCustomer()
+  } catch {
+    return (
+      <span
+        role="status"
+        aria-label="Favoritos no disponibles"
+        title="Favoritos no disponibles"
+        className="grid size-11 shrink-0 place-items-center border border-border text-muted-foreground"
+      >
+        <Heart className="size-4" aria-hidden="true" />
+      </span>
+    )
+  }
+  return (
+    <FavoriteButton
+      productId={productId}
+      saved={getFavoriteProductIds(customer?.metadata).includes(productId)}
+      authenticated={Boolean(customer)}
+      compact
+    />
   )
 }
 
@@ -72,7 +137,7 @@ async function ProductContent({
           Vuelve a intentar en unos instantes.
         </p>
         <Link
-          href={`/products/${encodeURIComponent(handle)}`}
+          href={"/products/" + encodeURIComponent(handle)}
           className="mt-6 inline-flex min-h-11 items-center font-sans underline underline-offset-4"
         >
           Reintentar
@@ -90,71 +155,106 @@ async function ProductContent({
       ].filter((image): image is string => Boolean(image)),
     ),
   ]
+  const summary = <ProductSummary product={product} />
+  const overview = product.description ? (
+    <p className="line-clamp-4 whitespace-pre-line break-words font-sans text-sm leading-6 text-muted-foreground">
+      {product.description}
+    </p>
+  ) : null
+  const category = product.categories?.[0]
   return (
     <>
-      <article className="grid items-start gap-8 md:grid-cols-[1.1fr_1fr] lg:gap-16">
-        <ProductGallery title={product.title} sources={images} />
-        <div className="md:sticky md:top-28">
-          {product.categories?.[0] ? (
-            <Link
-              href={`/?category_id=${encodeURIComponent(product.categories[0].id)}#catalog`}
-              className="font-sans text-xs font-bold tracking-[0.14em] text-brand-accent uppercase"
-            >
-              {product.categories[0].name}
-            </Link>
-          ) : null}
-          <h1 className="mt-3 text-4xl tracking-[-0.035em] sm:text-5xl lg:text-6xl">
-            {product.title}
-          </h1>
-          {product.subtitle ? (
-            <p className="mt-5 font-sans text-lg text-muted-foreground">
-              {product.subtitle}
-            </p>
-          ) : null}
-          {product.description ? (
-            <p className="mt-6 whitespace-pre-line font-sans text-sm leading-7 text-muted-foreground">
-              {product.description}
-            </p>
-          ) : null}
-          <Suspense
-            fallback={
-              <div
-                aria-label="Cargando precio y disponibilidad"
-                className="mt-8 space-y-6"
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <nav
+          aria-label="Ruta del producto"
+          className="flex min-w-0 flex-wrap items-center gap-2 font-sans text-xs text-muted-foreground"
+        >
+          <Link href="/search" className="hover:text-foreground">
+            Productos
+          </Link>
+          {category ? (
+            <>
+              <ChevronRight className="size-3" aria-hidden="true" />
+              <Link
+                href={"/search?category_id=" + encodeURIComponent(category.id)}
+                className="hover:text-foreground"
               >
-                <Skeleton className="h-28 w-full" />
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            }
+                {category.name}
+              </Link>
+            </>
+          ) : null}
+          <ChevronRight className="size-3" aria-hidden="true" />
+          <span
+            className="max-w-60 truncate text-foreground"
+            aria-current="page"
           >
-            <ProductOffers product={product} regionPromise={regionPromise} />
-          </Suspense>
+            {product.title}
+          </span>
+        </nav>
+        <Suspense
+          fallback={
+            <Skeleton
+              className="size-11 shrink-0"
+              aria-label="Cargando favorito"
+            />
+          }
+        >
+          <ProductFavorite productId={product.id} />
+        </Suspense>
+      </div>
+      <article className={PRODUCT_GRID}>
+        <ProductGallery title={product.title} sources={images} />
+        <Suspense
+          fallback={<OfferSkeleton summary={summary} overview={overview} />}
+        >
+          <ProductOffers
+            product={product}
+            regionPromise={regionPromise}
+            summary={summary}
+            overview={overview}
+          />
+        </Suspense>
+        <div className="min-w-0 md:col-span-2">
+          <ProductDetails product={product} />
         </div>
       </article>
+      <Suspense
+        fallback={
+          <div
+            className="mt-8 border-t border-border pt-6"
+            aria-label="Cargando otros productos"
+          >
+            <h2 className="mb-5 font-sans text-base font-bold">
+              También te puede interesar
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className="h-28 w-full" />
+              ))}
+            </div>
+          </div>
+        }
+      >
+        <RelatedProducts product={product} />
+      </Suspense>
     </>
   )
 }
 
 export default function ProductPage(props: ProductPageProps) {
   const categories = getStorefrontCategories()
-  const customer = getCurrentCustomer()
   const regionPromise = getStorefrontRegion()
-  // ProductOffers reports this error locally, once the product has rendered.
   void regionPromise.catch(() => undefined)
   return (
     <>
-      <SiteHeader categories={categories} customer={customer} />
-      <main className="mx-auto w-full max-w-[90rem] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
-        <nav aria-label="Ruta de navegación" className="mb-8">
-          <Link
-            href="/#catalog"
-            className="inline-flex min-h-11 items-center gap-2 font-sans text-sm font-semibold hover:text-brand-accent"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Volver al catálogo
-          </Link>
-        </nav>
+      <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-4 sm:px-6 lg:px-10 lg:py-5">
+        <Link
+          href="/search"
+          className="mb-1 inline-flex min-h-11 items-center gap-2 font-sans text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" aria-hidden="true" />
+          Volver al catálogo
+        </Link>
         <Suspense fallback={<ProductSkeleton />}>
           <ProductContent {...props} regionPromise={regionPromise} />
         </Suspense>

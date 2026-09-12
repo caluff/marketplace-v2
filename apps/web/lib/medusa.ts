@@ -195,7 +195,7 @@ export const getStorefrontProduct = cache(async (handle: string) => {
       handle,
       limit: 1,
       fields:
-        "id,title,subtitle,description,handle,thumbnail,*images,*categories,*options,*variants,*variants.options",
+        "id,title,subtitle,description,handle,thumbnail,material,weight,length,width,height,*images,*categories,*options,*variants,*variants.options",
     })
     return products[0] ?? null
   }, STORE_API_TIMEOUT_MS)

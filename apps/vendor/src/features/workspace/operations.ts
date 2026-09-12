@@ -17,6 +17,7 @@ import {
 } from "./validation";
 import { createCatalogBody, selectedCategories, submittedImages } from "../catalog/validation";
 import { createMasterSku } from "../catalog/master-sku";
+import { productSpecifications } from "../catalog/product-specifications";
 
 export type AuthorizedVendor = { sdk: Medusa; membership: SellerMemberDTO };
 export type AuthorizeVendor = () => Promise<AuthorizedVendor>;
@@ -79,6 +80,7 @@ export function vendorOperations(authorize: AuthorizeVendor) {
         title: textField(form, "title", true, 200),
         subtitle: textField(form, "subtitle", false, 200),
         description: textField(form, "description", false, 10000),
+        ...productSpecifications(form, "update"),
         ...(form.has("categories_present") ? { categories: selectedCategories(form) } : {}),
         ...(form.has("images") ? { images: submittedImages(form) } : {}),
       } satisfies Pick<CreateProductDTO, "title" | "subtitle" | "description"> & Pick<MedusaHttpTypes.AdminUpdateProduct, "categories">;

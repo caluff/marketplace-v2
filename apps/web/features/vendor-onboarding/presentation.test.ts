@@ -10,7 +10,7 @@ import {
   formatApplicationEventDate,
   APPLICATION_LOGIN_PATH,
   STATUS_LABELS,
-  vendorLoginUrl,
+  vendorPanelUrl,
 } from "./presentation"
 import { safeRedirectPath } from "../../lib/auth-utils"
 
@@ -22,14 +22,14 @@ test("history formats UTC instants and handles invalid calendar dates without th
   assert.equal(formatApplicationEventDate("2026-09-03T20:30:00-04:00"), utc)
 })
 
-test("vendor login uses only a configured trusted origin and never transfers tokens", () => {
+test("vendor panel uses the current session through an internal handoff", () => {
   assert.equal(
-    vendorLoginUrl("https://vendors.example.com"),
-    "https://vendors.example.com/seller/login?next=%2Fseller",
+    vendorPanelUrl("https://vendors.example.com"),
+    "/auth/vendor",
   )
   assert.equal(
-    vendorLoginUrl("http://localhost:3002"),
-    "http://localhost:3002/seller/login?next=%2Fseller",
+    vendorPanelUrl("http://localhost:3002"),
+    "/auth/vendor",
   )
   for (const value of [
     undefined,
@@ -42,7 +42,7 @@ test("vendor login uses only a configured trusted origin and never transfers tok
     "https://example.com#token",
     "http://example.com",
   ])
-    assert.equal(vendorLoginUrl(value), null, value)
+    assert.equal(vendorPanelUrl(value), null, value)
 })
 
 test("application login return path survives safe redirect validation", () => {

@@ -14,7 +14,13 @@ function imageUrl(value: unknown) {
   }
 }
 
-function ImageList({ value, label }: { value: unknown; label: string }) {
+export function ProductReviewImages({
+  value,
+  label,
+}: {
+  value: unknown;
+  label: string;
+}) {
   const images = Array.isArray(value) ? value : [];
   return (
     <div className="min-w-0 space-y-3">
@@ -69,11 +75,14 @@ export function ProductChangeDetails({ details }: { details: unknown }) {
   ) {
     return (
       <div className="grid gap-6 rounded-md border border-border p-4 md:grid-cols-2">
-        <ImageList
+        <ProductReviewImages
           label="Imágenes actuales"
           value={"previous_value" in details ? details.previous_value : []}
         />
-        <ImageList label="Imágenes propuestas" value={details.value} />
+        <ProductReviewImages
+          label="Imágenes propuestas"
+          value={details.value}
+        />
       </div>
     );
   }
