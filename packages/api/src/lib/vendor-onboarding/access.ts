@@ -67,7 +67,8 @@ async function readApplicant(container: MedusaContainer, input: ApplicantIdentit
   ]);
   // Native Google authentication accepts only a signed, verified email claim.
   const googleVerified = !!google?.entity_id && googleEmail?.toLowerCase() === email.toLowerCase();
-  const emailVerified = googleVerified || verifications.some((entry) => !!entry.verified_at);
+  // Temporary local testing bypass; never persist a simulated verification.
+  const emailVerified = process.env.NODE_ENV === "development" || googleVerified || verifications.some((entry) => !!entry.verified_at);
   return { customer, identity, email, emailVerified, member, memberships };
 }
 

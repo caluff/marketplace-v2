@@ -103,6 +103,20 @@ function accessFixture() {
   return { container, auth, graph };
 }
 describe("live applicant authorization", () => {
+  it.each(["development", "production", "test"])("limits simulated email verification to development (%s)", async environment => {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = environment;
+    try {
+      const f = accessFixture();
+      const live = await loadApplicant(f.container, { customer_id: "cus_one", auth_identity_id: "auth_one" });
+      expect(live.emailVerified).toBe(environment === "development");
+      expect(f.auth.requestAuthVerification).not.toHaveBeenCalled();
+      await expect(loadApplicant(f.container, { customer_id: "cus_foreign", auth_identity_id: "auth_one" })).rejects.toMatchObject({ code: "identity_changed" });
+    } finally {
+      if (previous === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previous;
+    }
+  });
   it("rejects an actor mismatch without returning the parallel customer read or continuing verification", async () => {
     const f = accessFixture();
     await expect(loadApplicant(f.container, { customer_id: "cus_foreign", auth_identity_id: "auth_one" })).rejects.toMatchObject({ code: "identity_changed" });
