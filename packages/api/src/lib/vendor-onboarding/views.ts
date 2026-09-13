@@ -6,6 +6,7 @@ import { onboardingService, loadApplicant, requireReviewer, requireVendorAccess,
 import { ApplicationViewSchema, ApplicationNotificationSchema, AdminApplicationEventSchema, type ApplicationResponse, type ApplicationView, type AdminApplicationResponse, type AdminApplicationListResponse, type SellerSummary, type SetupCheck, type VendorOnboardingResponse } from "./schemas";
 import type { ApplicationRecord } from "../../modules/vendor-onboarding/service";
 import { OnboardingError } from "./errors";
+import { isTestEmailVerificationEnabled } from "./verification";
 
 const iso = (date: Date | string | null | undefined) => date ? new Date(date).toISOString() : null;
 export async function unreadCount(container: MedusaContainer, customerId: string) {
@@ -41,7 +42,7 @@ export async function applicantResponse(container: MedusaContainer, input: Appli
     try { await requireVendorAccess(container, membership.member_id, membership.seller_id); existingAccess = true; break; }
     catch (error) { if (!(error instanceof OnboardingError)) throw error; }
   }
-  return { application, applicant: { email: live.email, email_verified: live.emailVerified, existing_vendor_access: existingAccess }, unread_count };
+  return { application, applicant: { email: live.email, email_verified: live.emailVerified, existing_vendor_access: existingAccess, email_verification_test_mode: isTestEmailVerificationEnabled() }, unread_count };
 }
 export async function notificationsResponse(container: MedusaContainer, input: ApplicantIdentity, pagination: { limit: number; offset: number }) {
   await loadApplicant(container, input);

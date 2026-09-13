@@ -32,7 +32,6 @@ export function ApplicationReview({
       title: "Tu tienda",
       values: [
         data.store.name,
-        data.store.handle,
         data.store.description,
         data.store.website_url,
       ],

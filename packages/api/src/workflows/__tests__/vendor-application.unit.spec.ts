@@ -7,6 +7,8 @@ import type { ApplicationRecord, MutationRecord } from "../../modules/vendor-onb
 import type VendorOnboardingService from "../../modules/vendor-onboarding/service";
 import type { DraftData } from "../../lib/vendor-onboarding/schemas";
 import { warehouseFixture } from "./fixtures/vendor-warehouse";
+import { applicationStoreHandle } from "../../lib/vendor-onboarding/validation";
+import { SaveApplicationBodySchema } from "../../lib/vendor-onboarding/schemas";
 
 const data: DraftData = {
   responsible: { first_name: "Jane", last_name: "Buyer", phone: "+12025550123" },
@@ -14,6 +16,57 @@ const data: DraftData = {
   activity: { business_type: "individual", company_name: "", business_address: { address_1: "1 Main Street", address_2: "", city: "Washington", province: "DC", postal_code: "20001", country_code: "us" }, currency_code: "usd", category_ids: ["pcat_craft"], description: "Handmade home goods" },
 };
 const mutationId = "90885306-3217-46ab-8cef-fcf0ac647f8d";
+
+describe("internal store identifiers", () => {
+  it("replaces a taken legacy identifier when submitting without user intervention", async () => {
+    const f = fixture();
+    f.native.listSellers.mockImplementation(async filter => filter.handle === data.store.handle ? [{ id: "sel_existing" }] : []);
+    await mutateVendorApplicationWorkflow(f.container).run({ input: {
+      operation: "submit", applicant: { customer_id: "cus_buyer", auth_identity_id: "auth_buyer" },
+      body: { mutation_id: mutationId, expected_version: 2, accepted_terms: true },
+    } });
+    const update = f.onboarding.atomicMutation.mock.calls[0][0].update;
+    expect((update.submitted_data as DraftData).store.handle).toBe(applicationStoreHandle("cus_buyer"));
+    expect(update.data).toEqual(update.submitted_data);
+  });
+
+  it("assigns an identifier on save and ignores the client-provided value", async () => {
+    const f = fixture();
+    f.onboarding.listVendorApplications.mockResolvedValue([]);
+    await mutateVendorApplicationWorkflow(f.container).run({ input: {
+      operation: "save", applicant: { customer_id: "cus_buyer", auth_identity_id: "auth_buyer" },
+      body: { mutation_id: mutationId, expected_version: 0, current_step: "store", data },
+    } });
+    const saved = f.onboarding.atomicMutation.mock.calls[0][0].update.data as DraftData;
+    expect(saved.store.handle).toBe(applicationStoreHandle("cus_buyer"));
+    expect(saved.store.handle).not.toBe(data.store.handle);
+  });
+
+  it("preserves the persisted identifier when a client tries to replace it", async () => {
+    const f = fixture();
+    await mutateVendorApplicationWorkflow(f.container).run({ input: {
+      operation: "save", applicant: { customer_id: "cus_buyer", auth_identity_id: "auth_buyer" },
+      body: { mutation_id: mutationId, expected_version: 2, current_step: "store", data: { ...data, store: { ...data.store, handle: "replacement" } } },
+    } });
+    const saved = f.onboarding.atomicMutation.mock.calls[0][0].update.data as DraftData;
+    expect(saved.store.handle).toBe(data.store.handle);
+  });
+
+  it("accepts a draft without an identifier and generates it before submission", async () => {
+    const f = fixture();
+    const { handle: _handle, ...store } = data.store;
+    const body = SaveApplicationBodySchema.parse({ mutation_id: mutationId, expected_version: 2, current_step: "store", data: { ...data, store } });
+    f.onboarding.listVendorApplications.mockResolvedValue([{ ...f.state().app, data: body.data }]);
+    await mutateVendorApplicationWorkflow(f.container).run({ input: {
+      operation: "submit", applicant: { customer_id: "cus_buyer", auth_identity_id: "auth_buyer" },
+      body: { mutation_id: mutationId, expected_version: 2, accepted_terms: true },
+    } });
+    const update = f.onboarding.atomicMutation.mock.calls[0][0].update;
+    expect((update.submitted_data as DraftData).store.handle).toBe(applicationStoreHandle("cus_buyer"));
+    expect(update.data).toEqual(update.submitted_data);
+    expect(applicationStoreHandle("cus_other")).not.toBe(applicationStoreHandle("cus_buyer"));
+  });
+});
 
 function fixture(options: { reused?: boolean; verified?: boolean; failFinalize?: boolean; foreignMember?: boolean; inactive?: boolean; loseMemberResponse?: boolean; loseBindResponse?: boolean; loseCommitResponse?: boolean; loseSellerResponse?: boolean; unavailableCommitReadback?: boolean; loseCreateResponse?: boolean; loseLinkResponse?: boolean } = {}) {
   const warehouse = warehouseFixture(options);

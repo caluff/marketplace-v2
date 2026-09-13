@@ -16,11 +16,13 @@ export function VerificationPanel({
   verified,
   email,
   hasCode = false,
+  testMode = false,
   onVerified,
 }: {
   verified: boolean
   email: string
   hasCode?: boolean
+  testMode?: boolean
   onVerified?: () => void
 }) {
   const [isVerified, setIsVerified] = useState(verified)
@@ -58,8 +60,10 @@ export function VerificationPanel({
       <p className="text-sm leading-6 text-muted-foreground">
         La solicitud requiere verificar{" "}
         <span className="break-all font-medium">{email}</span>. Puedes guardar
-        el borrador mientras tanto. El envío de códigos depende de que
-        Marketplace V2 tenga habilitado el servicio de correo.
+        el borrador mientras tanto.{" "}
+        {testMode
+          ? "En este entorno de prueba puedes generar un código aquí y se completará automáticamente."
+          : "El envío de códigos depende de que Marketplace V2 tenga habilitado el servicio de correo."}
       </p>
       <div className="flex flex-wrap gap-3">
         <Button
@@ -70,6 +74,9 @@ export function VerificationPanel({
             startTransition(async () => {
               try {
                 const result = await requestApplicationVerificationAction()
+                if (result.status === "success" && result.testCode) {
+                  setCode(result.testCode)
+                }
                 setFeedback(result)
                 setCooldown(
                   Math.min(3600, Math.max(0, result.retryAfterSeconds ?? 0)),
@@ -88,10 +95,12 @@ export function VerificationPanel({
             ? `Volver a solicitar en ${cooldown}s`
             : pending
               ? "Procesando…"
-              : "Solicitar código"}
+              : testMode
+                ? "Generar código de prueba"
+                : "Solicitar código"}
         </Button>
       </div>
-      {!hasCode ? (
+      {!hasCode || code ? (
         <Field>
           <FieldLabel htmlFor="application-code">
             Código de verificación

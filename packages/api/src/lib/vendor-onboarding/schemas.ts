@@ -17,7 +17,7 @@ export const BusinessAddressSchema = z.strictObject({
 export const DraftDataSchema = z.strictObject({
   responsible: z.strictObject({ first_name: name(100), last_name: name(100), phone: text(32) }),
   store: z.strictObject({
-    name: name(120), handle: name(80), description: text(2000),
+    name: name(120), handle: name(80).default(""), description: text(2000),
     website_url: text(2048).refine((value) => {
       if (!value) return true;
       try { const url = new URL(value); return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password; }
@@ -54,7 +54,7 @@ export const ApplicationViewSchema = z.strictObject({
   review: ReviewSummarySchema.nullable(), approval_state: ApprovalStateSchema,
   seller: z.custom<SellerSummary>().nullable(), can_edit: z.boolean(), can_submit: z.boolean(), can_access_vendor: z.boolean(),
 });
-export const ApplicationResponseSchema = z.strictObject({ application: ApplicationViewSchema.nullable(), applicant: z.strictObject({ email: z.string(), email_verified: z.boolean(), existing_vendor_access: z.boolean() }), unread_count: z.number().int() });
+export const ApplicationResponseSchema = z.strictObject({ application: ApplicationViewSchema.nullable(), applicant: z.strictObject({ email: z.string(), email_verified: z.boolean(), existing_vendor_access: z.boolean(), email_verification_test_mode: z.boolean().optional() }), unread_count: z.number().int() });
 export const ApplicationNotificationSchema = z.strictObject({ id: z.string(), type: z.enum(["submitted", "changes_requested", "approved", "rejected"]), reason: z.string().nullable(), created_at: date, read_at: date.nullable() });
 export const AdminApplicationEventSchema = ApplicationNotificationSchema.extend({ submission_revision: z.number().int(), reviewer_id: z.string().nullable(), submitted_data: DraftDataSchema.nullable() });
 export const AdminApplicationSummarySchema = ApplicationViewSchema.pick({ id: true, status: true, version: true, submitted_at: true, reviewed_at: true, created_at: true, updated_at: true, approval_state: true }).extend({ customer: z.custom<ApplicantSummary>(), store_name: z.string(), business_type: z.enum(["individual", "company"]) });
@@ -64,7 +64,7 @@ export const AdminApplicationListResponseSchema = z.strictObject({ applications:
 export const ApplicationOptionsResponseSchema = z.strictObject({ country_codes: z.array(z.string()), currency_codes: z.array(z.string()), terms_version: z.string() });
 export const ApplicationNotificationsResponseSchema = z.strictObject({ notifications: z.array(ApplicationNotificationSchema), count: z.number(), limit: z.number(), offset: z.number(), unread_count: z.number() });
 export const ReadNotificationsResponseSchema = z.strictObject({ unread_count: z.number() });
-export const VerificationResponseSchema = z.strictObject({ requested: z.literal(true), retry_after_seconds: z.number() });
+export const VerificationResponseSchema = z.strictObject({ requested: z.literal(true), retry_after_seconds: z.number(), test_code: z.string().min(1).max(512).optional() });
 export const SetupCheckSchema = z.strictObject({ key: z.enum(["profile", "location", "first_product", "inventory"]), status: z.enum(["complete", "incomplete", "blocked"]), reason: z.string().nullable() });
 export const VendorOnboardingResponseSchema = z.strictObject({ seller: z.custom<SellerSummary>(), checks: z.array(SetupCheckSchema), completed_count: z.number(), total_count: z.number() });
 export type ApplicationStatus = z.infer<typeof ApplicationStatusSchema>;

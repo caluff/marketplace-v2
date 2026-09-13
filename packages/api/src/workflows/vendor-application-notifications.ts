@@ -1,22 +1,32 @@
-import { createStep, createWorkflow, StepResponse, WorkflowResponse } from "@medusajs/framework/workflows-sdk";
-import { requestVerificationWorkflow } from "@medusajs/core-flows";
+import { createStep, createWorkflow, StepResponse, WorkflowResponse, transform, when } from "@medusajs/framework/workflows-sdk";
+import { requestVerificationStep, requestVerificationWorkflow } from "@medusajs/core-flows";
 import { deliverEmailNotification } from "../lib/deliver-email-notification";
 import { loadApplicant, onboardingService, type ApplicantIdentity } from "../lib/vendor-onboarding/access";
 import { onboardingEmailConfiguration } from "../lib/vendor-onboarding/email";
 import { OnboardingError } from "../lib/vendor-onboarding/errors";
 import { canonicalHash } from "../lib/vendor-onboarding/validation";
 import { ReadNotificationsBodySchema } from "../lib/vendor-onboarding/schemas";
+import { isTestEmailVerificationEnabled } from "../lib/vendor-onboarding/verification";
 
 const prepareVerificationStep = createStep("prepare-verification", async (input: { applicant: ApplicantIdentity; ip: string }, { container }) => {
   const live = await loadApplicant(container, input.applicant);
-  if (!onboardingEmailConfiguration()) throw new OnboardingError("email_service_unconfigured", 503);
+  const testMode = isTestEmailVerificationEnabled();
+  if (!testMode && !onboardingEmailConfiguration()) throw new OnboardingError("email_service_unconfigured", 503);
   await onboardingService(container).reserveVerification(live.customer.id, canonicalHash(input.ip));
-  return new StepResponse({ auth_identity_id: live.identity.id, entity_id: live.email, entity_type: "email", code_provider: "token", metadata: { actor_type: "customer", vendor_onboarding: true } });
+  return new StepResponse({ testMode, request: { auth_identity_id: live.identity.id, entity_id: live.email, entity_type: "email", code_provider: "token", metadata: { actor_type: "customer", vendor_onboarding: true } } });
 });
 export const requestVendorApplicationVerificationWorkflow = createWorkflow("request-vendor-application-verification", function (input: { applicant: ApplicantIdentity; ip: string }) {
-  const request = prepareVerificationStep(input);
-  requestVerificationWorkflow.runAsStep({ input: request });
-  return new WorkflowResponse({ requested: true as const, retry_after_seconds: 60 });
+  const prepared = prepareVerificationStep(input);
+  // Reuse the native token generator without dispatching an email in test mode.
+  const testVerification = when("test-email-verification", prepared, data => data.testMode).then(() => requestVerificationStep(prepared.request));
+  when("email-verification-delivery", prepared, data => !data.testMode).then(() => {
+    requestVerificationWorkflow.runAsStep({ input: prepared.request });
+  });
+  return new WorkflowResponse(transform({ prepared, testVerification }, ({ prepared, testVerification }) => ({
+    requested: true as const,
+    retry_after_seconds: 60,
+    ...(prepared.testMode && testVerification ? { test_code: testVerification.code } : {}),
+  })));
 });
 const readNotificationsStep = createStep("read-notifications", async (input: { applicant: ApplicantIdentity; notification_ids: string[] }, { container }) => {
   await loadApplicant(container, input.applicant);

@@ -9,6 +9,10 @@ import { OnboardingError } from "./errors";
 
 export const TERMS_VERSION = "vendor-application-2026-09-04";
 export const ELIGIBLE_COUNTRIES = ["us"];
+export function applicationStoreHandle(customerId: string, persistedHandle?: string): string {
+  if (persistedHandle && persistedHandle.length >= 3 && persistedHandle.length <= 80 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(persistedHandle)) return persistedHandle;
+  return `store-${canonicalHash(customerId)}`;
+}
 export function canonicalHash(input: unknown): string {
   function canonical(value: unknown): string {
     if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -34,7 +38,7 @@ export function validateCompleteData(value: unknown): DraftData {
   if (!ELIGIBLE_COUNTRIES.includes(address.country_code)) throw new OnboardingError("not_eligible", 403);
   return data;
 }
-export async function validateSubmission(container: MedusaContainer, value: unknown, email: string) {
+export async function validateSubmission(container: MedusaContainer, value: unknown, email: string, customerId?: string) {
   const data = validateCompleteData(value);
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   const [options, categories] = await Promise.all([
@@ -49,6 +53,14 @@ export async function validateSubmission(container: MedusaContainer, value: unkn
   const service = container.resolve<NativeSellerService>(MercurModules.SELLER);
   const uniqueFields = [["name", data.store.name, "store_name_taken"], ["handle", data.store.handle, "store_handle_taken"], ["email", email, "store_email_taken"]] as const;
   const matches = await Promise.all(uniqueFields.map(([key, value]) => service.listSellers({ [key]: value }, { take: 1 })));
+  // Old drafts may contain a user-selected handle that became unavailable.
+  if (matches[1].length && customerId) {
+    const generatedHandle = applicationStoreHandle(customerId);
+    if (generatedHandle !== data.store.handle) {
+      data.store.handle = generatedHandle;
+      matches[1] = await service.listSellers({ handle: generatedHandle }, { take: 1 });
+    }
+  }
   for (const [index, sellers] of matches.entries()) {
     if (sellers.length) throw new OnboardingError(uniqueFields[index][2]);
   }

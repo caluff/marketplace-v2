@@ -106,13 +106,6 @@ export function validateStep(
   }
   if (step === "store" || step === "review") {
     required("store.name", data.store.name, 120)
-    if (
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(data.store.handle) ||
-      data.store.handle.length < 3 ||
-      data.store.handle.length > 80
-    )
-      errors["store.handle"] =
-        "Usa de 3 a 80 caracteres: letras minúsculas, números y guiones entre palabras."
     required("store.description", data.store.description, 2000)
     if (data.store.description.trim().length < 20)
       errors["store.description"] =

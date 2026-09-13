@@ -30,6 +30,7 @@ export default async function VerifyEmailPage({
           verified={response.applicant.email_verified}
           email={response.applicant.email}
           hasCode={Boolean(await getVerificationCode())}
+          testMode={response.applicant.email_verification_test_mode}
         />
         <Button asChild variant="outline" className="mt-5 w-full">
           <Link href="/account/sell">Volver a mi solicitud</Link>

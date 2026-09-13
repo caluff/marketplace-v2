@@ -62,7 +62,9 @@ export async function submitApplicationAction(body: SubmitApplicationBody) {
   return mutateApplication(body, true)
 }
 
-export async function requestApplicationVerificationAction(): Promise<Feedback> {
+export async function requestApplicationVerificationAction(): Promise<
+  Feedback & { testCode?: VerificationResponse["test_code"] }
+> {
   const { sdk } = await requireApplicant()
   try {
     const result = await sdk.client.fetch<VerificationResponse>(
@@ -71,9 +73,11 @@ export async function requestApplicationVerificationAction(): Promise<Feedback> 
     )
     return {
       status: "success",
-      message:
-        "Se solicitó un código de verificación. Revisa tu correo; la solicitud no confirma la entrega.",
+      message: result.test_code
+        ? "Código de prueba generado y completado. Confírmalo para continuar."
+        : "Se solicitó un código de verificación. Revisa tu correo; la solicitud no confirma la entrega.",
       retryAfterSeconds: result.retry_after_seconds,
+      testCode: result.test_code,
     }
   } catch (error) {
     const status = error instanceof FetchError ? error.status : undefined

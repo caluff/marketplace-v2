@@ -341,6 +341,7 @@ export function ApplicationWizard({
                     verified={isVerified}
                     email={response.applicant.email}
                     hasCode={hasCode}
+                    testMode={response.applicant.email_verification_test_mode}
                     onVerified={() => setIsVerified(true)}
                   />
                   <Field orientation="horizontal">

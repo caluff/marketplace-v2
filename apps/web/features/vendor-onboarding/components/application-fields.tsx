@@ -152,20 +152,6 @@ export function ApplicationFields({
           onChange={(e) => store("name", e.target.value)}
           error={errors["store.name"]}
         />
-        <Field>
-          <TextField
-            id="store.handle"
-            label="Identificador de la tienda"
-            value={draft.store.handle}
-            maxLength={80}
-            onChange={(e) => store("handle", e.target.value)}
-            error={errors["store.handle"]}
-          />
-          <FieldDescription>
-            Por ejemplo, mi-tienda. Su disponibilidad se confirma al revisar la
-            solicitud.
-          </FieldDescription>
-        </Field>
         <TextField
           id="store.description"
           label="Cuéntanos sobre tu tienda"

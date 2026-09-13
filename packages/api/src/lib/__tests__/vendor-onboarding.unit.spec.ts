@@ -103,13 +103,13 @@ function accessFixture() {
   return { container, auth, graph };
 }
 describe("live applicant authorization", () => {
-  it.each(["development", "production", "test"])("limits simulated email verification to development (%s)", async environment => {
+  it.each(["development", "production", "test"])("requires actual email confirmation in %s", async environment => {
     const previous = process.env.NODE_ENV;
     process.env.NODE_ENV = environment;
     try {
       const f = accessFixture();
       const live = await loadApplicant(f.container, { customer_id: "cus_one", auth_identity_id: "auth_one" });
-      expect(live.emailVerified).toBe(environment === "development");
+      expect(live.emailVerified).toBe(false);
       expect(f.auth.requestAuthVerification).not.toHaveBeenCalled();
       await expect(loadApplicant(f.container, { customer_id: "cus_foreign", auth_identity_id: "auth_one" })).rejects.toMatchObject({ code: "identity_changed" });
     } finally {

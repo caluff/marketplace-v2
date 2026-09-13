@@ -136,10 +136,10 @@ test("old drafts without a suggestion remain valid with an existing category", (
 
 test("store step enforces the submission minimums before saving the next step", () => {
   const draft = structuredClone(data)
-  draft.store.handle = "ab"
+  draft.store.handle = ""
   draft.store.description = "Too short"
   const errors = validateStep(draft, "store", options, ["pcat_art"])
-  assert.ok(errors["store.handle"])
+  assert.equal(errors["store.handle"], undefined)
   assert.ok(errors["store.description"])
 })
 

@@ -1,7 +1,7 @@
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 import { randomUUID } from "node:crypto";
 import { onboardingService, loadApplicant, requireReviewer, type ApplicantIdentity } from "../../lib/vendor-onboarding/access";
-import { canonicalHash, TERMS_VERSION, validateSubmission } from "../../lib/vendor-onboarding/validation";
+import { applicationStoreHandle, canonicalHash, TERMS_VERSION, validateSubmission } from "../../lib/vendor-onboarding/validation";
 import { SaveApplicationBodySchema, SubmitApplicationBodySchema, ReviewApplicationBodySchema, type SaveApplicationBody, type SubmitApplicationBody, type ReviewApplicationBody } from "../../lib/vendor-onboarding/schemas";
 import { OnboardingError } from "../../lib/vendor-onboarding/errors";
 import type { ApplicationRecord } from "../../modules/vendor-onboarding/service";
@@ -51,12 +51,16 @@ export const mutateVendorApplicationStep = createStep("mutate-vendor-application
   let claim = false;
   if (input.operation === "save") {
     const save = SaveApplicationBodySchema.parse(input.body);
+    const persisted = current ? SaveApplicationBodySchema.shape.data.parse(current.data) : null;
+    save.data.store.handle = applicationStoreHandle(applicant.customer_id, persisted?.store.handle);
     update = { data: save.data, current_step: save.current_step };
   } else if (input.operation === "submit") {
     if (!current) throw new OnboardingError("application_not_found", 404);
     if (!live.emailVerified) throw new OnboardingError("verification_required", 403);
-    const data = await validateSubmission(container, current.data, live.email);
-    update = { status: "submitted", submitted_data: data, applicant_email: live.email, submission_revision: current.submission_revision + 1, submitted_at: now, terms_version: TERMS_VERSION, current_step: "review" };
+    const draft = SaveApplicationBodySchema.shape.data.parse(current.data);
+    draft.store.handle = applicationStoreHandle(applicant.customer_id, draft.store.handle);
+    const data = await validateSubmission(container, draft, live.email, applicant.customer_id);
+    update = { data, status: "submitted", submitted_data: data, applicant_email: live.email, submission_revision: current.submission_revision + 1, submitted_at: now, terms_version: TERMS_VERSION, current_step: "review" };
     event = { type: "submitted", reason: null, reviewer_id: null };
   } else {
     const review = ReviewApplicationBodySchema.parse(input.body);

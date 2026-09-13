@@ -45,6 +45,25 @@ Los productos privados y los registros de inventario requieren el alcance de la
 tienda. La API vuelve a comprobar la membresía activa y el estado operativo; una
 cookie válida por sí sola no mantiene acceso a una tienda suspendida.
 
+## Verificación de correo en pruebas
+
+El identificador de la tienda es interno: el backend lo genera al guardar la
+solicitud y conserva el de los borradores existentes. No se solicita ni se muestra
+como un campo editable al cliente.
+
+Configura `VENDOR_ONBOARDING_TEST_VERIFICATION=true` en el entorno privado de la
+API (el `.env` raíz para desarrollo local o las variables del servicio desplegado).
+La solicitud de vendedor mostrará «Generar código de prueba»: el servidor genera
+un token nativo para el correo de la cuenta autenticada y el formulario lo
+completa automáticamente. La persona debe pulsar «Confirmar código»; generar el
+token por sí solo no verifica la cuenta. No se envía un correo en este modo y se
+mantienen los límites de reenvío y la caducidad del token.
+
+La opción está desactivada por defecto, independientemente de `NODE_ENV`. Para
+volver a verificar la posesión real del correo, elimina la variable o configura
+`VENDOR_ONBOARDING_TEST_VERIFICATION=false` y reinicia la API. Las cuentas ya
+verificadas conservan su estado. Activa esta opción solo en el entorno de pruebas.
+
 ## Requisitos pendientes para producción
 
 - **Correo transaccional:** Resend está integrado con Notification de Medusa y
