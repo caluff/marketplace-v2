@@ -1,5 +1,7 @@
 # QA de pedidos en Orca — 2026-09-12
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Estado: **parcial; el flujo completo todavía no está certificado**.
 
 La sesión principal coordinó el run `run_94847f2aa92d` de Orca. Dos trabajadores

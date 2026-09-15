@@ -1,5 +1,7 @@
 # Commerce automation checkpoint
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Status: bounded evaluation and durable operator-review infrastructure implemented in dispatch `ctx_ca4e8492026b`; **native financial automation remains deliberately pending and disabled**. The coordinator agreed to fail closed on unverified cancellation concurrency and payment/accounting boundaries. This is not certification of operational cancellation, capture, payout or payment-webhook reconciliation.
 
 ## Confirmed policy

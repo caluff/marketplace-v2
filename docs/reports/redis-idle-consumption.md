@@ -1,5 +1,7 @@
 # Redis idle consumption — 2026-09-05
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 ## Cause
 
 `pnpm dev` starts Medusa in `shared` mode. Installed Medusa 2.18.0 creates

@@ -1,5 +1,7 @@
 # Flujo de pedidos
 
+Guía revisada contra el código el 2026-09-15. Las prioridades vigentes están en la [auditoría de cierre](develpment/development-completion-audit.md); esta actualización no ejecutó nuevos pedidos ni repitió pruebas de navegador.
+
 ## Comprador
 
 - `/account/orders`: tarjetas con productos reales, estado de pago, entrega y paginación.
@@ -14,13 +16,13 @@ Las etapas sólo se completan cuando todos los artículos alcanzan el estado cor
 
 El listado muestra únicamente Todos, Pendientes, Preparados, Enviados, Completados y Cancelados. Son grupos de presentación sobre los datos nativos; no se guardan estados nuevos:
 
-| Grupo | Datos nativos |
-| --- | --- |
-| Pendientes | Pedido pendiente sin preparaciones activas marcadas como preparadas o enviadas |
-| Preparados | Pedido pendiente con alguna preparación activa (`packed_at`) y ningún envío activo |
-| Enviados | Pedido pendiente con algún envío o entrega activos (`shipped_at` o `delivered_at`) |
-| Completados | `order.status = completed` |
-| Cancelados | `order.status = canceled` |
+| Grupo       | Datos nativos                                                                      |
+| ----------- | ---------------------------------------------------------------------------------- |
+| Pendientes  | Pedido pendiente sin preparaciones activas marcadas como preparadas o enviadas     |
+| Preparados  | Pedido pendiente con alguna preparación activa (`packed_at`) y ningún envío activo |
+| Enviados    | Pedido pendiente con algún envío o entrega activos (`shipped_at` o `delivered_at`) |
+| Completados | `order.status = completed`                                                         |
+| Cancelados  | `order.status = canceled`                                                          |
 
 Las preparaciones canceladas no determinan el grupo. Los parciales permanecen dentro del grupo correspondiente y sus cantidades se consultan en el detalle. Los enlaces antiguos a pestañas parciales se traducen al grupo actual.
 
@@ -28,18 +30,24 @@ Las preparaciones canceladas no determinan el grupo. Los parciales permanecen de
 
 Las acciones vuelven a consultar el pedido dentro de la sesión del vendedor antes de ejecutar el flujo nativo:
 
-| Acción | Endpoint nativo POST bajo `/vendor/orders/:id` |
-| --- | --- |
-| Preparar cantidades pendientes | `/fulfillments` |
-| Registrar envío y seguimiento | `/fulfillments/:fulfillmentId/shipments` |
-| Marcar entregado | `/fulfillments/:fulfillmentId/mark-as-delivered` |
-| Cancelar preparación no enviada | `/fulfillments/:fulfillmentId/cancel` |
-| Cancelar pedido no enviado | `/cancel` |
-| Finalizar pedido enviado | `/complete` |
+| Acción                                | Endpoint POST bajo `/vendor/orders/:id`                      |
+| ------------------------------------- | ------------------------------------------------------------ |
+| Preparar cantidades pendientes        | `/fulfillments`                                              |
+| Registrar envío y seguimiento         | `/fulfillments/:fulfillmentId/shipments`                     |
+| Marcar entregado                      | `/fulfillments/:fulfillmentId/mark-as-delivered`             |
+| Cancelar preparación no enviada       | `/fulfillments/:fulfillmentId/cancel`                        |
+| Cancelar pedido elegible / reembolsar | `/finance` (flujo financiero local con validaciones backend) |
+| Finalizar pedido enviado              | `/complete`                                                  |
 
 Se permiten preparaciones parciales. Los artículos con y sin envío se preparan por separado. El backend valida que la ubicación de preparación pertenezca a la tienda. Las operaciones irreversibles exigen confirmación; el estado del servidor decide qué acciones siguen disponibles. El panel permite completar cuando todos los artículos con envío ya fueron enviados o entregados, y los artículos sin envío fueron preparados. Registrar la entrega no es un paso obligatorio para completar; completar no inventa una fecha de entrega.
 
-La cancelación no se presenta como un reembolso: el cobro puede ser compartido por varios pedidos de un carrito. No se añadió un endpoint de reembolso para vendedores ni emisión fiscal; requieren definir sus correspondientes flujos operativos.
+El cobro puede ser compartido por varios pedidos de un carrito. La cancelación y los reembolsos ahora pasan por el [flujo financiero por tienda](order-finance.md): sin captura se cancela sin inventar un refund; con captura se devuelve el saldo elegible de ese pedido. La ruta nativa directa `/cancel` no es una alternativa para evitar esa asignación. El vendedor puede cancelar/reembolsar cuando el backend lo permite; solo el operador puede capturar la compra compartida. No se añade emisión fiscal.
+
+## Operador y estados financieros
+
+`/dashboard/orders/[id]` ofrece el detalle del pedido y su sección Finanzas, incluida la captura ajustada de la compra, cancelaciones e importes de reembolso. El listado y el detalle utilizan información real del backend. Completar la logística de un pedido no acredita que su pago esté capturado o su vendedor liquidado: consultar las asignaciones y movimientos financieros, no deducirlos de `order.status`.
+
+Los dashboards de negocio y el desglose financiero completo por venta siguen pendientes (F09). La exclusión de escritores financieros tampoco cubre aún todos los `order-edits` (F04).
 
 ## Correo al enviar
 
@@ -49,6 +57,6 @@ Reutiliza la configuración existente: `AUTH_EMAIL_ENABLED=true`, `RESEND_API_KE
 
 ## Verificación
 
-Pruebas automatizadas cubren autorización, cantidades y estados inválidos, preparaciones parciales, seguimiento seguro, kits, cancelación, correo y filtros. Se verificaron componentes en móvil/escritorio e impresión mediante datos aislados; también las redirecciones sin sesión.
+La implementación incorpora pruebas de autorización, cantidades y estados inválidos, preparaciones parciales, seguimiento seguro, kits, cancelación, correo y filtros. La QA histórica incluyó componentes en móvil/escritorio e impresión mediante datos aislados y redirecciones sin sesión. Su alcance concreto está en los informes de [pedidos](reports/qa-orders-browser-2026-09-12.md), [operador](reports/qa-admin-browser-2026-09-12.md) y [finanzas](reports/qa-order-finance-2026-09-12.md).
 
-Antes de desplegar, completar una prueba con cuentas y pedidos de prueba autorizados: preparar parcialmente, enviar, comprobar recepción del correo, consultar el progreso como comprador, marcar entrega y finalizar. La entrega real de correo y el recorrido autenticado completo no se ejercitaron durante esta implementación; no se modificaron pedidos reales.
+Antes de cerrar desarrollo, completar la regresión F12 con cuentas y pedidos de prueba autorizados: preparar parcialmente, enviar, comprobar recepción del correo, consultar el progreso como comprador, marcar entrega, finalizar y verificar el resultado financiero. La QA parcial y los tests aislados no certifican ese recorrido completo en la revisión final; registrar los nuevos resultados en [Development Progress](develpment/development-progress.md).

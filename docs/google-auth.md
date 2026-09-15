@@ -2,6 +2,8 @@
 
 La tienda, el panel de operadores y el portal de vendedores admiten Google junto al acceso existente con correo y contraseña. La integración usa los proveedores nativos de Medusa 2.18.0 y las sesiones HttpOnly de cada aplicación.
 
+Esta guía describe código y configuración esperada; no confirma el estado actual de Google Cloud ni una nueva ejecución del flujo. Consultar [Autenticación](../AUTHENTICATION.md) para las sesiones y Resend, y [el progreso de desarrollo](develpment/development-progress.md) para verificaciones pendientes. El aislamiento de carrito al cambiar de cliente (F05) sigue pendiente aunque el login OAuth sea correcto.
+
 El login de la tienda conserva su panel izquierdo y presenta el formulario de correo y contraseña a la derecha, seguido del acceso con Google. El icono local `apps/web/public/icons/google.png` procede de los [recursos oficiales de Google](https://developers.google.com/identity/branding-guidelines).
 
 ## Configuración local
@@ -16,10 +18,10 @@ GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
 
 Cada frontend usa su `.env.local`, con valores públicos:
 
-| Aplicación | `NEXT_PUBLIC_GOOGLE_CALLBACK_URL` |
-| --- | --- |
-| `apps/web` | `http://localhost:3000/auth/google/callback` |
-| `apps/admin` | `http://localhost:7000/auth/google/callback` |
+| Aplicación    | `NEXT_PUBLIC_GOOGLE_CALLBACK_URL`            |
+| ------------- | -------------------------------------------- |
+| `apps/web`    | `http://localhost:3000/auth/google/callback` |
+| `apps/admin`  | `http://localhost:7000/auth/google/callback` |
 | `apps/vendor` | `http://localhost:7001/auth/google/callback` |
 
 En los tres frontends, `NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9000`. La tienda también necesita su `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` existente. No copiar secretos a los frontends.
@@ -87,17 +89,24 @@ La suite HTTP `packages/api/integration-tests/http/google-auth.spec.ts` usa una 
 `.railway/railway.ts` contiene las referencias de configuración. Antes de desplegar, definir las variables compartidas `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y:
 
 ```dotenv
-GOOGLE_CALLBACK_URL=https://marketplace-v2web-production.up.railway.app/auth/google/callback
+GOOGLE_CALLBACK_URL=https://storefront.example.com/auth/google/callback
 ```
 
 API y worker consumen las tres variables. Cada frontend recibe su callback público correspondiente. Registrar también en el cliente OAuth de Google:
 
 ```text
-https://marketplace-v2web-production.up.railway.app/auth/google/callback
-https://marketplace-v2admin-production.up.railway.app/auth/google/callback
-https://marketplace-v2vendor-production.up.railway.app/auth/google/callback
+https://storefront.example.com/auth/google/callback
+https://admin.example.com/auth/google/callback
+https://vendor.example.com/auth/google/callback
 ```
 
-Si se usan otros dominios, actualizar tanto Google como las variables. Los orígenes deben estar incluidos en la configuración CORS del backend. Las variables `NEXT_PUBLIC_*` se incorporan al build, por lo que los frontends deben reconstruirse al cambiarlas.
+Los dominios anteriores son placeholders, no destinos configurados. Usar los orígenes reales de cada entorno tanto en Google como en las variables. Los orígenes deben estar incluidos en la configuración CORS del backend. Las variables `NEXT_PUBLIC_*` se incorporan al build, por lo que los frontends deben reconstruirse al cambiarlas. La configuración definitiva de producción no forma parte de las fases obligatorias de cierre funcional.
+
+## Fuentes de implementación
+
+- [Configuración Google](../packages/api/src/lib/google-auth-configuration.ts) y [registro de proveedores](../packages/api/medusa-config.ts).
+- [Ruta de completion](../packages/api/src/api/auth/google/complete/route.ts), [workflow](../packages/api/src/workflows/complete-google-auth.ts) y [step de vinculación](../packages/api/src/workflows/steps/complete-google-auth.ts).
+- [Transacción OAuth de la tienda](../apps/web/lib/google-auth.ts), [operador](../apps/admin/src/lib/google-auth.ts) y [vendedor](../apps/vendor/src/lib/google-auth.ts).
+- [Traspaso desde la tienda](../apps/web/lib/vendor-session.ts) y [recepción en el portal](../apps/vendor/src/lib/storefront-session.ts).
 
 Referencias: [proveedor Google de Medusa](https://docs.medusajs.com/resources/commerce-modules/auth/auth-providers/google), [OAuth para aplicaciones de servidor de Google](https://developers.google.com/identity/protocols/oauth2/web-server), [verificación de identidad y titularidad del correo](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token).

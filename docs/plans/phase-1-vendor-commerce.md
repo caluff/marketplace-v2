@@ -1,5 +1,7 @@
 # Fase 1: catálogo, almacén, ofertas y preparación de cobros
 
+> **Plan histórico.** Se conserva el alcance y las decisiones de esta etapa. Para continuar el desarrollo, usar el [plan de cierre vigente](../develpment/development-implementation-plan.md) y su [progreso](../develpment/development-progress.md). Las fases de este documento no son las nuevas fases de cierre. El cuerpo original se conserva; sus pendientes no constituyen por sí solos el backlog actual.
+
 Fecha: 2026-09-05. Actualización de integración: 2026-09-06 UTC.
 Estado: código integrado, dos migraciones aplicadas y controles de compilación
 aprobados. QA real parcial de almacén, catálogo, administración y alta de Stripe.

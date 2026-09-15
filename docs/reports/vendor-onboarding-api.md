@@ -1,5 +1,7 @@
 # Vendor onboarding backend handoff
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Implemented against installed Mercur 2.3.3 and Medusa 2.18.0 on 2026-09-04/05. This report covers the API, generated transport contracts, dependency manifests, and test-script changes owned by API dispatch `ctx_a732d0e19a46`; application interfaces belong to the coordinator and frontend workers.
 
 ## Delivered behavior

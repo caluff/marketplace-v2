@@ -1,5 +1,7 @@
 # Phase 1 vendor performance follow-up
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Date: 2026-09-06 UTC. Mercur 2.3.3, Medusa 2.18.0, Next.js 16.3.4, React 19.2.8.
 
 ## Delivered

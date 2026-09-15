@@ -244,15 +244,17 @@ Backend rules:
 
 - Store backend credentials only in the ignored root `.env`.
 - Browser-visible storefront configuration may use `apps/web/.env.local` for local development and platform-managed environment variables in deployed environments. Only explicitly public values may use `NEXT_PUBLIC_*`.
-  `apps/web/.env.local` and must be limited to public values.
+  `apps/web/.env.local` must be limited to public values.
 - Never commit database, Redis, signing, admin, or provider secrets.
 - Keep seller registration disabled unless marketplace onboarding is explicitly
   requested.
 - Do not add Stripe, checkout, seller onboarding, payments, or payouts without
   an explicit request.
-- `apps/admin` and `apps/vendor` are currently demonstration shells. Do not
-  present their authentication, records, or controls as operational until they
-  are connected to Mercur deliberately.
+- `apps/admin` and `apps/vendor` now have authentication and operational flows
+  connected to Mercur. Check each route's implementation rather than assuming
+  all controls are complete. Stripe remains test-only and financial development
+  is not complete; use `docs/develpment/development-completion-audit.md` as the
+  evidence baseline and `docs/develpment/development-progress.md` for phase status.
 - Validate external input and enforce authorization on the backend. UI hiding is
   not an authorization mechanism.
 

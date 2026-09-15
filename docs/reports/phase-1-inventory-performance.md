@@ -1,5 +1,7 @@
 # Phase 1 — vendor inventory and request counts
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 ## Delivered
 
 The inventory and warehouse routes now present the single warehouse associated with the approved application. The UI first requests at most two seller-linked location IDs; zero produces a pending state and multiple or inconsistent results produce a recovery state. For exactly one candidate, it reads the native stock-location detail route, whose existing `guardSellerWarehouse` invokes the backend canonical warehouse ownership/claim validation. The frontend does not infer approval from the list alone or create a replacement location.

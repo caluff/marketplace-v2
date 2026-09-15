@@ -25,3 +25,11 @@ whose capture method captures the full authorization. Therefore this wrapper
 does not implement an amount override or consume client-supplied payment data.
 Native final partial captures retain the original authorization and partial
 collection accounting; the finance journal owns the final-settlement distinction.
+
+This provider is not the complete financial implementation. The current local
+flows are restricted to Stripe TEST and USD, and automatic financial jobs remain
+disabled by default. General recovery, immutable commission history, monetary
+rounding, settlement and reporting remain open in the
+[development audit](../../../../../docs/develpment/development-completion-audit.md).
+In particular, a suppressed webhook cannot recover an uncertain local operation;
+the presence of fixture-specific QA recovery scripts does not close that gap.

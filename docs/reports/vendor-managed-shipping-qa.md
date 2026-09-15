@@ -1,5 +1,7 @@
 # Envíos administrados por vendedores
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Fecha de QA: 2026-09-07 (UTC).
 
 ## Alcance

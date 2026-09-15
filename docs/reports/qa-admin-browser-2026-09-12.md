@@ -1,5 +1,7 @@
 # QA del operador — 12 de septiembre de 2026
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 ## Alcance
 
 Admin independiente en `http://localhost:7000`, con la sesión de operador abierta por el usuario en Orca. Se conservaron los cambios existentes del workspace y se reutilizaron Mercur 2.3.3 / Medusa 2.18.0, sus tipos, SDK, rutas y workflows instalados. No se añadieron dependencias ni endpoints backend.

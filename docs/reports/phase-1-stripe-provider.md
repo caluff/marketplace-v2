@@ -1,5 +1,7 @@
 # Phase 1 native Stripe Connect provider
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 The coordinator relayed the user's later preference for native Mercur flows. This supersedes the dispatched Accounts v2 adapter: this work preserves `@mercurjs/payout-stripe-connect@2.3.3`, Accounts v1 Express, hosted onboarding, native PayoutAccount/Onboarding and workflows. No custom provider, embedded Account Session, thin-event handler, durable journal, legal acceptance or money job was created.
 
 ## Delivered integration contracts

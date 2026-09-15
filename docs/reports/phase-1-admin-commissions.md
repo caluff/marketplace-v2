@@ -1,5 +1,7 @@
 # Phase 1: admin commission editor
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Implemented `/dashboard/commissions` in the current worktree and enabled the existing Comisiones navigation item for desktop and mobile.
 
 ## Behavior

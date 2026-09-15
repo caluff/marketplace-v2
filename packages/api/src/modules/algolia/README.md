@@ -7,12 +7,14 @@ Adapted from the [official Mercur Algolia block](https://github.com/mercurjs/mer
 Set these only in the ignored root `.env` and the API/worker deployment environment:
 
 ```dotenv
-ALGOLIA_APP_ID=ZYFJI8HPMX
+ALGOLIA_APP_ID=<your application ID>
 ALGOLIA_API_KEY=<restricted private key>
 ALGOLIA_PRODUCT_INDEX=marketplace_v2_dev_products
 ```
 
-The key needs `search`, `addObject`, `deleteObject`, `settings`, `editSettings`, and `browse`, restricted to `marketplace_v2_dev_products*`. Use a separate key and index prefix in production. Never expose this key as `NEXT_PUBLIC_*`.
+The index name above is an example. The key needs `search`, `addObject`, `deleteObject`, `settings`, `editSettings`, and `browse`, restricted to your configured index and its replicas. Use a separate key and index prefix in production. Never expose this key as `NEXT_PUBLIC_*`.
+
+Without `ALGOLIA_API_KEY`, the module is not registered. Providing the key also requires an application ID and a valid index name. This optional registration does not make the search feature operational without configuration.
 
 After Redis and PostgreSQL are available:
 

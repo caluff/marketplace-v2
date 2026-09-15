@@ -1,5 +1,7 @@
 # Phase 1: vendor catalog and offers
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Implemented in the current shared worktree; no commits, servers, live mutations, migrations, Stripe calls, or Redis tests were run by this worker.
 
 ## Delivered

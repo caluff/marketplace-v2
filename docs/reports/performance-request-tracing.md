@@ -1,5 +1,7 @@
 # Diagnóstico de peticiones y permisos
 
+Guía de diagnóstico vigente, aunque se encuentra en `reports`. No acredita mediciones nuevas de rendimiento. Para el estado de desarrollo y las verificaciones por ejecutar, consultar el [índice documental](../README.md) y el [progreso](../develpment/development-progress.md).
+
 ## Instrumentación opt-in
 
 `PERFORMANCE_TRACE_ENABLED=true` en el entorno del proceso API activa

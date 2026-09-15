@@ -1,5 +1,7 @@
 # QA payment, email, and order safety audit — 2026-09-12
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Read-only audit of the current dirty workspace. Only this report was written; no remote records were queried or mutated, no emails sent, and no environment, server, migration, dependency, or code changes made. Source and installed packages were inspected rather than booting Medusa. Existing unrelated changes were preserved.
 
 ## Decision for the coordinator

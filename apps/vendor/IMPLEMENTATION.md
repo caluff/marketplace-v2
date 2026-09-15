@@ -1,5 +1,13 @@
 # Operational vendor dashboard
 
+> Historical evidence from the initial Vendor API integration (last recorded
+> change: 2026-09-05). The body below preserves the delivered scope and checks at
+> that time. Its free location creation, deferred offers/shipping/finance and
+> missing backend concurrency protection are superseded by later work. See the
+> [current vendor README](README.md), [vendor operations](../../docs/vendor-operations.md)
+> and [development audit](../../docs/develpment/development-completion-audit.md).
+> Historical test results are not verification of the current tree.
+
 The vendor app now uses its existing Medusa SDK with explicit `x-seller-id` and uncached requests. All seven workspace mutations independently reload membership and require an active member plus seller status `open`; native API authorization remains authoritative. The API owner separately implemented the backend live-access, catalog-visibility, and location-ownership guards.
 
 ## Capabilities

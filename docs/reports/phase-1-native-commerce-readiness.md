@@ -1,5 +1,7 @@
 # Phase 1 native commerce readiness audit
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Inspected installed Mercur 2.3.3 / Medusa 2.18.0 source in the shared worktree. This report describes the inspected package and project code, not running database configuration or proof of operational checkout. No Stripe API mutation, server, database migration, Redis poll, commission record edit or money job was performed by this worker.
 
 ## Implemented sale boundary

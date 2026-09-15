@@ -1,5 +1,7 @@
 # Phase 1 warehouse implementation
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Date: 2026-09-05. This report covers the dispatched warehouse work only. Shared
 registration, dependency repair, migration generation/application, and completion
 builds belong to the coordinator; no shared database writes were performed.

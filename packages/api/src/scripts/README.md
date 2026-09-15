@@ -1,63 +1,25 @@
-# Custom CLI Script
+# Operational scripts
 
-A custom CLI script is a function to execute through Medusa's CLI tool. This is useful when creating custom Medusa tooling to run as a CLI tool.
+Scripts execute inside Medusa's container; startup loads configured modules.
+Inspect each script's guards and target environment before execution. Keep
+credentials in the ignored root environment.
 
-> Learn more about custom CLI scripts in [this documentation](https://docs.medusajs.com/learn/fundamentals/custom-cli-scripts).
+| Script                                                                  | Purpose / side effects                                                                                |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `configure-storefront-region.ts`                                        | US/USD region and Stripe configuration. Defaults to `dry-run`; `apply` mutates through workflows.     |
+| `backfill-vendor-warehouse.ts`                                          | Seller warehouse; defaults to `dry-run`, supports explicit `apply`.                                   |
+| `recover-vendor-application.ts`                                         | Inspects the original operation by default. `cancel`/`finalize` mutate and require its recovery gate. |
+| `reindex-search.ts`                                                     | Writes Algolia settings/projections and removes obsolete records; package command `search:reindex`.   |
+| `inspect-order-finance.ts`                                              | Reads a finance view without provider secrets/customer details; requires an operator.                 |
+| `inspect-order-finance-extension-qa.ts`, `verify-order-finance-qa.ts`   | Inspects/checks existing financial QA fixtures; inspect each guard before use.                        |
+| `seed-order-finance-qa.ts`, `seed-order-finance-extension-qa.ts`        | Creates/mutates dedicated QA fixtures; not ordinary setup.                                            |
+| `reconcile-finance-extension-qa.ts`, `repair-finance-qa-payout-link.ts` | Fixture-specific repairs, not general recovery tools.                                                 |
 
-## How to Create a Custom CLI Script?
+Use the existing pnpm/Medusa tooling in [package.json](../../package.json) with
+the script's declared arguments. Finance currently uses TEST Stripe and USD;
+keep automatic jobs disabled. Never copy fixture assumptions to arbitrary orders.
 
-To create a custom CLI script, create a TypeScript or JavaScript file under the `src/scripts` directory. The file must default export a function.
-
-For example, create the file `src/scripts/my-script.ts` with the following content:
-
-```ts title="src/scripts/my-script.ts"
-import { 
-  ExecArgs,
-} from "@medusajs/framework/types"
-
-export default async function myScript ({
-  container
-}: ExecArgs) {
-  const productModuleService = container.resolve("product")
-
-  const [, count] = await productModuleService.listAndCountProducts()
-
-  console.log(`You have ${count} product(s)`)
-}
-```
-
-The function receives as a parameter an object having a `container` property, which is an instance of the Medusa Container. Use it to resolve resources in your Medusa application.
-
----
-
-## How to Run Custom CLI Script?
-
-To run the custom CLI script, run the `exec` command:
-
-```bash
-npx medusa exec ./src/scripts/my-script.ts
-```
-
----
-
-## Custom CLI Script Arguments
-
-Your script can accept arguments from the command line. Arguments are passed to the function's object parameter in the `args` property.
-
-For example:
-
-```ts
-import { ExecArgs } from "@medusajs/framework/types"
-
-export default async function myScript ({
-  args
-}: ExecArgs) {
-  console.log(`The arguments you passed: ${args}`)
-}
-```
-
-Then, pass the arguments in the `exec` command after the file path:
-
-```bash
-npx medusa exec ./src/scripts/my-script.ts arg1 arg2
-```
+General financial recovery remains F08 in the
+[development audit](../../../../docs/develpment/development-completion-audit.md).
+QA scripts and historical reports do not certify complete settlement. Record new
+verification in [development progress](../../../../docs/develpment/development-progress.md).

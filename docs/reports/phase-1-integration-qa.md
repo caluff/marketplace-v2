@@ -1,5 +1,7 @@
 # Fase 1: integración y QA
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Revisión: 2026-09-06 UTC (2026-09-05 en America/Montevideo).
 Estado: **integración parcial verificada; fase todavía abierta, solo pruebas**.
 Este informe consolida las verificaciones del coordinador posteriores a los

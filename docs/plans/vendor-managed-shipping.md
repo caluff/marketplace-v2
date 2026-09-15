@@ -1,5 +1,7 @@
 # Envíos configurados por cada vendedor
 
+> **Plan histórico.** Se conserva el alcance y las decisiones de esta etapa. Para continuar el desarrollo, usar el [plan de cierre vigente](../develpment/development-implementation-plan.md) y su [progreso](../develpment/development-progress.md). Las fases de este documento no son las nuevas fases de cierre. El cuerpo original se conserva; sus pendientes no constituyen por sí solos el backlog actual.
+
 ## Alcance aprobado
 
 Cada vendedor administra sus perfiles y opciones de envío desde su panel. Se

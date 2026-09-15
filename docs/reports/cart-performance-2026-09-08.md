@@ -1,5 +1,7 @@
 # Investigación de rendimiento: carrito y checkout
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Fecha: 8 de septiembre de 2026. Código desplegado: `6ed1756`.
 API: Railway `61bbdf4a-8a46-41eb-907d-ea8a0d523dc3`.
 Store: Railway `fc2e3eb8-1e7a-40aa-bd92-c7f621c773ae`.

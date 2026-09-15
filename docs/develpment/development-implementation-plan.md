@@ -19,7 +19,7 @@ Este documento convierte únicamente los P0/P1 (F01–F12) de la [auditoría de 
 - Conservar Medusa 2.18.0/Mercur 2.3.3 y patrones existentes salvo necesidad demostrada; no introducir un ledger general, ERP, nueva librería monetaria ni paquete compartido por anticipación. Extender la persistencia existente solo en lo que falte para reconstruir la venta y sus ajustes.
 - Antes de cambiar backend, cargar `building-with-medusa`, las referencias pertinentes y la documentación instalada de Mercur. Inspeccionar workflows, rutas, validadores, subscribers y hooks nativos y locales. Medusa permite un solo consumidor por workflow hook: cualquier composición debe probarse con hooks Mercur cargados.
 - No editar `node_modules` directamente. Si el cambio requiere intervenir una dependencia, revisar primero los parches declarados y usar el mecanismo reproducible del repositorio, con regresión de compatibilidad y sin actualizar versiones por conveniencia.
-- Cargar `building-storefronts` y `storefront-best-practices` para `apps/web`; `frontend-design` cuando se construyan las nuevas vistas de reporting; `supabase` y `supabase-postgres-best-practices` para permisos y base de datos. Cargar `db-generate`/`db-migrate` al generar/ejecutar migraciones Medusa. Leer [date-fns](skills/date-fns/SKILL.md) antes de modificar fechas o rangos. Localizar skills requeridas; no suponer que otra cuenta mantiene las mismas rutas absolutas.
+- Cargar `building-storefronts` y `storefront-best-practices` para `apps/web`; `frontend-design` cuando se construyan las nuevas vistas de reporting; `supabase` y `supabase-postgres-best-practices` para permisos y base de datos. Cargar `db-generate`/`db-migrate` al generar/ejecutar migraciones Medusa. Leer [date-fns](../skills/date-fns/SKILL.md) antes de modificar fechas o rangos. Localizar skills requeridas; no suponer que otra cuenta mantiene las mismas rutas absolutas.
 - Consultar documentación actual/versionada según `AGENTS.md` cuando el cambio dependa de APIs o comportamiento incierto. Este plan no prescribe firmas de APIs sin verificarlas.
 - Mutaciones mediante workflows, ownership en backend y SDK existente para consumidores frontend. Contratos oficiales/generados, sin importar código backend desde las aplicaciones.
 - Medusa guarda importes en unidades de presentación. La conversión a unidades menores corresponde al límite del proveedor y a cálculos explícitos; no cambiar la escala almacenada ni dividir por 100 al mostrar.
@@ -73,7 +73,7 @@ Leer las evidencias F01–F03 y localizar sus consumidores actuales. Identificar
 ### Áreas probablemente afectadas
 
 - Comisión nativa de Mercur: `packages/api/node_modules/@mercurjs/core/.medusa/server/src/modules/commission/service.js` y sus subscribers/workflows, como referencias de lectura.
-- [order-finance](../packages/api/src/lib/order-finance/), en especial `policy.ts`, `settlement.ts` y contratos.
+- [order-finance](../../packages/api/src/lib/order-finance/), en especial `policy.ts`, `settlement.ts` y contratos.
 - Módulos/workflows existentes que persisten asignaciones y operaciones; localizar sus modelos antes de ampliar datos.
 - Validadores de commission-rates nativos y su integración local; `pnpm-workspace.yaml` y parches solo si fueran necesarios para reproducir un cambio de dependencia.
 
@@ -123,9 +123,9 @@ Integrar las invariantes financieras de Phase 1 para F04. Releer el código actu
 
 ### Áreas probablemente afectadas
 
-- [order-finance-middlewares.ts](../packages/api/src/api/order-finance-middlewares.ts), rutas admin/vendor `order-edits` nativas y consumidores locales.
-- [auth-actions.ts](../apps/web/app/auth-actions.ts), [auth-sdk.ts](../apps/web/lib/auth-sdk.ts), [cart/actions.ts](../apps/web/features/cart/actions.ts) y comprobantes/checkout.
-- Permisos y esquemas de PostgreSQL, migraciones existentes y [vendor-operations.md](vendor-operations.md).
+- [order-finance-middlewares.ts](../../packages/api/src/api/order-finance-middlewares.ts), rutas admin/vendor `order-edits` nativas y consumidores locales.
+- [auth-actions.ts](../../apps/web/app/auth-actions.ts), [auth-sdk.ts](../../apps/web/lib/auth-sdk.ts), [cart/actions.ts](../../apps/web/features/cart/actions.ts) y comprobantes/checkout.
+- Permisos y esquemas de PostgreSQL, migraciones existentes y [vendor-operations.md](../vendor-operations.md).
 
 ### Invariantes
 
@@ -168,9 +168,9 @@ Phase 1 y Phase 2 verificadas. Identificar la fuente original del reparto, las o
 
 ### Áreas probablemente afectadas
 
-- [order-finance](../packages/api/src/lib/order-finance/), [operate-order-finance.ts](../packages/api/src/workflows/steps/operate-order-finance.ts).
-- [commerce-automation](../packages/api/src/lib/commerce-automation/), workflows/proveedor nativo de payouts, webhooks Stripe y journal existente.
-- [inspect-order-finance.ts](../packages/api/src/scripts/inspect-order-finance.ts), recuperación QA y herramienta operativa general que la sustituya/amplíe sin perder sus restricciones.
+- [order-finance](../../packages/api/src/lib/order-finance/), [operate-order-finance.ts](../../packages/api/src/workflows/steps/operate-order-finance.ts).
+- [commerce-automation](../../packages/api/src/lib/commerce-automation/), workflows/proveedor nativo de payouts, webhooks Stripe y journal existente.
+- [inspect-order-finance.ts](../../packages/api/src/scripts/inspect-order-finance.ts), recuperación QA y herramienta operativa general que la sustituya/amplíe sin perder sus restricciones.
 
 ### Invariantes
 
@@ -220,9 +220,9 @@ Fuentes, snapshots, ajustes y conciliación de Phase 3 completos. Tomar las defi
 
 ### Áreas probablemente afectadas
 
-- Contratos y lecturas de [order-finance](../packages/api/src/lib/order-finance/), endpoints admin/vendor, SDKs y contratos generados existentes.
-- [overview/metrics.ts](../apps/admin/src/features/overview/metrics.ts), vistas admin de pedidos/resumen y sus componentes.
-- [seller workspace](../apps/vendor/src/app/seller/), detalles de pedidos y resumen vendor.
+- Contratos y lecturas de [order-finance](../../packages/api/src/lib/order-finance/), endpoints admin/vendor, SDKs y contratos generados existentes.
+- [overview/metrics.ts](../../apps/admin/src/features/overview/metrics.ts), vistas admin de pedidos/resumen y sus componentes.
+- [seller workspace](../../apps/vendor/src/app/seller/), detalles de pedidos y resumen vendor.
 
 ### Invariantes
 
@@ -270,8 +270,8 @@ Localizar los patrones de paginación ya existentes y el resumen de cuenta que p
 
 ### Áreas probablemente afectadas
 
-- [medusa.ts](../apps/web/lib/medusa.ts), [catalog-section.tsx](../apps/web/components/catalog-section.tsx).
-- [order-summary.tsx](../apps/web/features/cart/components/order-summary.tsx), [confirmation/page.tsx](../apps/web/app/checkout/confirmation/page.tsx) y resumen de cuenta existente como referencia.
+- [medusa.ts](../../apps/web/lib/medusa.ts), [catalog-section.tsx](../../apps/web/components/catalog-section.tsx).
+- [order-summary.tsx](../../apps/web/features/cart/components/order-summary.tsx), [confirmation/page.tsx](../../apps/web/app/checkout/confirmation/page.tsx) y resumen de cuenta existente como referencia.
 
 ### Invariantes
 
@@ -311,7 +311,7 @@ Todas las fases anteriores cumplen salida y tienen pruebas registradas. Identifi
 
 ### Áreas probablemente afectadas
 
-- [integration-tests/http](../packages/api/integration-tests/http/), pruebas existentes de módulos/workflows y suites web/admin/vendor.
+- [integration-tests/http](../../packages/api/integration-tests/http/), pruebas existentes de módulos/workflows y suites web/admin/vendor.
 - Scripts de comprobación/contratos y harness existente; documentación de evidencia en el progreso.
 - Solo correcciones necesarias de los flujos ya incluidos si aparecen fallos durante la regresión; asignarlas al hallazgo/fase de origen.
 

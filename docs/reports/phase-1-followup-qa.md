@@ -1,5 +1,7 @@
 # Fase 1: continuación de integración
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Fecha: 2026-09-06 UTC. Continuación integrada, exclusivamente en modo test.
 Complementa el [informe inicial](phase-1-integration-qa.md); sus resultados de
 compilación anteriores no certifican los cambios de esta continuación.

@@ -1,5 +1,7 @@
 # Phase 1 — Stripe account reconciliation
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 Completed the prior draft for native Mercur 2.3.3 Stripe Express Accounts v1, using the installed Stripe 15.12.0 SDK as explicitly requested. This task did not install dependencies, restart services, inspect credentials, call Stripe, or mutate a database.
 
 ## Result

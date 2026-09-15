@@ -1,5 +1,7 @@
 # Customer-to-vendor onboarding and operational vendor portal
 
+> **Plan histórico.** Se conserva el alcance y las decisiones de esta etapa. Para continuar el desarrollo, usar el [plan de cierre vigente](../develpment/development-implementation-plan.md) y su [progreso](../develpment/development-progress.md). Las fases de este documento no son las nuevas fases de cierre. El cuerpo original se conserva; sus pendientes no constituyen por sí solos el backlog actual.
+
 Planning artifact, inspected 2026-09-04/05. No application code, dependencies,
 configuration, database records, or infrastructure were changed by this planning
 task. The coordinator subsequently relayed the user's expanded scope: connect

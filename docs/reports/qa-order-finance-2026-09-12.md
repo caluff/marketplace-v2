@@ -1,5 +1,7 @@
 # QA de cancelaciones y reembolsos — 12 de septiembre de 2026
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 ## Entorno y alcance
 
 Mercur 2.3.3 / Medusa 2.18.0, aplicaciones locales en 3000/7000/7001, API en 9000, PostgreSQL/Redis configurados y Stripe **TEST**. No se habilitaron pagos reales ni liquidaciones automáticas. Se preservó el pedido original #5 sin modificarlo.

@@ -2,21 +2,27 @@
 
 The storefront uses the Medusa Store API to search Algolia. It does not expose an Algolia key to the browser. The integration adapts the official Mercur Algolia registry block to Mercur 2.3.3's offer-based pricing model; it does not install a second commerce engine.
 
+This guide describes the current source and expected configuration; it does not certify the current remote index or a fresh integration run. Development closure is tracked in [Development Progress](develpment/development-progress.md). Search pagination already exists; F10 concerns the separate catalog/category view, not this search endpoint.
+
 ## Configuration
 
 Set these variables in the ignored root `.env` locally, and in both the API and worker environment when deploying:
 
 ```dotenv
-ALGOLIA_APP_ID=ZYFJI8HPMX
+ALGOLIA_APP_ID=<application-id>
 ALGOLIA_API_KEY=<private restricted indexing key>
 ALGOLIA_PRODUCT_INDEX=marketplace_v2_dev_products
 ```
 
-The development key is restricted to `marketplace_v2_dev_products*`, with the permissions `search`, `browse`, `addObject`, `deleteObject`, `settings`, and `editSettings`. Never put it in `NEXT_PUBLIC_*`, `apps/web/.env.local`, a commit, or a browser bundle. Production must use a separate index prefix and restricted key.
+Use a key restricted to the configured index and its replicas (for the example, `marketplace_v2_dev_products*`), with the permissions `search`, `browse`, `addObject`, `deleteObject`, `settings`, and `editSettings`. These are required configuration expectations, not a fresh inspection of the remote key. Never put the key in `NEXT_PUBLIC_*`, `apps/web/.env.local`, a commit, or a browser bundle. Production must use a separate index prefix and restricted key.
+
+Without `ALGOLIA_API_KEY`, the module is not registered and `POST /store/products/search` returns 503; the remaining storefront can still run. With a key, startup requires an application ID and an index name containing only letters, numbers, hyphens or underscores. Missing search configuration is not treated as an empty result set.
 
 The API and worker also require a working `REDIS_URL`. Updating the root environment requires restarting the running processes. Switching Redis does not migrate queued events from the previous instance; the full reindex below rebuilds the search projection from PostgreSQL through Medusa, not from old queue data.
 
 ## Initial indexing and recovery
+
+The following command writes to Algolia and may remove obsolete records in the configured index. Confirm that the environment points to the intended development index before running it; it is not a read-only verification command.
 
 ```powershell
 pnpm --filter @marketplace-v2/api search:reindex
@@ -61,3 +67,10 @@ pnpm peers check
 ```
 
 Sources: [Mercur official blocks](https://docs.mercurjs.com/blocks), [Medusa Algolia integration](https://docs.medusajs.com/resources/integrations/guides/algolia), [Algolia API-key security](https://www.algolia.com/doc/guides/security/api-keys).
+
+## Implementation map
+
+- [Module configuration](../packages/api/src/modules/algolia/configuration.ts) and [service](../packages/api/src/modules/algolia/service.ts).
+- [Search route](../packages/api/src/api/store/products/search/route.ts), [validators](../packages/api/src/api/store/products/search/validators.ts), and [workflow](../packages/api/src/workflows/algolia/search-products.ts).
+- [Product projection](../packages/api/src/workflows/algolia/product-projection.ts), [synchronization workflow](../packages/api/src/workflows/algolia/sync-products.ts), and [scheduled reconciliation](../packages/api/src/jobs/reconcile-search.ts).
+- [Reindex script](../packages/api/src/scripts/reindex-search.ts). Contract generation and builds above write generated output; list them as executed only after actually running them.

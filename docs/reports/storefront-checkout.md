@@ -1,5 +1,7 @@
 # Storefront checkout: United States / USD
 
+> **Informe histórico.** Sus resultados corresponden únicamente a la revisión, fecha y entorno descritos en el cuerpo original. No certifica el estado actual ni el cierre financiero. Consultar la [auditoría de cierre](../develpment/development-completion-audit.md), el [progreso](../develpment/development-progress.md) y las [guías vigentes](../README.md).
+
 ## Price diagnosis
 
 `Producto 1` had a USD 200 seller offer, but no Store region existed. The

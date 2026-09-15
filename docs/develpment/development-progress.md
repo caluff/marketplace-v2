@@ -30,7 +30,7 @@ None
 
 ## Next Action
 
-Start Phase 1 from `docs/development-implementation-plan.md`.
+Start Phase 1 from `docs/develpment/development-implementation-plan.md`.
 
 ## Phase Status
 

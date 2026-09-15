@@ -1,5 +1,7 @@
 # Cancelaciones y reembolsos por tienda
 
+Guía revisada contra el código el 2026-09-15. La [auditoría de cierre](develpment/development-completion-audit.md) mantiene **Financial Readiness: FAIL**; la [implementación por fases](develpment/development-implementation-plan.md) aún no comenzó. Los casos de QA fechados prueban ramas concretas, no el ciclo financiero completo.
+
 Implementación para Mercur 2.3.3 / Medusa 2.18.0. El alcance habilitado es Stripe de prueba, USD, un pago compartido con autorización sin captura, captura completa o captura final ajustada registrada por este flujo. Incluye reembolsos posteriores a una liquidación nativa atribuible y verificada. No habilita pagos reales ni liquidaciones automáticas.
 
 ## Acceso
@@ -13,7 +15,7 @@ El formulario permite cancelar, reembolsar todo el saldo disponible o indicar un
 ## Flujo
 
 1. Autenticar al actor; para vendedores, verificar pertenencia al pedido y permisos de Mercur.
-2. Leer grupo, pedidos, pago del carrito, capturas, reembolsos, preparaciones, cambios pendientes y liquidaciones. Congelar el reparto original de los totales de cada pedido, incluyendo descuentos/envío calculados por Medusa.
+2. Leer grupo, pedidos, pago del carrito, capturas, reembolsos, preparaciones, cambios pendientes y liquidaciones. Congelar el reparto original de los totales de cada pedido, incluyendo descuentos/envío calculados por Medusa. Esta asignación del journal no es un snapshot histórico completo de la regla y base de comisión: F01 sigue pendiente.
 3. Serializar operaciones por carrito y registrar de forma duradera la identidad de la solicitud antes de mover dinero.
 4. Verificar en Stripe TEST que sus saldos coinciden con Medusa.
 5. Ejecutar la operación nativa aplicable y registrar el resultado del pedido concreto.
@@ -49,7 +51,7 @@ La liberación de la autorización restante no es un reembolso al comprador. Se 
 
 Se verifica la liquidación nativa y la transferencia real de Stripe: tienda, cuenta conectada, moneda, importe, grupo del pedido, modo de prueba y reversiones previas. Una transferencia huérfana, duplicada, externa o que no cuadre bloquea la operación.
 
-La política autorizada devuelve proporcionalmente la comisión del marketplace. Para un pedido bruto de 12 USD, con neto de vendedor de 10,80 USD, un reembolso de 1 USD recupera 0,90 USD de la transferencia y devuelve 0,10 USD de comisión. El cálculo acumulativo en centavos garantiza que varios reembolsos parciales terminan exactamente en el neto y comisión originales.
+La política autorizada devuelve proporcionalmente la comisión del marketplace. En el fixture de QA de un pedido bruto de 12 USD, con neto de vendedor de 10,80 USD, un reembolso de 1 USD recupera 0,90 USD de la transferencia y devuelve 0,10 USD de comisión. Es un ejemplo de esa prueba, no el porcentaje general vigente. El cálculo acumulativo en centavos hace que varios reembolsos parciales terminen en el neto y comisión originales dentro de esta rama verificada. No demuestra que las comisiones nativas anteriores al reparto se hayan redondeado correctamente: F02 documenta esa diferencia.
 
 Antes de mover dinero se guarda el plan. Se revierte la parte correspondiente de la transferencia con una clave idempotente; se guarda su identificador y después se reembolsa al comprador con el paso nativo de Medusa y su contabilidad por pedido. Si la reversión falla no se inicia el reembolso; si el resultado posterior es incierto se conserva el bloqueo para conciliación, sin volver a mover dinero automáticamente.
 
@@ -57,14 +59,17 @@ Antes de mover dinero se guarda el plan. Se revierte la parte correspondiente de
 
 - UUID estable para repetir la misma solicitud dentro del formulario; el backend rechaza reutilizarlo con otros datos. Tras recargar, consultar el historial antes de iniciar una solicitud nueva.
 - Exclusión mutua por carrito y registro duradero de operaciones. Si hay incertidumbre, no se libera automáticamente el bloqueo ni se crea otro reembolso.
-- Las rutas nativas de captura, cancelación y reembolso sin asignación, y escrituras de la colección compartida, quedan bloqueadas. Se normalizan los identificadores y las rutas antes de comprobarlas. Otros escritores de pedidos, devoluciones, cambios y reclamaciones respetan la exclusión por carrito y una reserva duradera. Una desconexión HTTP conserva esa reserva y exige revisión: desconectar el navegador no cancela un workflow nativo.
+- Las rutas nativas de captura, cancelación y reembolso sin asignación, y escrituras de la colección compartida, quedan bloqueadas. Se normalizan los identificadores y las rutas antes de comprobarlas. Los escritores cubiertos de pedidos, devoluciones, cambios y reclamaciones respetan la exclusión por carrito y una reserva duradera. **La cobertura no incluye todas las rutas de `order-edits` (F04)**: no presentar esta protección como universal. Una desconexión HTTP conserva la reserva de los escritores cubiertos y exige revisión: desconectar el navegador no cancela un workflow nativo.
 - Se rechazan importes negativos, fracciones de centavo, exceso de saldo, estados no verificados, cambios/devoluciones pendientes, reembolsos históricos sin asignación, capturas parciales ajenas al flujo y liquidaciones que no puedan conciliarse.
 - No hay botón para «forzar» o borrar una operación incierta. Hay un diagnóstico de solo lectura: `pnpm --filter @marketplace-v2/api exec medusa exec ./src/scripts/inspect-order-finance.ts order_ID`.
 
 ## Pendiente antes de habilitar el ciclo financiero completo
 
-1. **Conciliación operativa de resultados inciertos y reembolsos históricos:** el diagnóstico y bloqueo existen, pero no se implementó una interfaz que resuelva automáticamente esos casos.
-2. **Devoluciones físicas, cambios y reclamaciones:** se respetan los cambios pendientes de Medusa, pero este trabajo no añade sus formularios de gestión logística.
-3. **Automatización y producción:** las tareas automáticas de cobro/liquidación y el modo real requieren un alcance y validación propios; no se activan con esta extensión.
+1. **Fundamento financiero (F01–F03):** snapshot histórico de comisión, redondeo consistente y validaciones backend de las reglas. El porcentaje futuro no debe modificar ventas anteriores.
+2. **Cobertura de escritores (F04):** incluir `order-edits` en las invariantes financieras y de concurrencia.
+3. **Liquidación y recuperación (F07/F08):** falta cerrar la liquidación operativa normal, el efecto económico de refunds anteriores al transfer y una recuperación general de operaciones inciertas. El diagnóstico y los scripts para fixtures de QA no sustituyen ese flujo. Puede resolverse manualmente con controles; no exige automatización ni una interfaz nueva por sí misma.
+4. **Reporte y regresión (F09/F12):** reconciliar venta, comisión, vendor, refunds, costes y dashboards con evidencia repetible.
 
-Las banderas de integración y las liquidaciones automáticas permanecen desactivadas. No presentar el conjunto como listo para producción hasta resolver y probar estas ramas.
+Fuera de esos requisitos, las devoluciones físicas, cambios y reclamaciones tienen primitivas nativas pero esta extensión no añade todos sus formularios logísticos. No son automáticamente bloqueadores del alcance actual. La automatización financiera es opcional (F17) si existe operación manual segura; el modo real y la preparación de producción pertenecen a una etapa posterior.
+
+Las liquidaciones automáticas no están habilitadas. Consultar el [progreso](develpment/development-progress.md) antes de iniciar una fase y los informes [QA financiero](reports/qa-order-finance-2026-09-12.md) y [extensión de QA](reports/qa-order-finance-extension-2026-09-12.md) para distinguir pruebas históricas de verificaciones pendientes.

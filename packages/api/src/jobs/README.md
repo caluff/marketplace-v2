@@ -1,38 +1,21 @@
-# Custom scheduled jobs
+# Scheduled jobs
 
-A scheduled job is a function executed at a specified interval of time in the background of your Medusa application.
+| Job                                   | Schedule         | Gate and behavior                                                                                                |
+| ------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `reconcile-search.ts`                 | Every 15 minutes | Returns if Algolia is not registered; otherwise synchronizes products.                                           |
+| `vendor-application-notifications.ts` | Every minute     | Requires enabled email; drains up to 20 successful deliveries, stopping at an empty claim or failure.            |
+| `evaluate-commerce.ts`                | Every 15 minutes | Requires `STRIPE_AUTOMATIC_JOBS_ENABLED=true` and valid TEST Connect configuration before invoking its workflow. |
 
-> Learn more about scheduled jobs in [this documentation](https://docs.medusajs.com/learn/fundamentals/scheduled-jobs).
+Automatic commerce jobs are disabled by default. Enabling the environment flag
+does not complete capture, payout or recovery:
+[configuration.ts](../lib/commerce-automation/configuration.ts) has additional
+code gates and [runner.ts](../lib/commerce-automation/runner.ts) retains pending
+integration boundaries. Keep automation disabled while following the
+[development plan](../../../../docs/develpment/development-implementation-plan.md).
 
-A scheduled job is created in a TypeScript or JavaScript file under the `src/jobs` directory.
+Jobs invoke workflows instead of owning business mutations. Ambiguous financial
+outcomes retain durable claims for reconciliation. Notification and search
+READMEs describe their separate retry/consistency behavior.
 
-For example, create the file `src/jobs/hello-world.ts` with the following content:
-
-```ts
-import {
-  MedusaContainer
-} from "@medusajs/framework/types";
-
-export default async function myCustomJob(container: MedusaContainer) {
-  const productService = container.resolve("product")
-
-  const products = await productService.listAndCountProducts();
-
-  // Do something with the products
-}
-
-export const config = {
-  name: "daily-product-report",
-  schedule: "0 0 * * *", // Every day at midnight
-};
-```
-
-A scheduled job file must export:
-
-- The function to be executed whenever it’s time to run the scheduled job.
-- A configuration object defining the job. It has three properties:
-  - `name`: a unique name for the job.
-  - `schedule`: a [cron expression](https://crontab.guru/).
-  - `numberOfExecutions`: an optional integer, specifying how many times the job will execute before being removed
-
-The `handler` is a function that accepts one parameter, `container`, which is a `MedusaContainer` instance used to resolve services.
+API and worker share persistence. [Package scripts](../../package.json) set their
+runtime modes; a job file does not prove that a remote worker is running.
