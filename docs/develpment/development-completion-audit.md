@@ -50,7 +50,7 @@ No se asigna un porcentaje de avance: la amplitud de funcionalidades ya implemen
 | Configuración de infraestructura | `.railway/`, `railway/`                | Definiciones/documentación; despliegue definitivo fuera del alcance      |
 | Dependencias adaptadas           | `patches/`, `pnpm-workspace.yaml`      | Parches declarados de framework, Mercur y proveedor Connect              |
 
-Persistencia PostgreSQL/Supabase; Redis/Upstash para caché, eventos, workflows y bloqueos; integraciones reales con Stripe/Connect, Resend, Algolia y almacenamiento de imágenes. Las aplicaciones conservan SDKs y sesiones propios. La documentación y los AGENTS antiguos que llaman “demo” a los paneles no deben sustituir la inspección del código conectado.
+Persistencia PostgreSQL/Supabase; Redis en Railway para caché, eventos, workflows y bloqueos; integraciones reales con Stripe/Connect, Resend, Algolia y almacenamiento de imágenes. Las aplicaciones conservan SDKs y sesiones propios. La documentación y los AGENTS antiguos que llaman “demo” a los paneles no deben sustituir la inspección del código conectado.
 
 ## Financial Readiness
 

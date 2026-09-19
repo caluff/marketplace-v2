@@ -299,7 +299,7 @@ Fuente instalada explica actividad periódica:
 No se añadieron ni arrancaron workers para la auditoría. No hacer más grande
 drainDelay esperando eliminar delayed/stalled checks; no desactivar mecanismos
 de fiabilidad silenciosamente. Diseñar un perfil local explícito de Redis y
-workers, y medir facturación con las métricas autoritativas de Upstash.
+workers, y medir consumo con las métricas autoritativas de Railway.
 
 ## Servicios externos
 
@@ -333,7 +333,7 @@ no al listar tablas sin medios.
 
 No aumentar el pool ni añadir índices/dependencias sin medir. Mantener frontend
 sin acceso directo a DB/Redis, workflows nativos, permisos frescos e inventario
-consistente. El despliegue local→Supabase/Upstash remoto amplifica el problema;
+consistente. El despliegue local→Supabase/Redis remoto amplifica el problema;
 colocar API cerca de ambos servicios puede reducir RTT, pero no sustituye
 corregir consultas repetidas.
 
@@ -341,7 +341,7 @@ corregir consultas repetidas.
 
 - Milisegundos de cola del pool, ORM, serialización, event loop y Redis por cada
   request: faltan spans internos correlacionados. No llamar «red» a todo el resto.
-- Coste facturado Upstash y reparto por comando/worker: INFO no lo expuso.
+- Consumo facturado de Redis y reparto por comando/worker: `INFO` no lo expuso.
 - Rendimiento de producción, carga concurrente o p95: solo desarrollo actual.
 - Tiempo de uploads, Stripe, checkout y emails: se inspeccionó código sin
   producir efectos externos. Tampoco se reprodujeron todas las mutaciones.

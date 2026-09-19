@@ -273,7 +273,6 @@ load every applicable installed skill:
 - Creating a Medusa admin user: `new-user`.
 - Intentional creation or redesign of frontend interfaces: `frontend-design`.
 - Supabase-specific work: `supabase`.
-- Upstash-specific work: `upstash:upstash` and the relevant product sub-skill.
 - Date handling: read the project skill `docs/skills/date-fns/SKILL.md` before
   changing parsing, formatting, or calendar calculations.
 - Effect setup, only when its adoption is justified for a concrete requirement:

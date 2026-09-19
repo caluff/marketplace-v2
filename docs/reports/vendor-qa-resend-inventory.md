@@ -30,13 +30,12 @@ la prueba ni se ejecuta el runner HTTP que crea/elimina bases de datos.
   `c2109780-a654-4c07-81b5-25f1adde57f9`). Esta prueba confirma la conexión y
   entrega al destinatario permitido, no el recorrido completo de una notificación
   desde Medusa. No se cambió ninguna contraseña.
-- Al reanudar a las 06:54 UTC, Upstash rechazó conexiones con
+- Al reanudar a las 06:54 UTC, el proveedor Redis anterior rechazó conexiones con
   `ERR max requests limit exceeded`, límite 500000, uso 500002. El intento de
   arranque del API se detuvo para no mantener reintentos. Los tres servidores
   frontend permanecieron abiertos; el API quedó detenido. No se borraron colas,
   cambiaron credenciales ni contrataron planes. Es necesario recuperar capacidad
   en la instancia existente antes de continuar con workflows y correo.
-  [Explicación oficial de la cuota mensual](https://upstash.com/docs/redis/troubleshooting/max_requests_limit).
 
 ## Cambios verificados
 
@@ -136,7 +135,7 @@ devuelve `configured: true`, por lo que el job sigue hasta 20 invocaciones. Con
 correo habilitado y ejecución continua, son hasta 28800 invocaciones diarias,
 no 28800 correos. A esto se suma el polling nativo de BullMQ.
 
-No se dispone del desglose histórico de Upstash para atribuir las 500000
+No se dispone del desglose histórico del proveedor Redis anterior para atribuir las 500000
 solicitudes a una única causa. La cuota es mensual; las fuentes públicas
 consultadas no confirmaron la fecha/hora exacta de renovación de esta instancia.
 En esta revisión solo se cambia el remitente, no la programación de jobs ni el

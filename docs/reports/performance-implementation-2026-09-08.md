@@ -171,7 +171,7 @@ QA end-to-end de todas las mutaciones ni una prueba de carga de producción.
    Elegir explícitamente Redis local para desarrollo o un servicio con un modelo
    de coste adecuado, manteniendo los workers funcionales. Antes de cambiar URL,
    planificar los trabajos pendientes del Redis anterior. Verificar consumo
-   facturado con métricas de Upstash, no extrapolando INFO como cuota mensual.
+   con métricas de Railway, no extrapolando contadores de `INFO`.
 2. **Colocación y esperas internas.** API local sigue hablando con PostgreSQL
    remoto; el RTT de referencia ronda 212 ms. Medir adquisición del pool,
    reconexiones, ORM y Redis con spans correlacionados y comparar desde la región

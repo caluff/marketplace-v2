@@ -45,17 +45,17 @@ their native behavior, so this mitigation does not eliminate idle consumption.
   or an estimate of billed commands. INFO counters also differed between
   connections/runs; their reset/scope behavior was not established. Do not add
   them into a monthly usage figure. No per-command breakdown was returned by
-  `INFO commandstats` on this service. Upstash Console usage is authoritative
-  for the quota; it was not available to this diagnostic.
+  `INFO commandstats` on this service. Provider-side metrics are authoritative
+  for billing; they were not available to this diagnostic.
 - 174 API unit tests passed, including three configuration regression cases;
   API typecheck, lint, and build passed (five existing native inventory import warnings).
 
 ## Development guidance
 
 Normal `pnpm dev` still supports background processing. Run one instance and
-stop it after testing. This adjustment does not guarantee that a 500,000-command
-monthly allowance supports continuous operation. Upstash itself documents
-[idle BullMQ traffic and command-based plan concerns](https://upstash.com/docs/redis/integrations/bullmq).
+stop it after testing. Continuous BullMQ workers still consume Redis, CPU and
+memory even when there is no application traffic, so Railway usage should be
+monitored during development.
 
 For unrestricted local development, use a dedicated persistent local Redis or
 a Redis service sized for continuously running workers. A local Redis setup
