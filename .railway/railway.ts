@@ -1,4 +1,11 @@
-import { defineRailway, github, project, redis, service } from "railway/iac";
+import {
+  defineRailway,
+  github,
+  preserve,
+  project,
+  redis,
+  service,
+} from "railway/iac";
 
 const source = () =>
   github("caluff/marketplace-v2", {
@@ -51,6 +58,7 @@ export default defineRailway((ctx) => {
       STRIPE_WEBHOOK_SECRET: ctx.shared.STRIPE_WEBHOOK_SECRET,
       STRIPE_PAYOUT_WEBHOOK_SECRET: ctx.shared.STRIPE_PAYOUT_WEBHOOK_SECRET,
       VENDOR_PUBLIC_URL: "https://marketplace-v2vendor-production.up.railway.app",
+      VENDOR_ONBOARDING_TEST_VERIFICATION: preserve(),
     },
   });
 
