@@ -53,7 +53,7 @@ beforeAll(() => {
   for (const file of ["helpers.js", "middlewares.js", "helpers.d.ts"]) {
     writeFileSync(path.join(target, file), readFileSync(path.join(packageRoot, sourceDirectory, file)));
   }
-  const apply = (args: string[]) => execFileSync("git", ["apply", `--include=${sourceDirectory}/*`, ...args, patchPath], { cwd: directory, stdio: "pipe" });
+  const apply = (args: string[]) => execFileSync("git", ["apply", "--ignore-space-change", `--include=${sourceDirectory}/*`, ...args, patchPath], { cwd: directory, stdio: "pipe" });
   try { apply(["--check"]); } catch { apply(["--reverse"]); }
   original = loadSource(target);
   apply([]);

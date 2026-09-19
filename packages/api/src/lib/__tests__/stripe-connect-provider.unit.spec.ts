@@ -30,7 +30,7 @@ beforeAll(() => {
   const target = path.join(patchDirectory, "dist/index.js");
   mkdirSync(path.dirname(target));
   writeFileSync(target, readFileSync(installedPath));
-  const apply = (args: string[]) => execFileSync("git", ["apply", ...args, patchPath], { cwd: patchDirectory, stdio: "pipe" });
+  const apply = (args: string[]) => execFileSync("git", ["apply", "--ignore-space-change", ...args, patchPath], { cwd: patchDirectory, stdio: "pipe" });
   try { apply(["--check"]); } catch { apply(["--reverse"]); }
   originalSource = readFileSync(target, "utf8");
   // pnpm's patcher requires the actual source position; git may silently relocate.

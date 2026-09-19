@@ -38,7 +38,7 @@ beforeAll(() => {
   const target = path.join(directory, sourcePath);
   mkdirSync(path.dirname(target), { recursive: true });
   writeFileSync(target, readFileSync(installedPath));
-  const apply = (args: string[]) => execFileSync("git", ["apply", `--include=${sourcePath}`, ...args, patchPath], {
+  const apply = (args: string[]) => execFileSync("git", ["apply", "--ignore-space-change", `--include=${sourcePath}`, ...args, patchPath], {
     cwd: directory,
     stdio: "pipe",
   });
