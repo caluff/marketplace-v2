@@ -1,8 +1,9 @@
 # Railway service definitions
 
-[railway.ts](railway.ts) defines five services sourced from the repository's
-`develop` branch. It records builds, start commands, watch paths, networking
-and variable references. It does not prove that a remote environment matches.
+[railway.ts](railway.ts) defines five application services and one Redis
+database sourced from the repository's `develop` branch. It records builds,
+start commands, watch paths, networking and variable references. It does not
+prove that a remote environment matches.
 
 | Service    | Build                      | Start               | Health check    |
 | ---------- | -------------------------- | ------------------- | --------------- |
@@ -15,10 +16,11 @@ and variable references. It does not prove that a remote environment matches.
 Only API declares `pnpm db:migrate` before deployment. Worker shares the database
 and backend build but has no public domain declared.
 
-PostgreSQL and Redis are external. Backend references include `DATABASE_URL`,
-`REDIS_URL`, signing secrets, CORS, Google and Stripe TEST settings. Frontends
-reference public configuration only. Credentials belong in the deployment
-environment, never in docs or Git.
+PostgreSQL remains external. Redis is provisioned in Railway and API/worker use
+the database helper's private `REDIS_URL`. Backend references also include
+`DATABASE_URL`, signing secrets, CORS, Google and Stripe TEST settings.
+Frontends reference public configuration only. Credentials belong in the
+deployment environment, never in docs or Git.
 
 This file does not declare every optional integration supported by
 [medusa-config.ts](../packages/api/medusa-config.ts). Email/Resend, Algolia,

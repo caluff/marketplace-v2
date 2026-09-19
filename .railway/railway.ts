@@ -1,4 +1,4 @@
-import { defineRailway, github, project, service } from "railway/iac";
+import { defineRailway, github, project, redis, service } from "railway/iac";
 
 const source = () =>
   github("caluff/marketplace-v2", {
@@ -6,6 +6,8 @@ const source = () =>
   });
 
 export default defineRailway((ctx) => {
+  const redisDatabase = redis("redis", { region: "us-west2" });
+
   const api = service("api", {
     source: source(),
     rootDirectory: "/",
@@ -35,7 +37,7 @@ export default defineRailway((ctx) => {
     env: {
       NODE_ENV: "production",
       DATABASE_URL: ctx.shared.DATABASE_URL,
-      REDIS_URL: ctx.shared.REDIS_URL,
+      REDIS_URL: redisDatabase.env.REDIS_URL,
       JWT_SECRET: ctx.shared.JWT_SECRET,
       COOKIE_SECRET: ctx.shared.COOKIE_SECRET,
       STORE_CORS: ctx.shared.STORE_CORS,
@@ -76,7 +78,7 @@ export default defineRailway((ctx) => {
     env: {
       NODE_ENV: "production",
       DATABASE_URL: ctx.shared.DATABASE_URL,
-      REDIS_URL: ctx.shared.REDIS_URL,
+      REDIS_URL: redisDatabase.env.REDIS_URL,
       JWT_SECRET: ctx.shared.JWT_SECRET,
       COOKIE_SECRET: ctx.shared.COOKIE_SECRET,
       STORE_CORS: ctx.shared.STORE_CORS,
@@ -213,6 +215,6 @@ export default defineRailway((ctx) => {
   });
 
   return project("grateful-presence", {
-    resources: [web, admin, vendor, api, worker],
+    resources: [redisDatabase, web, admin, vendor, api, worker],
   });
 });

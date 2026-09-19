@@ -1,0 +1,18 @@
+[mcp_servers.upstash-redis]
+command = "powershell"
+args = [
+  "-NoLogo",
+  "-NoProfile",
+  "-NonInteractive",
+  "-ExecutionPolicy",
+  "Bypass",
+  "-File",
+  "start-upstash-redis-mcp.ps1",
+]
+cwd = "."
+startup_timeout_sec = 30
+default_tools_approval_mode = "prompt"
+
+[plugins."upstash@upstash"]
+enabled = true
+

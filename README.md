@@ -25,7 +25,7 @@ La implementación permanece **NOT STARTED**. La siguiente fase es **Phase 1 —
 | Tema                 | `packages/theme-sync`                  | Contrato y sincronización de preferencias visuales                    | —                                 |
 | Contratos onboarding | `packages/vendor-onboarding-contracts` | Contratos de transporte compartidos del alta de vendedor              | —                                 |
 
-Las aplicaciones usan Next.js 16.3.4, React 19 y TypeScript. Se comunican con las APIs mediante SDKs; no acceden directamente a PostgreSQL o Redis. El admin Vite integrado está desactivado porque el operador usa su propia aplicación Next.js. PostgreSQL/Supabase persiste datos y Redis/Upstash participa en caché, eventos, workflows y locks.
+Las aplicaciones usan Next.js 16.3.4, React 19 y TypeScript. Se comunican con las APIs mediante SDKs; no acceden directamente a PostgreSQL o Redis. El admin Vite integrado está desactivado porque el operador usa su propia aplicación Next.js. PostgreSQL/Supabase persiste datos y Redis participa en caché, eventos, workflows y locks; producción lo provisiona dentro de Railway.
 
 Hay un único workspace pnpm y lockfile raíz. Las versiones, overrides y patches vigentes están en [package.json](package.json), [pnpm-workspace.yaml](pnpm-workspace.yaml) y `pnpm-lock.yaml`; consultar esos contratos antes de actualizar dependencias.
 
@@ -43,7 +43,7 @@ La comisión observada en la auditoría es configurable en backend, no una const
 
 - Node.js compatible con el mínimo declarado (`>=20.9.0`) y las dependencias instaladas.
 - pnpm 12.0.0, declarado en `packageManager`; usar exclusivamente pnpm.
-- PostgreSQL y Redis accesibles desde desarrollo; la configuración actual exige Redis con TLS (`rediss://`).
+- PostgreSQL y Redis accesibles desde desarrollo. Redis acepta `redis://` en redes privadas confiables, como Railway, y `rediss://` para conexiones TLS externas.
 
 Las credenciales backend van en el `.env` ignorado de la raíz. Medusa encuentra esa raíz desde fuente o artefacto compilado. No copiar secretos a documentación, código ni variables `NEXT_PUBLIC_*`.
 

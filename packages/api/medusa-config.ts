@@ -109,7 +109,7 @@ const requireSecret = (name: "JWT_SECRET" | "COOKIE_SECRET"): string => {
 };
 
 const databaseUrl = requireUrl("DATABASE_URL", ["postgres:", "postgresql:"]);
-const redisUrl = requireUrl("REDIS_URL", ["rediss:"]);
+const redisUrl = requireUrl("REDIS_URL", ["redis:", "rediss:"]);
 const jwtSecret = requireSecret("JWT_SECRET");
 const cookieSecret = requireSecret("COOKIE_SECRET");
 const requestedWorkerMode = process.env.MEDUSA_WORKER_MODE || "shared";
