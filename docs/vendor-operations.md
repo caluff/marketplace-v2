@@ -1,14 +1,16 @@
 # Alta y operación de vendedores
 
-Guía vigente de las superficies conectadas, revisada el 2026-09-15. El diseño
+Guía vigente de las superficies conectadas, actualizada el 2026-10-03. El diseño
 inicial para Mercur 2.3.3 y Medusa 2.18.0 está en
 [el plan histórico](plans/vendor-onboarding.md); los resultados de QA al final
 conservan su fecha y no representan una nueva verificación.
 
 La [auditoría de cierre](develpment/development-completion-audit.md) es la base de
-los pendientes de desarrollo. **Financial Readiness: FAIL**: existen checkout,
-Connect, pedidos y operaciones financieras TEST, pero no está terminado el ciclo
-de comisión, liquidación, recuperación y reporting. Seguir las
+los requisitos originales de desarrollo. **F01–F12 / Phase 1–6 DONE** y
+**Financial Readiness PASS para Stripe TEST, USD y operación manual**, incluidos
+comisión, liquidación, recuperación y reporting. La liberación automática está
+implementada y activa localmente en TEST, con su circuito nuevo de 72 horas
+reales aún **NEEDS VERIFICATION**. LIVE y producción no están certificados. Seguir las
 [fases de implementación](develpment/development-implementation-plan.md) y el
 [handoff de progreso](develpment/development-progress.md).
 
@@ -40,7 +42,7 @@ de comisión, liquidación, recuperación y reporting. Seguir las
 | Web `/account/sell`                    | Borrador, envío, estado, correcciones e historial/notificaciones dentro de la cuenta.                                                                           |
 | Admin `/dashboard/vendor-applications` | Cola, detalle y decisión de solicitudes, con permisos y control de versión.                                                                                     |
 | Admin `/dashboard/product-review`      | Moderación nativa de productos propuestos y de cambios pendientes. No configura precios ni ofertas.                                                             |
-| Vendor `/seller`                       | Conteos reales, pedidos recientes y preparación de la tienda. Sin métricas financieras simuladas.                                                               |
+| Vendor `/seller`                       | Conteos, pedidos recientes, preparación y reporte financiero propio: ventas netas, ganancias, transferencias y pendiente, con períodos y detalle. |
 | Vendor `/seller/catalog`               | Catálogo compartido, variantes, imágenes y revisión de productos/cambios; ofertas y precios propios. Producto aprobado y oferta vendible son estados distintos. |
 | Vendor `/seller/inventory`             | Consulta y ajuste atómico del total físico en el almacén aprobado, con controles de cantidad esperada y reservas.                                               |
 | Vendor `/seller/inventory/locations`   | Consulta y revalidación del único almacén de Estados Unidos basado en la solicitud aprobada. No permite creación libre.                                         |
@@ -64,9 +66,14 @@ entrega están en [el informe de almacén](reports/phase-1-warehouse.md).
 Una cuenta Connect habilitada, una oferta activa y stock disponible tampoco
 demuestran una venta cobrada: el checkout autoriza con captura manual y separa
 pedidos por vendedor. Ver [pedidos](orders-flow.md) y
-[operaciones financieras](order-finance.md). Los dashboards actuales muestran
-conteos operativos; el detalle financiero muestra asignado/capturado/reembolsado,
-pero todavía no las ganancias netas y balances reconciliados de cada vendedor.
+[operaciones financieras](order-finance.md). Los dashboards muestran conteos
+operativos y reporting backend conciliado. La sección Finanzas del detalle de
+pedido muestra asignado/capturado/reembolsado, saldo e historial de operaciones,
+con comisión devuelta cuando corresponde. El desglose por venta del informe en
+`/seller` utiliza el snapshot original de comisión/ganancias y los movimientos de
+transferencia/reversión. Los períodos usan `America/Montevideo` y la cobertura
+incompleta queda explícita. Transferido al saldo Connect no significa depositado
+en el banco del vendedor.
 
 ## Verificación de correo en pruebas
 
@@ -89,17 +96,18 @@ verificadas conservan su estado. Activa esta opción solo en el entorno de prueb
 
 ## Pendientes de desarrollo y límites
 
-- **Finanzas:** F01–F03 cubren histórico, redondeo y validación; F04 protege
-  escritores de pedidos; F07–F09 cierran liquidación, recuperación y reporting.
+- **Finanzas:** F01–F03 cerraron histórico, redondeo y validación; F04 protege
+  escritores de pedidos; F07–F09 completaron liquidación, recuperación y reporting.
   No repetir transferencias ni liberar journals por SQL para resolver un resultado
-  incierto. El detalle y los criterios de salida están en la auditoría.
-- **Autorización:** F05 trata el aislamiento de carrito/identidad; F06 registra
-  privilegios públicos peligrosos en tablas nativas PostgreSQL. La autorización
-  Medusa no protege consultas directas que esos roles puedan ejecutar. La
-  exposición externa concreta de Data API requiere verificación; no afirmar que
-  esta documentación haya corregido permisos.
-- **Catálogo y checkout:** F10–F11 cubren continuidad del catálogo y coherencia del
-  desglose con descuentos/impuestos. F12 exige regresión integral del código final.
+  incierto. La extensión automática usa un reloj durable observado por servidor,
+  espera 72 horas y revalida elegibilidad. Órdenes sin reloj o con revisión/resultado
+  incierto no se pagan automáticamente. La prueba integral nueva sigue pendiente.
+- **Autorización:** F05 cerró el aislamiento de carrito/identidad y F06 la
+  corrección de permisos incluida en el cierre. Medusa no protege consultas SQL
+  externas; verificar migraciones y permisos al preparar cada destino. La evidencia
+  del entorno de cierre no certifica la configuración de una nueva producción.
+- **Catálogo y checkout:** F10–F11 cerraron continuidad del catálogo y coherencia del
+  desglose con descuentos/impuestos. F12 certificó la regresión del alcance TEST/manual.
 - **Inventario:** el ajuste vendor ya compara y escribe de forma atómica, con
   bloqueos compartidos con reservas/ajustes nativos. La evidencia histórica incluye
   carreras PostgreSQL. La extensión usa clases internas de Medusa 2.18.0 y exige
@@ -126,7 +134,9 @@ No cambiar ni vaciar la instancia para eludir un fallo de acceso/cuota sin la
 correspondiente autorización.
 
 La entrega real de correo y el recorrido autenticado completo requieren pruebas
-integradas; tipos y unitarios no sustituyen esa validación. Los dominios,
+integradas; tipos y builds no sustituyen esa validación. Los tests unitarios se
+retiraron el 2026-10-03; se conservan 15 suites de integración con preflight de
+infraestructura aislada. Los dominios,
 remitentes, credenciales live y despliegue definitivos pertenecen a la etapa
 posterior de preparación para producción. No son parte de las fases obligatorias
 del plan de cierre funcional. No incluir secretos ni credenciales en evidencias.

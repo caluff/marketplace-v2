@@ -15,14 +15,36 @@ export async function cartSdk() {
   const sdk = createCustomerSdk(await getCustomerSessionToken())
   if (!sdk) throw new Error("La tienda no está disponible en este momento.")
   const transport = sdk.client.fetch_
-  sdk.client.fetch_ = (input, init) =>
-    transport(input, {
-      ...init,
-      cache: "no-store",
-      signal: init?.signal
-        ? AbortSignal.any([init.signal, AbortSignal.timeout(30_000)])
-        : AbortSignal.timeout(30_000),
-    })
+  sdk.client.fetch_ = async (input, init) => {
+    const method = (
+      init?.method ?? (input instanceof Request ? input.method : "GET")
+    ).toUpperCase()
+    const deadline = AbortSignal.timeout(method === "GET" ? 30_000 : 90_000)
+    const signal = init?.signal
+      ? AbortSignal.any([init.signal, deadline])
+      : deadline
+    // Native handlers can outlast the cart identity lock's acquisition wait.
+    // Retry only reads rejected by that lock, within one shared deadline.
+    for (let attempt = 0; ; attempt += 1) {
+      signal.throwIfAborted()
+      try {
+        return await transport(input, { ...init, cache: "no-store", signal })
+      } catch (error) {
+        if (
+          method !== "GET" ||
+          attempt >= 2 ||
+          signal.aborted ||
+          !(error instanceof FetchError) ||
+          error.status !== 409 ||
+          !/^Failed to acquire lock for key "store-cart-owner:cart_[A-Za-z0-9]+"$/.test(
+            error.message,
+          )
+        ) {
+          throw error
+        }
+      }
+    }
+  }
   return sdk
 }
 

@@ -29,9 +29,19 @@ not all mapped here. Review feature configuration alongside this definition
 before later deployment work.
 
 `NODE_ENV=production` does not enable live Stripe: the application accepts TEST
-keys only, financial operations are scoped to USD, and automatic financial jobs
-are disabled by default with additional code gates. Start with the
-[development audit](../docs/develpment/development-completion-audit.md).
+keys only and financial operations are scoped to USD. General commerce jobs stay
+disabled (`STRIPE_AUTOMATIC_JOBS_ENABLED=false`). The separate 72-hour settlement
+job requires `STRIPE_AUTOMATIC_SETTLEMENT_ENABLED=true`, the financial migrations
+and a running worker. It is active in the local TEST environment; that does not
+prove activation in Railway or a new-order transfer after 72 real hours.
+
+F01–F12 / Phase 1–6 are complete for TEST/USD/manual operations. The new automatic
+path still needs its full elapsed-time verification. LIVE compatibility cannot be
+enabled by replacing keys alone, and transfer to a Connect balance does not prove
+arrival at the seller's bank. Consult [current development progress](../docs/develpment/development-progress.md)
+and the [job contract](../packages/api/src/jobs/README.md).
 
 This docs refresh does not apply remote configuration, run migrations or change
-deployment state. Definitive deployment preparation follows functional closure.
+deployment state. Before production, validate the five deployed services,
+migrations, HTTPS/authentication, optional integrations, monitoring, financial
+recovery and backup restoration against the selected destination.

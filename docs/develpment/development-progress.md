@@ -6,7 +6,7 @@ Extensión solicitada después del cierre — liquidación automática a las 72 
 
 ## Overall Status
 
-ACTIVACIÓN PASS — extensión automática activa, código y gates backend PASS. Prueba integral de un pedido nuevo y 72 horas reales NEEDS VERIFICATION. F01–F12 DONE en el alcance histórico. Producción y el resto de F13–F17 continúan fuera de alcance.
+ACTIVACIÓN PASS — extensión automática activa, código y gates backend PASS. Pedido nuevo TEST #16 completado, captura y reloj verificados; cero transferencias antes del vencimiento. Prueba integral NEEDS VERIFICATION hasta el 6 de octubre de 2026, 12:51:00.416 America/Montevideo, y la conciliación posterior. F01–F12 DONE en el alcance histórico. Producción y el resto de F13–F17 continúan fuera de alcance.
 
 ## Extensión autorizada — 2026-10-03
 
@@ -25,7 +25,10 @@ ACTIVACIÓN PASS — extensión automática activa, código y gates backend PASS
 
 ## Completed — estado vigente
 
-- 2026-10-03, limpieza y publicación solicitadas: retirados cinco worktrees con snapshots recuperables; Docker conserva sólo Redis habitual, QA respaldada y retirada junto a cuatro volúmenes/dos redes. Eliminados185 archivos unitarios+tres auxiliares; conservadas15suites integración y agregado preflight que rechaza entorno compartido. Todos los cambios locales de UI/configuración preparados para develop; PDF personal preservado fuera de Git. Lint/tipos/peers/builds PASS,113integraciones PASS; automatización TEST sigue disponible, sin nuevos movimientos. [Evidencia de limpieza](evidence/repository-cleanup-20261003.md).
+- 2026-10-03, limpieza y publicación solicitadas: retirados cinco worktrees con snapshots recuperables; Docker conserva sólo Redis habitual, QA respaldada y retirada junto a cuatro volúmenes/dos redes. Eliminados185 archivos unitarios+tres auxiliares; conservadas15suites integración y agregado preflight que rechaza entorno compartido. Todos los cambios locales se publicaron en `origin/develop`, commit `e3a28e3`, con remoto/local idénticos y working tree limpio al terminar. Los125 commits anteriores se preservaron en rama/bundle local antes de agrupar la publicación; protección de secretos permaneció activa. PDF personal preservado fuera de Git. Lint/tipos/peers/builds PASS,113integraciones PASS; automatización TEST sigue disponible, sin nuevos movimientos. [Evidencia de limpieza](evidence/repository-cleanup-20261003.md).
+
+- 2026-10-03, documentación vigente actualizada: README, índice, guías operativas y mapa backend reflejan el cierre F01–F12 TEST/USD/manual y la extensión automática activa. Auditorías y checkpoints históricos se conservan. Nueva compra habitual TEST #16 preparada, enviada, entregada, capturada una vez y completada por controles nativos. Bruto USD 220, comisión original USD 16 y derecho vendedor USD 204. Reloj servidor 2026-10-03T15:51:00.416Z, vencimiento 2026-10-06T15:51:00.416Z. Verificador readonly TLS/Stripe GET PASS parcial a las15:57UTC: cero transferencias/payouts, histórico ajeno intacto, estado `not_due_waiting`; el recorrido de72 horas no se declara completo. Seguimiento local diario programado. [Evidencia integral y límites](evidence/automatic-settlement-e2e-20261003.md).
+- 2026-10-03, bloqueo observado durante ese checkout corregido: GET sólo reintenta el conflicto del lock de ownership (máximo2 retries/30 segundos), sin prefetch hacia pasos de checkout; mutaciones un solo intento/90 segundos. Guardas backend conservadas, ninguna operación monetaria repetida. Lint/tipos web y14 casos externos PASS; checkout nativo posterior PASS. El aviso fallido de notificación de envío se registra aparte: no acredita recepción de correo.
 
 - 2026-10-03, ajuste de presentación F09 solicitado tras el cierre: admin de 15 a 4 tarjetas principales, tabla de 10 a 6 columnas y conciliación desplegable; ganancias de vendedores eliminadas del informe admin. Vendedor de 8 a 4 tarjetas principales. Sin cambios contables ni API. Lint/tipos admin y vendor PASS; tests 99/138 PASS. Navegador local: dataset financiero ordinario vacío, cobertura parcial, desgloses con teclado y móvil sin desbordamiento; no se repitieron pagos. [Detalle del ajuste](evidence/financial-reporting.md#presentation-simplification--2026-10-03).
 
@@ -52,7 +55,7 @@ Los pendientes de estos checkpoints quedaron resueltos en el estado vigente ante
 
 ## Next Action vigente
 
-Activación autorizada completa y worker habitual verificado. Próxima verificación funcional: finalización normal de un pedido nuevo TEST y transferencia tras72 horas reales, sin adelantar relojes ni reutilizar órdenes históricas; aún no se ejecutó ese circuito. No quedan acciones de activación ni tareas obligatorias F01–F12 del cierre histórico. LIVE, resto de F13–F17 y despliegue siguen fuera de alcance. No repetir movimientos financieros ni restaurar cambios ajenos. Los registros siguientes conservan la evolución histórica.
+Esperar el vencimiento real del pedido TEST #16: **6 de octubre de 2026, 12:51:00.416 America/Montevideo**. El seguimiento local diario verificará de sólo lectura una única transferencia automática USD204, journal/payout/Stripe, destino, informes y otro ciclo natural sin duplicados. Mantener API/shared, Redis y equipo disponibles; si están apagados, documentar el retraso sin reducir72 horas ni liquidar manualmente. La compra y finalización ya ocurrieron; no repetirlas ni crear otro pedido. No quedan acciones de activación ni tareas obligatorias F01–F12 del cierre histórico. LIVE, resto de F13–F17 y despliegue siguen fuera de alcance. Preservar cambios ajenos. [Instrucciones y recibos](evidence/automatic-settlement-e2e-20261003.md).
 
 ## In Progress — registro histórico
 

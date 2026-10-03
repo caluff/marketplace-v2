@@ -74,3 +74,7 @@ La publicación agrupa todos sus cambios en un commit limpio sobre origin/develo
 sin force ni excepciones a la protección de secretos. El resultado remoto se
 comprueba tras el push; no se suben snapshots, respaldos, credenciales ni el PDF
 personal.
+
+Push normal completado: `origin/develop` y HEAD coinciden en
+`e3a28e305174b7b8a7aa1d21aa0a8220185df10a`; ahead/behind0/0 y working tree limpio
+al terminar. Recibo privado `marketplace-cleanup-20261003/publication-verified.json`.

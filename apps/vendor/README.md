@@ -9,7 +9,7 @@ authoritative for every operation.
 
 | Route                         | Current behavior                                                                                                                                                                      |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/seller`                     | Real catalog-visible, assigned-order and inventory counts, recent orders and backend preparation checks. Counts are not financial earnings.                                           |
+| `/seller`                     | Operational counts, preparation checks and scoped financial reporting: net sales, earnings, net transfers and pending settlement, with sale detail and period filters. |
 | `/seller/catalog`             | Searchable, paginated shared catalog; proposed products, staged content/image edits, variants and seller offers/prices. Product approval and a sellable offer remain distinct.        |
 | `/seller/catalog/[id]/stock`  | Inventory associated with the product and the seller's approved warehouse.                                                                                                            |
 | `/seller/inventory`           | Scoped inventory with absolute stock adjustments, stale-count/reservation checks and backend concurrency protection.                                                                  |
@@ -34,10 +34,20 @@ requirements are satisfied.
 ## Financial limits
 
 Order details expose allocated, captured, refunded and refundable amounts plus
-operation history. They do not yet provide the complete commission/earnings
-snapshot or reconciled seller balances. General settlement and recovery remain
-incomplete. The development audit records **Financial Readiness: FAIL**; Connect
-onboarding and successful TEST refunds do not establish commercial readiness.
+operation history, including returned commission when applicable. The financial
+report on `/seller` provides the sale breakdown from backend snapshots and
+reconciled movements, including original commission/earnings and transfers/reversals.
+It remains scoped to the seller, with periods in `America/Montevideo` and explicit
+partial coverage.
+
+F01–F12 / Phase 1–6 are **DONE**, with **Financial Readiness: PASS for TEST/USD
+and manual operations**, including general settlement and recovery. The separate
+automatic job waits 72 elapsed hours from the server's first valid observation
+of order completion and checks eligibility again before transferring the net
+entitlement to the Stripe TEST Connect balance. It is active locally; full
+verification with a new order and 72 real hours is still pending. Existing orders
+without a completion clock require manual review. Transfer does not prove a bank
+payout, and LIVE is unsupported. See [current progress](../../docs/develpment/development-progress.md).
 
 ## Development
 

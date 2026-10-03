@@ -2,6 +2,13 @@
 
 Fecha de preparación: 2026-09-15. Estado inicial: **NOT STARTED**.
 
+Estado vigente al 2026-10-03: **Phase 1–6 / F01–F12 DONE**, con
+**Financial Readiness PASS acotado a Stripe TEST, USD y operación manual**.
+Las tareas, dependencias y verificaciones siguientes conservan el plan original
+y sus checkpoints; no representan una lista de trabajo todavía abierto.
+La [matriz final](evidence/development-closure-20261003.md) y el
+[progreso](development-progress.md) documentan la resolución y sus límites.
+
 Este documento convierte únicamente los P0/P1 (F01–F12) de la [auditoría de cierre](development-completion-audit.md) en trabajo ejecutable por fases. La auditoría recoge evidencia histórica de la sesión del 13–14 de septiembre de 2026; crear este plan no repite sus verificaciones ni inicia F01. Consultar el [progreso](development-progress.md) para conocer el estado actual.
 
 ## Uso entre sesiones y límites
@@ -18,7 +25,14 @@ Este documento convierte únicamente los P0/P1 (F01–F12) de la [auditoría de 
 72 horas después de completar el pedido. Se agrega únicamente ese camino
 Stripe TEST/USD, conservando captura y recuperación existentes. No reabre el
 cierre histórico F01–F12 ni incorpora el resto de F17. Diseño, verificaciones y
-activación pendiente en [la evidencia de la extensión](evidence/automatic-settlement-20261003.md).
+activación efectiva TEST en [la evidencia de la extensión](evidence/automatic-settlement-20261003.md).
+La prueba integral de un pedido nuevo con 72 horas reales permanece **NEEDS
+VERIFICATION**; no se adelantan relojes ni se reutilizan órdenes históricas para
+declararla completa. LIVE, payout bancario y preparación de producción siguen
+fuera de la certificación de desarrollo.
+El [circuito nuevo en curso](evidence/automatic-settlement-e2e-20261003.md)
+corresponde al pedido TEST #16, ya completado y capturado, con vencimiento
+2026-10-06T15:51:00.416Z. No iniciar otra compra para sustituir su espera.
 
 ### Reglas técnicas comunes
 

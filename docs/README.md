@@ -1,9 +1,16 @@
 # Documentación del proyecto
 
-Revisión documental: **2026-09-15**. El código contiene funcionalidades operativas
-que no existían en los primeros informes. La auditoría de cierre sigue en
-**Financial Readiness: FAIL** y su plan de implementación permanece **NOT STARTED**.
-Actualizar documentación no equivale a resolver los hallazgos ni a repetir QA.
+Revisión documental: **2026-10-03**. **F01–F12 / Phase 1–6 DONE** y
+**Financial Readiness: PASS para Stripe TEST, USD y operación manual**, según
+la matriz de cierre y el progreso. La extensión automática de 72 horas está
+implementada y activa en TEST; su prueba integral con un pedido nuevo y 72 horas
+reales permanece **NEEDS VERIFICATION**. LIVE y preparación de producción no
+están certificados. Actualizar documentación no equivale a repetir QA.
+
+La [verificación integral en curso](develpment/evidence/automatic-settlement-e2e-20261003.md)
+registra el pedido nuevo TEST #16 completado y el vencimiento real del 6 de
+octubre, 12:51 de Uruguay. La comprobación previa al plazo pasó; la transferencia
+posterior y otro ciclo sin duplicados permanecen pendientes.
 
 ## Punto de entrada para implementar
 
@@ -16,7 +23,8 @@ Actualizar documentación no equivale a resolver los hallazgos ni a repetir QA.
 Se conserva el nombre de carpeta `develpment` solicitado por el usuario.
 Una nueva sesión debe leer esos tres archivos, el código y las instrucciones
 `AGENTS.md` aplicables. Los números «Phase 1» de informes antiguos se refieren
-a otro trabajo; no indican que la nueva Phase 1 financiera esté implementada.
+a otro trabajo. El estado vigente de las fases financieras consta en el progreso;
+sus checkpoints previos y resultados unitarios se conservan como historia.
 
 ## Guías vigentes
 
@@ -36,8 +44,11 @@ a otro trabajo; no indican que la nueva Phase 1 financiera esté implementada.
 
 Las guías describen el código actual y señalan sus límites conocidos. Sus
 instrucciones de configuración no demuestran el estado remoto de ningún entorno.
-Para prioridades de cierre prevalece la auditoría; para saber qué se implementó
-después de ella, consultar progreso y Git.
+La auditoría conserva las prioridades y requisitos originales; para conocer su
+resolución, las extensiones autorizadas y las verificaciones pendientes prevalece
+el progreso con su evidencia. La limpieza del 2026-10-03 retiró los tests unitarios
+y preservó las integraciones; no interpretar los comandos de informes anteriores
+como el inventario actual de pruebas.
 
 ## Planes e informes históricos
 

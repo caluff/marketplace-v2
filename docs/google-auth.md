@@ -2,7 +2,7 @@
 
 La tienda, el panel de operadores y el portal de vendedores admiten Google junto al acceso existente con correo y contraseña. La integración usa los proveedores nativos de Medusa 2.18.0 y las sesiones HttpOnly de cada aplicación.
 
-Esta guía describe código y configuración esperada; no confirma el estado actual de Google Cloud ni una nueva ejecución del flujo. Consultar [Autenticación](../AUTHENTICATION.md) para las sesiones y Resend, y [el progreso de desarrollo](develpment/development-progress.md) para verificaciones pendientes. El aislamiento de carrito al cambiar de cliente (F05) sigue pendiente aunque el login OAuth sea correcto.
+Guía vigente actualizada el 2026-10-03. Describe código y configuración esperada; no confirma el estado actual de Google Cloud ni una nueva ejecución del flujo. Consultar [Autenticación](../AUTHENTICATION.md) para las sesiones y Resend, y [el progreso de desarrollo](develpment/development-progress.md) para verificaciones pendientes. F05 está cerrado: los caminos de login comparten adopción validada del carrito antes de publicar la sesión; logout limpia carrito y comprobante. Un login OAuth correcto por sí solo no sustituye esas guardas.
 
 El login de la tienda conserva su panel izquierdo y presenta el formulario de correo y contraseña a la derecha, seguido del acceso con Google. El icono local `apps/web/public/icons/google.png` procede de los [recursos oficiales de Google](https://developers.google.com/identity/branding-guidelines).
 

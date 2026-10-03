@@ -11,15 +11,22 @@ credentials in the ignored root environment.
 | `recover-vendor-application.ts`                                         | Inspects the original operation by default. `cancel`/`finalize` mutate and require its recovery gate. |
 | `reindex-search.ts`                                                     | Writes Algolia settings/projections and removes obsolete records; package command `search:reindex`.   |
 | `inspect-order-finance.ts`                                              | Reads a finance view without provider secrets/customer details; requires an operator.                 |
+| `settle-order-finance.ts`                                               | Inspects a settlement plan by default; operator, stable UUID and reason required; `--execute` transfers. |
+| `recover-order-finance.ts`                                              | Inspects an operation; execution requires `--execute` and the inspected `--plan-hash`, with stopped-writer evidence when applicable. |
+| `refresh-order-finance-provider-facts.ts`                               | Inspects stored facts by default; `--execute` reads the TEST provider and persists a new reconciled observation. |
 | `inspect-order-finance-extension-qa.ts`, `verify-order-finance-qa.ts`   | Inspects/checks existing financial QA fixtures; inspect each guard before use.                        |
 | `seed-order-finance-qa.ts`, `seed-order-finance-extension-qa.ts`        | Creates/mutates dedicated QA fixtures; not ordinary setup.                                            |
 | `reconcile-finance-extension-qa.ts`, `repair-finance-qa-payout-link.ts` | Fixture-specific repairs, not general recovery tools.                                                 |
 
 Use the existing pnpm/Medusa tooling in [package.json](../../package.json) with
 the script's declared arguments. Finance currently uses TEST Stripe and USD;
-keep automatic jobs disabled. Never copy fixture assumptions to arbitrary orders.
+keep general commerce jobs disabled. Automatic settlement has a separate opt-in
+and 72-hour contract documented under [jobs](../jobs/README.md); it is active in
+the local TEST environment, with the full new-order elapsed-time check still
+pending. Never copy fixture assumptions to arbitrary orders.
 
-General financial recovery remains F08 in the
-[development audit](../../../../docs/develpment/development-completion-audit.md).
-QA scripts and historical reports do not certify complete settlement. Record new
+General settlement and recovery completed F07/F08 in the TEST/USD/manual closure;
+the original audit preserves its historical findings. LIVE and bank payouts are
+not certified. QA scripts and historical reports do not certify a new automatic
+settlement run. Record new
 verification in [development progress](../../../../docs/develpment/development-progress.md).

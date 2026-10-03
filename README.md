@@ -1,8 +1,13 @@
 # marketplace-v2
 
-Marketplace con storefront, panel de operador y panel de vendedor independientes sobre un backend modular Mercur/Medusa. El repositorio contiene flujos reales de catálogo, autenticación, onboarding, inventario, envío, checkout y pedidos. El desarrollo todavía no está cerrado: **Financial Readiness: FAIL**. Stripe está limitado a pruebas; el histórico de comisiones, la liquidación operativa y los dashboards financieros tienen pendientes documentados.
+Marketplace con storefront, panel de operador y panel de vendedor independientes sobre un backend modular Mercur/Medusa. El alcance obligatorio **F01–F12 / Phase 1–6 está DONE**, con **Financial Readiness: PASS para Stripe TEST, USD y operación manual**. Incluye histórico de comisiones, liquidación, recuperación y reporting. Ese cierre no certifica pagos reales ni preparación de producción.
 
-Documentación revisada el **15 de septiembre de 2026** contra el código. Esta actualización no implementa hallazgos ni constituye una nueva ejecución de QA. La evidencia de la auditoría corresponde al 13–14 de septiembre.
+Documentación vigente actualizada el **3 de octubre de 2026**. La liberación automática a las 72 horas está implementada y activa en el entorno habitual TEST; su recorrido completo con un pedido nuevo y 72 horas reales permanece **NEEDS VERIFICATION**. Los resultados y sus límites están en el [progreso](docs/develpment/development-progress.md), separado de la auditoría histórica del 13–14 de septiembre.
+
+El pedido TEST #16 ya está capturado y completado, sin transferencia anticipada.
+Su plazo vence el **6 de octubre a las 12:51 de Uruguay**; el
+[seguimiento integral](docs/develpment/evidence/automatic-settlement-e2e-20261003.md)
+registrará la transferencia automática y la ausencia de duplicados.
 
 ## Continuar el desarrollo
 
@@ -12,7 +17,7 @@ Leer en este orden, junto con las instrucciones aplicables de `AGENTS.md`:
 2. [Plan de implementación](docs/develpment/development-implementation-plan.md): seis fases, dependencias y criterios de salida para P0/P1.
 3. [Progreso y handoff](docs/develpment/development-progress.md): estado actual, verificaciones y siguiente acción.
 
-La implementación permanece **NOT STARTED**. La siguiente fase es **Phase 1 — Financial Foundation**. El estado mutable se registra en el archivo de progreso; la auditoría no se reescribe al resolver hallazgos. La carpeta `docs/develpment` conserva el nombre solicitado para el handoff. El [índice documental](docs/README.md) distingue guías vigentes de planes e informes históricos.
+Las seis fases obligatorias están cerradas. La siguiente verificación funcional corresponde a la extensión automática de 72 horas; el estado mutable se registra en el archivo de progreso. La auditoría no se reescribe al resolver hallazgos. La carpeta `docs/develpment` conserva el nombre solicitado para el handoff. El [índice documental](docs/README.md) distingue guías vigentes de planes e informes históricos.
 
 ## Arquitectura
 
@@ -32,13 +37,13 @@ Hay un único workspace pnpm y lockfile raíz. Las versiones, overrides y patche
 
 ## Alcance implementado y límites
 
-- **Cliente:** catálogo con ofertas reales, categorías, búsqueda Algolia con filtros/paginación, cuenta, favoritos, carrito, checkout, confirmación e historial de pedidos. La continuidad del catálogo inicial/categorías y ciertos desgloses monetarios siguen pendientes (F10/F11).
+- **Cliente:** catálogo con ofertas reales, categorías y continuidad de resultados, búsqueda Algolia con filtros/paginación, cuenta, favoritos, carrito, checkout, confirmación e historial de pedidos. Los resúmenes conservan el total backend con descuentos e impuestos (F10/F11 cerrados).
 - **Vendedor:** solicitud desde una cuenta de comprador y revisión administrativa, portal autenticado, catálogo maestro y ofertas propias, imágenes, inventario, un almacén aprobado, envíos y preparación/seguimiento de pedidos. El registro genérico de sellers permanece desactivado deliberadamente.
-- **Operador:** autenticación y controles conectados al backend, revisión de solicitudes y vendedores, catálogo, pedidos y configuración de comisiones. Los dashboards actuales son operativos; aún no proporcionan el reporte financiero exigido por F09.
-- **Dinero:** checkout USD/Estados Unidos con Stripe TEST, autorización compartida por carrito, captura por operador, cancelación y reembolsos por tienda, incluida reversión proporcional de transferencias verificadas. Existe journal y bloqueo de resultados inciertos. Siguen abiertos histórico, redondeo, validación, cobertura de escritores, liquidación y recuperación (F01–F08).
+- **Operador:** autenticación y controles conectados al backend, revisión de solicitudes y vendedores, catálogo, pedidos y configuración de comisiones. El dashboard financiero presenta ventas de mercancía, comisiones, resultado después de tarifas y pendiente de liquidar, con detalle y conciliación; los costes desconocidos permanecen explícitos.
+- **Dinero:** checkout USD/Estados Unidos con Stripe TEST, autorización compartida por carrito, captura por operador, cancelación y reembolsos por tienda, incluida reversión proporcional de transferencias verificadas. Snapshot original inmutable, precisión al centavo, validación de comisiones, journal, protección de escritores, liquidación y recuperación general completan F01–F08. La extensión automática conserva estos controles y espera 72 horas desde la observación servidor de finalización; transfiere al saldo Connect, no acredita un depósito bancario.
 - **Integraciones:** Google OAuth, correo Resend, Algolia, imágenes mediante almacenamiento S3 compatible de Supabase y Stripe Connect se registran según configuración. Su presencia en código no acredita la configuración o entrega remota de cada entorno.
 
-La comisión observada en la auditoría es configurable en backend, no una constante contractual. No equiparar GMV, comisiones, transferencias al connected account y payouts bancarios. Consultar el [flujo financiero](docs/order-finance.md) y las fuentes de verdad de la auditoría antes de modificar pagos o métricas.
+La comisión es configurable en backend; cero o ausencia de regla bloquean la venta, y los cambios futuros no alteran el snapshot original. No equiparar GMV, comisiones, transferencias al connected account y payouts bancarios. Los filtros financieros usan `America/Montevideo`. Consultar el [flujo financiero](docs/order-finance.md) y el progreso antes de modificar pagos o métricas.
 
 ## Requisitos y entorno local
 
@@ -87,8 +92,10 @@ pnpm peers check
 
 Los resultados históricos están fechados en informes y auditoría. No constituyen verificación del siguiente cambio: cada fase exige registrar comandos, resultados y verificaciones pendientes en el handoff.
 
+El cierre de limpieza del 2026-10-03 retiró 185 archivos de tests unitarios y conservó 15 suites de integración, con 113 comprobaciones PASS; lint, tipos, builds y dependencias pares también PASS. Todos los cambios se publicaron en `develop`, commit `e3a28e3`. Son resultados de esa revisión, no garantías permanentes del árbol actual; consultar la [evidencia de limpieza](docs/develpment/evidence/repository-cleanup-20261003.md).
+
 ## Definiciones de infraestructura existentes
 
 [.railway/README.md](.railway/README.md) documenta los cinco servicios, comandos y variables. El worker reutiliza el backend; `pnpm build` compila cada aplicación una vez. Los artefactos backend se preparan con `build:api:deploy` / `build:worker:deploy` y tienen comandos `start:*` independientes.
 
-Estas definiciones no certifican cierre de desarrollo ni preparación para producción. El plan de cierre no incluye dominios, escalado ni despliegue definitivo.
+Estas definiciones no certifican preparación para producción. Stripe LIVE está rechazado por el código; cambiar las claves no habilita dinero real. La compatibilidad LIVE, el despliegue completo y la operación/recuperación de producción requieren validación adicional. El plan de cierre funcional no incluye dominios, escalado ni despliegue definitivo.

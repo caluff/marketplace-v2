@@ -28,6 +28,7 @@ export default function CheckoutPage({ searchParams }: CheckoutPageProps) {
     <>
       <Link
         href="/cart"
+        prefetch={false}
         className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
@@ -104,6 +105,7 @@ async function CheckoutContent({ searchParams }: CheckoutPageProps) {
                 {item.enabled ? (
                   <Link
                     href={`/checkout?step=${item.key}`}
+                    prefetch={false}
                     aria-current={step === item.key ? "step" : undefined}
                     className={`flex min-h-12 items-center gap-2 border-b-2 px-2 text-sm ${step === item.key ? "border-foreground font-semibold" : "border-transparent text-muted-foreground"}`}
                   >

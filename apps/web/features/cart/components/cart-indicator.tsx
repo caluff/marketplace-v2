@@ -29,6 +29,7 @@ export function CartIndicator({
   return (
     <Link
       href="/cart"
+      prefetch={false}
       className="relative inline-flex min-h-11 min-w-11 items-center justify-center gap-1 px-2 font-sans text-xs font-bold"
       aria-label={
         count === null ? "Ver carrito" : `Ver carrito, ${count} productos`

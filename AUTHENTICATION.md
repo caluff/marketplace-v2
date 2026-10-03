@@ -1,6 +1,6 @@
 # Autenticación
 
-Guía de la implementación actual; no acredita una nueva prueba de login, correo
+Guía vigente actualizada el 2026-10-03; no acredita una nueva prueba de login, correo
 o configuración remota. El estado de cierre y las verificaciones pendientes se
 siguen en [Development Progress](docs/develpment/development-progress.md).
 
@@ -82,14 +82,20 @@ El registro genérico de vendedores permanece deshabilitado. El acceso del
 vendedor procede del [flujo de solicitud y aprobación](docs/vendor-operations.md),
 no de registrarse libremente en el panel.
 
-## Límite pendiente de desarrollo
+## Aislamiento de identidad y carrito
 
-**F05 sigue pendiente:** `clearCustomerSession()` elimina las cookies de
-autenticación, pero no las de carrito y comprobante. La separación de cookies
-entre aplicaciones no demuestra aislamiento del carrito al cambiar de cliente
-en el mismo navegador. No considerar resuelta esa transición hasta completar
-Phase 2 del [plan de implementación](docs/develpment/development-implementation-plan.md)
-y su regresión A → logout → B / invitado.
+**F05 está cerrado** en el alcance de desarrollo: `clearCustomerSession()`
+elimina también las cookies de carrito y comprobante mediante `clearCartSession()`.
+Antes de publicar una sesión nueva, `setCustomerSession()` verifica al comprador
+y adopta el carrito con las guardas nativas de ownership; no asigna a otra persona
+un carrito ya perteneciente a un comprador. El comprobante anterior se elimina
+al cambiar de sesión. Errores transitorios preservan el carrito invitado para
+reintentar el login. La separación de cookies entre aplicaciones por sí sola no
+sustituye estas comprobaciones ni la autorización backend.
+
+Las regresiones de identidad y el cierre Phase 2/F12 están documentados en
+[el progreso](docs/develpment/development-progress.md) y la
+[matriz final](docs/develpment/evidence/development-closure-20261003.md).
 
 ## Fuentes de código y verificación
 

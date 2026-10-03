@@ -1,6 +1,6 @@
 # Flujo de pedidos
 
-Guía revisada contra el código el 2026-09-15. Las prioridades vigentes están en la [auditoría de cierre](develpment/development-completion-audit.md); esta actualización no ejecutó nuevos pedidos ni repitió pruebas de navegador.
+Guía vigente actualizada el 2026-10-03. La [auditoría de cierre](develpment/development-completion-audit.md) conserva los requisitos originales; el [progreso](develpment/development-progress.md) y su matriz final registran F01–F12 cerrados para Stripe TEST/USD/manual. Esta actualización documental no ejecuta pedidos ni repite pruebas de navegador.
 
 ## Comprador
 
@@ -47,7 +47,13 @@ El cobro puede ser compartido por varios pedidos de un carrito. La cancelación 
 
 `/dashboard/orders/[id]` ofrece el detalle del pedido y su sección Finanzas, incluida la captura ajustada de la compra, cancelaciones e importes de reembolso. El listado y el detalle utilizan información real del backend. Completar la logística de un pedido no acredita que su pago esté capturado o su vendedor liquidado: consultar las asignaciones y movimientos financieros, no deducirlos de `order.status`.
 
-Los dashboards de negocio y el desglose financiero completo por venta siguen pendientes (F09). La exclusión de escritores financieros tampoco cubre aún todos los `order-edits` (F04).
+Los dashboards admin/vendor y el desglose por venta de F09 están implementados,
+con snapshots, movimientos conciliados y costes desconocidos explícitos. F04
+incluye protección de `order-edits`; escritores nuevos o SQL externo requieren
+revisión independiente. La extensión automática registra el reloj de finalización
+observado por servidor y espera 72 horas antes de revalidar la transferencia.
+Finalizar no captura por sí solo el pago ni asegura elegibilidad; consultar
+[el flujo financiero](order-finance.md).
 
 ## Correo al enviar
 
@@ -57,6 +63,6 @@ Reutiliza la configuración existente: `AUTH_EMAIL_ENABLED=true`, `RESEND_API_KE
 
 ## Verificación
 
-La implementación incorpora pruebas de autorización, cantidades y estados inválidos, preparaciones parciales, seguimiento seguro, kits, cancelación, correo y filtros. La QA histórica incluyó componentes en móvil/escritorio e impresión mediante datos aislados y redirecciones sin sesión. Su alcance concreto está en los informes de [pedidos](reports/qa-orders-browser-2026-09-12.md), [operador](reports/qa-admin-browser-2026-09-12.md) y [finanzas](reports/qa-order-finance-2026-09-12.md).
+Las verificaciones históricas cubrieron autorización, cantidades y estados inválidos, preparaciones parciales, seguimiento seguro, kits, cancelación, correo y filtros. Los tests unitarios se retiraron el 2026-10-03; las integraciones aisladas se conservan. La QA histórica incluyó componentes en móvil/escritorio e impresión mediante datos aislados y redirecciones sin sesión. Su alcance concreto está en los informes de [pedidos](reports/qa-orders-browser-2026-09-12.md), [operador](reports/qa-admin-browser-2026-09-12.md) y [finanzas](reports/qa-order-finance-2026-09-12.md).
 
-Antes de cerrar desarrollo, completar la regresión F12 con cuentas y pedidos de prueba autorizados: preparar parcialmente, enviar, comprobar recepción del correo, consultar el progreso como comprador, marcar entrega, finalizar y verificar el resultado financiero. La QA parcial y los tests aislados no certifican ese recorrido completo en la revisión final; registrar los nuevos resultados en [Development Progress](develpment/development-progress.md).
+F12 está cerrado con los alcances y calificaciones de la [matriz final](develpment/evidence/development-closure-20261003.md). La verificación nueva pendiente corresponde a completar un pedido TEST, esperar 72 horas reales y conciliar la transferencia automática única. No sustituirla por la QA manual previa ni por relojes adelantados; registrar resultados en [Development Progress](develpment/development-progress.md).

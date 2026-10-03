@@ -7,8 +7,14 @@ Implementación y verificaciones del backend **PASS**; activación sobre la base
 habitual y disponibilidad del worker **PASS, ACTIVA**. Exclusivamente Stripe TEST/USD. No amplía
 la certificación histórica manual F01–F12 a producción ni al resto de F17.
 
-Código integrado localmente en `develop`, commit `5d0935b`, sin push. Los cambios
-ajenos de UI/configuración/dependencias permanecen fuera del commit.
+Implementación inicialmente integrada localmente en `5d0935b`. La publicación
+posterior autorizada agrupó todos los cambios en `e3a28e3`, verificado en
+`origin/develop` el2026-10-03. El historial previo se conserva en el respaldo
+de [la limpieza](repository-cleanup-20261003.md).
+
+La [verificación integral de una venta nueva](automatic-settlement-e2e-20261003.md)
+está iniciada. Los checkpoints siguientes conservan sus resultados y límites
+históricos; no certifican por sí solos ese recorrido de72 horas reales.
 
 La liberación es una transferencia del derecho neto del vendedor a su saldo
 Connect. El calendario de retiro bancario de Stripe sigue siendo independiente.
