@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 
 import {
   clearCustomerSession,
+  clearMfaSecret,
   clearResetSecret,
   clearVerificationSecrets,
   createCustomerSdk,
@@ -24,6 +25,7 @@ import {
   safeRedirectPath,
   validateCredentials,
 } from "@/lib/auth-utils"
+import { completeCustomerMfa } from "@/lib/customer-mfa"
 
 const INVALID_CREDENTIALS =
   "No pudimos iniciar sesión con esos datos. Revisa el correo y la contraseña."
@@ -72,12 +74,11 @@ async function completeCustomerLogin(
     if (!authenticatedSdk) return configurationError()
 
     try {
-      await authenticatedSdk.store.customer.retrieve()
+      await setCustomerSession(result, safeRedirectPath(next, "/account") === "/account/sell")
     } catch (error) {
       return customerLoginError(error, "profile")
     }
 
-    await setCustomerSession(result, safeRedirectPath(next, "/account") === "/account/sell")
     redirect(safeRedirectPath(next, "/account"))
   }
 
@@ -178,20 +179,23 @@ export async function verifyCustomerMfaAction(
   const sdk = createCustomerSdk(secret.token)
   if (!sdk) return configurationError()
 
-  try {
-    const token = await sdk.auth.mfa.verifyChallenge(secret.challengeId, {
-      method,
-      code,
-    })
-    await createCustomerSdk(token)?.store.customer.retrieve()
-    await setCustomerSession(token)
-  } catch {
+  const result = await completeCustomerMfa({
+    verifyChallenge: () =>
+      sdk.auth.mfa.verifyChallenge(secret.challengeId, { method, code }),
+    setSession: async (token) => {
+      await setCustomerSession(token)
+    },
+    clearChallenge: clearMfaSecret,
+  })
+  if (result === "invalid_code") {
     return {
       status: "mfa_required",
       message: "No pudimos validar el código. Inténtalo nuevamente.",
       mfaMethods: secret.methods,
     }
   }
+  if (result === "session_unavailable")
+    redirect(`/login?reason=session_unavailable&next=${encodeURIComponent(next)}`)
 
   redirect(next)
 }
@@ -268,7 +272,11 @@ export async function registerCustomerAction(
   }
 
   if (existingCustomerToken) {
-    await setCustomerSession(existingCustomerToken)
+    try {
+      await setCustomerSession(existingCustomerToken)
+    } catch (error) {
+      return customerLoginError(error, "profile")
+    }
     redirect("/account")
   }
 

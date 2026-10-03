@@ -18,6 +18,10 @@ export function failure(error: unknown): { error: string } {
         "La operación está demorando. Consulta el carrito o el estado del pedido antes de repetirla.",
     }
   if (error instanceof FetchError) {
+    if (/cart_customer_transfer_required/i.test(error.message))
+      return {
+        error: "Vuelve a iniciar sesión para asociar tu carrito antes de pagar. Tus productos se conservan.",
+      }
     if (error.status === 401)
       return { error: "Tu sesión venció. Vuelve a ingresar para continuar." }
     if (/stock|inventory/i.test(error.message))

@@ -9,12 +9,11 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "pnpm test:smoke",
-    "test:smoke": "tsx --test tests/admin-smoke.test.mjs tests/*.test.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@marketplace-v2/theme-sync": "workspace:*",
+    "@marketplace-v2/ui": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
     "class-variance-authority": "0.7.1",

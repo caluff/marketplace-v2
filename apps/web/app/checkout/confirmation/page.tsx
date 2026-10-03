@@ -12,6 +12,7 @@ import {
   getShippingStatusLabel,
 } from "@/features/account/order-format"
 import { getReceiptOrders } from "@/features/cart/data"
+import { OrderReceiptTotals } from "@/features/cart/components/order-receipt-totals"
 import { formatMoney } from "@/features/cart/presentation"
 
 export default function ConfirmationPage() {
@@ -75,12 +76,6 @@ async function Receipt() {
 
 function OrderReceipt({ order }: { order: HttpTypes.StoreOrder }) {
   const address = order.shipping_address
-  const totals = [
-    ["Productos", order.item_subtotal],
-    ["Envío", order.shipping_subtotal],
-    ["Impuestos", order.tax_total],
-    ["Descuentos", -order.discount_total],
-  ] as const
 
   return (
     <section
@@ -147,18 +142,7 @@ function OrderReceipt({ order }: { order: HttpTypes.StoreOrder }) {
           </li>
         ))}
       </ul>
-      <dl className="space-y-3 border-t border-border p-5 text-sm sm:p-6">
-        {totals.map(([label, amount]) => (
-          <div key={label} className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd>{formatMoney(amount, order.currency_code)}</dd>
-          </div>
-        ))}
-        <div className="flex justify-between gap-4 border-t border-border pt-4 text-lg font-semibold">
-          <dt>Total</dt>
-          <dd>{formatMoney(order.total, order.currency_code)}</dd>
-        </div>
-      </dl>
+      <OrderReceiptTotals order={order} />
       {address ? (
         <div className="border-t border-border p-5 text-sm leading-relaxed sm:p-6">
           <h3 className="mb-2 font-semibold">Dirección de envío</h3>

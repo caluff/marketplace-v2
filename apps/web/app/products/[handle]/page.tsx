@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FavoriteButton } from "@/features/account/components/favorite-button"
 import { getFavoriteProductIds } from "@/features/account/favorites"
+import { catalogHref } from "@/features/catalog/catalog-navigation"
 import { ProductGallery } from "@/features/catalog/product-gallery"
 import { ProductOffers } from "@/features/catalog/product-offers"
 import { ProductDetails } from "@/features/catalog/product-details"
@@ -169,14 +170,14 @@ async function ProductContent({
           aria-label="Ruta del producto"
           className="flex min-w-0 flex-wrap items-center gap-2 font-sans text-xs text-muted-foreground"
         >
-          <Link href="/search" className="hover:text-foreground">
+          <Link href={catalogHref({})} className="hover:text-foreground">
             Productos
           </Link>
           {category ? (
             <>
               <ChevronRight className="size-3" aria-hidden="true" />
               <Link
-                href={"/search?category_id=" + encodeURIComponent(category.id)}
+                href={catalogHref({ categoryId: category.id })}
                 className="hover:text-foreground"
               >
                 {category.name}
@@ -249,7 +250,7 @@ export default function ProductPage(props: ProductPageProps) {
     <>
       <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-4 sm:px-6 lg:px-10 lg:py-5">
         <Link
-          href="/search"
+          href={catalogHref({})}
           className="mb-1 inline-flex min-h-11 items-center gap-2 font-sans text-xs font-medium text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" aria-hidden="true" />

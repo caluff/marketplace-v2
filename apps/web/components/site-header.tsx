@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CustomerMenu } from "@/features/account/components/customer-menu"
+import { catalogHref } from "@/features/catalog/catalog-navigation"
 import { CartLink } from "@/features/cart/components/cart-link"
 import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
@@ -19,7 +20,7 @@ async function CategoryLinks() {
 
   return categories.map((category) => (
     <DropdownMenuItem key={category.id} asChild className="min-h-11 px-3">
-      <Link href={`/search?category_id=${encodeURIComponent(category.id)}`}>
+      <Link href={catalogHref({ categoryId: category.id })}>
         {category.name}
       </Link>
     </DropdownMenuItem>

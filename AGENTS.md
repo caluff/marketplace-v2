@@ -96,6 +96,11 @@ Repository boundaries:
 - Keep code local to an application by default. Create a shared workspace
   package only after code is genuinely reused by at least two applications and
   has a stable, application-agnostic public API.
+- The shared frontend design system is established reuse, not speculative
+  sharing. Its generic UI primitives, semantic design tokens, typography,
+  icon rules, and motion primitives belong in a dedicated workspace package
+  rather than being copied between `apps/web`, `apps/admin`, and `apps/vendor`.
+  Use `packages/ui` as that package.
 - Do not create a broad `shared`, `common`, or `utils` package for speculative
   reuse.
 
@@ -112,7 +117,9 @@ Within each frontend:
 - Route-local `_components/`: UI used only by that route or route subtree.
 - `features/<domain>/`: substantial reusable business features, including their
   components, hooks, schemas, query keys, and feature-specific helpers.
-- `components/ui/`: generic UI primitives without marketplace business logic.
+- `components/ui/`: thin application adapters for shared primitives, or legacy
+  primitives awaiting migration. New generic primitives without marketplace
+  business logic belong in the shared design-system package.
 - `components/`: application-wide layout and reusable presentation components.
 - `lib/`: SDK clients, environment validation, infrastructure adapters, and
   generic pure helpers.
@@ -134,8 +141,22 @@ Frontend rules:
 - Keep view headers concise: do not add explanatory subtitles that repeat the
   title or obvious page purpose. Reserve helper text for meaningful constraints
   and actions that need clarification.
-- Preserve each application's existing visual language. Do not assume the
-  storefront, operator panel, and vendor panel share one design system.
+- Maintain one marketplace visual language across the storefront, operator
+  panel, and vendor panel. All three frontends must use the same canonical
+  semantic colors, typography, spacing and radius scales, shadows, icon rules,
+  interaction states, and motion durations/easings. Generic UI primitives such
+  as buttons, fields, cards, dialogs, menus, badges, tables, tooltips, and toasts
+  must converge on the same shared implementations and variants.
+- Product composition may still differ by audience: storefront, operator, and
+  vendor routes can use different layouts, navigation, information density, and
+  domain-specific components, but those compositions must be built from the
+  same design-system foundations. Do not rebrand an application independently.
+- Treat the current duplicated frontend tokens and `components/ui` primitives
+  as migration debt, not as separate sources of truth. Do not introduce new
+  divergence. When changing a shared token or primitive, update or migrate all
+  affected frontends together and verify the behavior in each application.
+- Motion must use shared tokens, remain restrained for high-frequency dashboard
+  interactions, and preserve keyboard usability and `prefers-reduced-motion`.
 
 ### Progressive rendering and loading states
 
@@ -271,7 +292,10 @@ load every applicable installed skill:
 - Database migration generation: `db-generate` plus `building-with-medusa`.
 - Running Medusa migrations: `db-migrate` plus `building-with-medusa`.
 - Creating a Medusa admin user: `new-user`.
-- Intentional creation or redesign of frontend interfaces: `frontend-design`.
+- Intentional creation or redesign of frontend interfaces: `frontend-design`
+  and `better-ui`.
+- Animation, gesture, transition, or microinteraction work in any frontend:
+  `emil-design-eng` and `better-ui`.
 - Supabase-specific work: `supabase`.
 - Date handling: read the project skill `docs/skills/date-fns/SKILL.md` before
   changing parsing, formatting, or calendar calculations.

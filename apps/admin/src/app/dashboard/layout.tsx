@@ -26,6 +26,7 @@ export default async function DashboardLayout({
         <PendingStatus />
       </Suspense>
       <SidebarProvider
+        cookieName="admin_sidebar_state"
         defaultOpen={cookieStore.get("admin_sidebar_state")?.value !== "false"}
       >
         <AdminSidebar user={user} />

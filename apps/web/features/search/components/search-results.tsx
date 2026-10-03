@@ -11,6 +11,7 @@ import { getCurrentCustomer } from "@/lib/auth-sdk";
 import { getSearchResults } from "../data";
 import {
   clearSearchFilters,
+  getSearchPagination,
   parseSearchParameters,
   searchHref,
   type SearchParameters,
@@ -72,15 +73,16 @@ function SearchPagination({
   parameters: SearchParameters;
   pages: number;
 }) {
-  if (pages <= 1 && parameters.page <= 1) return null;
+  const pagination = getSearchPagination(parameters, pages);
+  if (pagination.isOutOfRange || pages <= 1) return null;
   return (
     <nav
       aria-label="Páginas de resultados"
       className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6"
     >
-      {parameters.page > 1 ? (
+      {pagination.previousHref ? (
         <Button asChild variant="outline">
-          <Link href={searchHref({ ...parameters, page: parameters.page - 1 })}>
+          <Link href={pagination.previousHref}>
             <ArrowLeft aria-hidden="true" className="size-4" />
             Anterior
           </Link>
@@ -89,11 +91,11 @@ function SearchPagination({
         <span />
       )}
       <span className="text-sm tabular-nums text-muted-foreground">
-        Página {parameters.page} de {Math.max(1, pages)}
+        Página {parameters.page} de {pagination.lastPage}
       </span>
-      {parameters.page < pages ? (
+      {pagination.nextHref ? (
         <Button asChild variant="outline">
-          <Link href={searchHref({ ...parameters, page: parameters.page + 1 })}>
+          <Link href={pagination.nextHref}>
             Siguiente
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
@@ -154,6 +156,7 @@ async function ResolvedSearchResults({
     );
   }
   const { result, offers } = data;
+  const pagination = getSearchPagination(parameters, result.nbPages);
   const filters = {
     parameters,
     facets: result.facets,
@@ -186,7 +189,20 @@ async function ResolvedSearchResults({
         <SearchFilters {...filters} />
         <section aria-label="Resultados de productos" className="min-w-0">
           <ActiveSearchFilters {...filters} />
-          {result.products.length ? (
+          {pagination.isOutOfRange ? (
+            <div className="border border-dashed border-border px-6 py-16 text-center">
+              <h2 className="text-2xl">Esta página ya no está disponible</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+                Vuelve a la última página disponible para continuar con los
+                mismos filtros.
+              </p>
+              <Button asChild variant="outline" className="mt-6 min-h-11">
+                <Link href={pagination.recoveryHref}>
+                  Ir a la página {pagination.lastPage}
+                </Link>
+              </Button>
+            </div>
+          ) : result.products.length ? (
             <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
               {result.products.map((product) => (
                 <ProductCard

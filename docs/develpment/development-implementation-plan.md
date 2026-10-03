@@ -14,6 +14,12 @@ Este documento convierte únicamente los P0/P1 (F01–F12) de la [auditoría de 
 
 **Fuera de las fases obligatorias:** F13–F17 (P2/P3), funciones nuevas ajenas a la auditoría, analítica avanzada, automatización no imprescindible y tareas puramente de producción. La auditoría conserva esos pendientes para otra fase del producto.
 
+**Extensión autorizada el 2026-10-03:** el usuario solicita liquidación automática
+72 horas después de completar el pedido. Se agrega únicamente ese camino
+Stripe TEST/USD, conservando captura y recuperación existentes. No reabre el
+cierre histórico F01–F12 ni incorpora el resto de F17. Diseño, verificaciones y
+activación pendiente en [la evidencia de la extensión](evidence/automatic-settlement-20261003.md).
+
 ### Reglas técnicas comunes
 
 - Conservar Medusa 2.18.0/Mercur 2.3.3 y patrones existentes salvo necesidad demostrada; no introducir un ledger general, ERP, nueva librería monetaria ni paquete compartido por anticipación. Extender la persistencia existente solo en lo que falte para reconstruir la venta y sus ajustes.
@@ -164,7 +170,9 @@ Cerrar F07 y F08 (P1), incluyendo las fuentes y conciliación necesarias para co
 
 ### Dependencias y criterio de entrada
 
-Phase 1 y Phase 2 verificadas. Identificar la fuente original del reparto, las operaciones ya realizadas y el estado Stripe TEST. Revisar los límites actuales a TEST/USD sin tratar el cambio de claves como una implementación financiera.
+Phase 1 y Phase 2 verificadas antes de integrar o validar el circuito económico completo. Identificar la fuente original del reparto, las operaciones ya realizadas y el estado Stripe TEST. Revisar los límites actuales a TEST/USD sin tratar el cambio de claves como una implementación financiera.
+
+Coordinación del 2026-09-19: con Phase1 y las protecciones F04/F06 verificadas localmente, la implementación aislada de ajustes, liquidación, recuperación y fuentes de costes puede avanzar en su worktree mientras F05 termina su revisión. Son archivos y lógica independientes de la identidad del carrito. Las pruebas unitarias y de persistencia local no sustituyen el gate Phase2; la integración de Phase3 y sus pruebas del circuito completo/Stripe esperan ese gate. Esta separación reduce espera sin adelantar la certificación de seguridad o dinero.
 
 ### Áreas probablemente afectadas
 
@@ -217,6 +225,8 @@ Cerrar F09 (P1): desglose por venta, dashboard admin y dashboard vendor con mét
 ### Dependencias y criterio de entrada
 
 Fuentes, snapshots, ajustes y conciliación de Phase 3 completos. Tomar las definiciones del dashboard mínimo de la auditoría como propuesta explícita a concretar con la implementación; no presentarlas como métricas ya disponibles. Acordar y registrar la zona temporal de negocio y el criterio de atribución de refunds por componente.
+
+Coordinación del 2026-09-22: la tarea de reporting puede preparar sus consumidores y desarrollar en un worktree separado cuando reciba un commit coherente de las fuentes de Phase3, con sus pruebas de persistencia y lectura. No copiará fuentes en edición ni sustituirá datos pendientes por cifras simuladas. La integración y certificación de Phase4 siguen esperando la verificación completa de Phase3 y el contraste con ventas Stripe TEST. La zona acordada es `America/Montevideo`; los refunds sin atribución verificable de componentes no se usarán para inventar GMV neto.
 
 ### Áreas probablemente afectadas
 

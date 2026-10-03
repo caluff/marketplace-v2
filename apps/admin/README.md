@@ -37,7 +37,6 @@ place for backend credentials. Sessions remain isolated from the other apps.
 ```bash
 pnpm lint:admin
 pnpm typecheck:admin
-pnpm test:admin
 pnpm build:admin
 ```
 

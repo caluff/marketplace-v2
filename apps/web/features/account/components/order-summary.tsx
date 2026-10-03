@@ -1,4 +1,5 @@
 import type { HttpTypes } from "@medusajs/types";
+import { getMoneyRoundingAdjustment } from "@/lib/money-rounding";
 import { formatOrderAmount } from "../order-format";
 
 export function OrderAddress({
@@ -42,6 +43,17 @@ export function OrderTotals({
   const amount = (value: number) =>
     formatOrderAmount(value, order.currency_code);
   const discount = order.discount_total - order.discount_tax_total;
+  const roundingAdjustment = getMoneyRoundingAdjustment({
+    amounts: [
+      order.original_item_subtotal,
+      order.original_shipping_subtotal,
+      discount > 0 ? -discount : 0,
+      order.tax_total > 0 ? order.tax_total : 0,
+      order.credit_line_total > 0 ? -order.credit_line_total : 0,
+    ],
+    total: order.total,
+    currency: order.currency_code,
+  });
   return (
     <dl className="space-y-3 text-sm">
       <div className="flex justify-between gap-4">
@@ -70,6 +82,12 @@ export function OrderTotals({
         <div className="flex justify-between gap-4">
           <dt>Créditos aplicados</dt>
           <dd>−{amount(order.credit_line_total)}</dd>
+        </div>
+      ) : null}
+      {roundingAdjustment !== 0 ? (
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Ajuste por redondeo</dt>
+          <dd className="tabular-nums">{amount(roundingAdjustment)}</dd>
         </div>
       ) : null}
       <div

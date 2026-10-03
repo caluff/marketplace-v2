@@ -1,10 +1,8 @@
 import { createHash } from "node:crypto";
+import { hostname } from "node:os";
 import { cancelOrderWorkflow } from "@medusajs/core-flows";
-import type {
-  ILockingModule,
-  MedusaContainer,
-} from "@medusajs/framework/types";
-import { MathBN, MedusaError, Modules } from "@medusajs/framework/utils";
+import type { MedusaContainer } from "@medusajs/framework/types";
+import { MathBN, MedusaError } from "@medusajs/framework/utils";
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 import { z } from "@medusajs/framework/zod";
 import {
@@ -36,6 +34,8 @@ import {
   reverseSettlement,
 } from "../../lib/order-finance/settlement";
 import { performFinalOrderCapture } from "./final-order-capture";
+import { withFinanceExecutionLock } from "../../lib/order-finance/execution-lock";
+import { recordOrderFinanceProviderFacts } from "../../lib/order-finance/record-provider-facts";
 
 export type OperateOrderFinanceInput = OrderFinanceInput &
   FinanceActor & { order_id: string };
@@ -45,17 +45,17 @@ export async function operateOrderFinance(
   input: OperateOrderFinanceInput,
 ) {
   const initial = await readOrderFinance(container, input.order_id, input);
-  const locking = container.resolve<ILockingModule>(Modules.LOCKING);
-  return locking.execute(
-    initial.group.cart_id,
-    () => operateLockedOrderFinance(container, input),
-    { timeout: 5 },
+  return withFinanceExecutionLock(
+    container,
+    { groupId: initial.group.id, cartId: initial.group.cart_id },
+    (ownerId) => operateLockedOrderFinance(container, input, ownerId),
   );
 }
 
 async function operateLockedOrderFinance(
   container: MedusaContainer,
   input: OperateOrderFinanceInput,
+  ownerId: string,
 ) {
   const body = orderFinanceInputSchema.parse({
     action: input.action,
@@ -93,10 +93,11 @@ async function operateLockedOrderFinance(
       );
     return first.view;
   }
-  const claim = await first.journal.claimGroup(
-    first.group.id,
-    first.group.cart_id,
-  );
+  const claim = await first.journal.claimFinanceGroup({
+    groupId: first.group.id,
+    cartId: first.group.cart_id,
+    ownerId,
+  });
   if (!claim?.active_token)
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,
@@ -201,6 +202,10 @@ async function operateLockedOrderFinance(
       false,
     );
     operationResult = {
+      actor_id: input.actor_id,
+      execution_owner_id: ownerId,
+      execution_host: hostname(),
+      execution_pid: process.pid,
       order_id: input.order_id,
       request_id: body.request_id,
       action: body.action,
@@ -208,6 +213,21 @@ async function operateLockedOrderFinance(
       note: body.note,
       fingerprint,
       refund_ids: [],
+      refund_attempted: false,
+      reversal_attempted: false,
+      capture_attempted: false,
+      cancel_authorization_attempted: false,
+      ...(amount > 0 && body.action !== "capture"
+        ? {
+            credit_amount: Math.max(
+              0,
+              MathBN.sub(
+                amount,
+                Math.max(0, -(order.summary?.pending_difference ?? 0)),
+              ).toNumber(),
+            ),
+          }
+        : {}),
       ...(body.action === "capture"
         ? {
             capture_orders: current.allocation.orders.map((part) => ({
@@ -227,8 +247,15 @@ async function operateLockedOrderFinance(
         orderId: order.id,
         sellerId: order.seller.id,
         gross: current.view.finance.captured_total,
+        sellerNet: current.original!.seller_entitlement,
         refunded: current.view.finance.refunded_total,
         amount,
+        paymentIntentId: payment.data.id,
+        chargeId:
+          typeof providerBefore.intent.latest_charge === "string"
+            ? providerBefore.intent.latest_charge
+            : providerBefore.intent.latest_charge?.id,
+        groupOrderIds: current.group.orders.map((part) => part.id),
         prior: current.operations
           .filter((operation) => operation.state === "complete")
           .flatMap((operation) => {
@@ -255,15 +282,36 @@ async function operateLockedOrderFinance(
       );
     reserved = true;
     if (body.action === "capture") {
+      operationResult.capture_attempted = true;
+      await current.journal.updateCommerceOperations({
+        selector: { id: operation.id, token, state: "processing" },
+        data: { result: operationResult },
+      });
       await performFinalOrderCapture(container, {
         current,
         token,
         operationId: operation.id,
         actorId: input.actor_id,
+        persistEvidence: async (evidence) => {
+          operationResult!.capture_evidence = evidence;
+          await current.journal.updateCommerceOperations({
+            selector: { id: operation.id, token, state: "processing" },
+            data: { result: operationResult },
+          });
+        },
       });
     }
     if (amount > 0 && body.action !== "capture") {
       if (operationResult.settlement) {
+        operationResult.reversal_attempted =
+          financeAmount(
+            operationResult.settlement.seller_reversal_amount ??
+              operationResult.settlement.seller_reversed,
+          ) > 0;
+        await current.journal.updateCommerceOperations({
+          selector: { id: operation.id, token, state: "processing" },
+          data: { result: operationResult },
+        });
         operationResult.settlement = await reverseSettlement(
           operationResult.settlement,
           operation.id,
@@ -289,6 +337,11 @@ async function operateLockedOrderFinance(
           },
         });
       }
+      operationResult.refund_attempted = true;
+      await current.journal.updateCommerceOperations({
+        selector: { id: operation.id, token, state: "processing" },
+        data: { result: operationResult },
+      });
       const { result: updatedPayment } = await refundAllocatedPaymentWorkflow(
         container,
       ).run({
@@ -333,7 +386,8 @@ async function operateLockedOrderFinance(
       );
       const newProviderRefunds = providerAfter.refunds.filter(
         (refund) =>
-          !providerBefore.refunds.some((previous) => previous.id === refund.id),
+          refund.metadata?.finance_operation_id === operation.id &&
+          refund.metadata?.order_id === order.id,
       );
       if (
         newProviderRefunds.length !== 1 ||
@@ -341,6 +395,11 @@ async function operateLockedOrderFinance(
       ) {
         throw new Error("The provider refund result is ambiguous.");
       }
+      operationResult.provider_refund_id = newProviderRefunds[0].id;
+      await current.journal.updateCommerceOperations({
+        selector: { id: operation.id, token, state: "processing" },
+        data: { result: operationResult },
+      });
       await recordAllocatedRefundWorkflow(container).run({
         input: {
           order_id: order.id,
@@ -350,8 +409,7 @@ async function operateLockedOrderFinance(
           reference: "refund",
         },
       });
-      const owed = Math.max(0, -(order.summary?.pending_difference ?? 0));
-      const credit = Math.max(0, MathBN.sub(amount, owed).toNumber());
+      const credit = financeAmount(operationResult.credit_amount!);
       if (credit > 0) {
         await createOrderCreditLinesWorkflow(container).run({
           input: {
@@ -375,6 +433,11 @@ async function operateLockedOrderFinance(
         (item) => item.id === order.id || item.status === "canceled",
       );
       if (allCanceled && captured === 0) {
+        operationResult.cancel_authorization_attempted = true;
+        await current.journal.updateCommerceOperations({
+          selector: { id: operation.id, token, state: "processing" },
+          data: { result: operationResult },
+        });
         await cancelSharedAuthorizationWorkflow(container).run({
           input: { payment_id: payment.id },
         });
@@ -393,8 +456,13 @@ async function operateLockedOrderFinance(
       "complete",
       operationResult,
     );
-    await current.journal.releaseGroup(claim.id, token);
     complete = true;
+    await recordOrderFinanceProviderFacts(container, {
+      order_id: input.order_id,
+      actor_id: input.actor_id,
+      owned_token: token,
+    });
+    await current.journal.releaseGroup(claim.id, token);
     return (await readOrderFinance(container, input.order_id, input)).view;
   } catch (error) {
     if (complete) throw error;
@@ -415,6 +483,11 @@ async function operateLockedOrderFinance(
       },
       true,
     );
+    await recordOrderFinanceProviderFacts(container, {
+      order_id: input.order_id,
+      actor_id: input.actor_id,
+      owned_token: token,
+    }).catch(() => undefined);
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,
       "La operación requiere conciliación del operador. No se realizará un segundo reembolso automáticamente.",

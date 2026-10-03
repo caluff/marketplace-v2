@@ -15,8 +15,19 @@ import {
   initialAllocation,
   finalCaptureSchema,
 } from "./policy";
-import { financePayoutSchema, type FinancePayout } from "./settlement";
+import {
+  financePayoutSchema,
+  settlementReduction,
+  verifySettlementHistory,
+  type FinancePayout,
+} from "./settlement";
 import type { OrderFinanceResponse } from "./contracts";
+import {
+  assertOriginalGroup,
+  originalAllocation,
+  originalSaleSchema,
+  type OriginalSale,
+} from "./snapshot";
 
 export type FinanceActor = { actor_id: string; seller_id?: string };
 const GROUP_FIELDS = [
@@ -44,6 +55,7 @@ const GROUP_FIELDS = [
   "orders.credit_lines.*",
   "orders.transactions.id",
   "orders.transactions.amount",
+  "orders.transactions.currency_code",
   "orders.transactions.reference",
   "orders.transactions.reference_id",
   "orders.cart.id",
@@ -54,6 +66,7 @@ const GROUP_FIELDS = [
     "id",
     "amount",
     "provider_id",
+    "payment_session_id",
     "canceled_at",
     "data",
     "captures.id",
@@ -121,53 +134,94 @@ export async function readOrderFinance(
   const journal = container.resolve<CommerceAutomationService>(
     COMMERCE_AUTOMATION_MODULE,
   );
-  const [states, operations, payoutLinks, pendingChanges] = await Promise.all([
-    journal.listCommerceGroupStates({ id: group.id }, { take: 1 }),
-    journal.listCommerceOperations(
-      { group_id: group.id },
-      { take: 1001, order: { created_at: "ASC" } },
-    ),
-    query.graph(
-      {
-        entity: "payout_seller",
-        fields: [
-          "seller_id",
-          "payout.id",
-          "payout.data",
-          "payout.status",
-          "payout.amount",
-          "payout.currency_code",
-          "payout.account_id",
-          "payout.account.id",
-          "payout.account.data",
-        ],
-        filters: { seller_id: group.orders.map((order) => order.seller.id) },
-      },
-      { cache: { enable: false } },
-    ),
-    query.graph(
-      {
-        entity: "order_change",
-        fields: ["id"],
-        filters: {
-          order_id: group.orders.map((order) => order.id),
-          status: "pending",
+  const [states, operations, payoutLinks, pendingChanges, originalRecords] =
+    await Promise.all([
+      journal.listCommerceGroupStates({ id: group.id }, { take: 1 }),
+      journal.listCommerceOperations(
+        { group_id: group.id },
+        { take: 1001, order: { created_at: "ASC" } },
+      ),
+      query.graph(
+        {
+          entity: "payout_seller",
+          fields: [
+            "seller_id",
+            "payout.id",
+            "payout.data",
+            "payout.status",
+            "payout.amount",
+            "payout.currency_code",
+            "payout.account_id",
+            "payout.account.id",
+            "payout.account.data",
+          ],
+          filters: { seller_id: group.orders.map((order) => order.seller.id) },
         },
-        pagination: { take: 1 },
-      },
-      { cache: { enable: false } },
-    ),
-  ]);
+        { cache: { enable: false } },
+      ),
+      query.graph(
+        {
+          entity: "order_change",
+          fields: ["id"],
+          filters: {
+            order_id: group.orders.map((order) => order.id),
+            status: "pending",
+          },
+          pagination: { take: 1 },
+        },
+        { cache: { enable: false } },
+      ),
+      journal.listFinanceSaleSnapshots({ group_id: group.id }, { take: 51 }),
+    ]);
   if (operations.length > 1000)
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,
       "Este grupo requiere conciliación del operador.",
     );
   const state = states[0];
+  let originals: OriginalSale[] = [];
+  let originalProblem: string | null = null;
+  try {
+    originals = originalRecords.map((record) =>
+      originalSaleSchema.parse(record.original),
+    );
+    assertOriginalGroup(originals, group);
+    if (
+      originals.some(
+        (sale) =>
+          sale.allocation.payment_session_id !==
+          group.orders[0].cart.payment_collection.payments[0]
+            ?.payment_session_id,
+      )
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "The payment does not belong to the original session.",
+      );
+    }
+  } catch {
+    originalProblem =
+      "Esta venta no tiene un original financiero verificable. Requiere conciliación; no se aplicará la tasa actual a datos históricos.";
+  }
   const allocation =
     state?.observation?.finance_allocation === undefined
-      ? initialAllocation(group)
+      ? !originalProblem
+        ? originalAllocation(
+            originals,
+            group.orders[0].cart.payment_collection.payments[0]?.id ?? "",
+          )
+        : initialAllocation(group)
       : financeAllocationSchema.parse(state.observation.finance_allocation);
+  if (
+    !originalProblem &&
+    allocation.orders.some((part) => {
+      const original = originals.find(
+        (sale) => sale.order_id === part.order_id,
+      );
+      return !original || financeAmount(part.amount) !== original.gross;
+    })
+  )
+    originalProblem = "La asignación guardada difiere del original financiero.";
   const history: OrderFinanceResponse["finance"]["history"] = [];
   const finalCapture =
     state?.observation?.finance_final_capture === undefined
@@ -209,6 +263,9 @@ export async function readOrderFinance(
         : {}),
       ...(value.data.settlement && operation.state === "complete"
         ? {
+            seller_entitlement_reduced: settlementReduction(
+              value.data.settlement,
+            ),
             commission_returned: financeAmount(
               value.data.settlement.commission_returned,
             ),
@@ -218,13 +275,17 @@ export async function readOrderFinance(
   }
   const sellerId = group.orders.find((order) => order.id === orderId)?.seller
     .id;
-  const matchingPayouts = payoutLinks.data.filter(
-    (link) =>
-      link.seller_id === sellerId &&
-      (!(link.payout?.data?.transfer_group ?? link.payout?.data?.order_id) ||
-        (link.payout?.data?.transfer_group ?? link.payout?.data?.order_id) ===
-          orderId),
-  );
+  const matchingPayouts = payoutLinks.data.filter((link) => {
+    if (link.seller_id !== sellerId) return false;
+    const data = link.payout?.data;
+    const metadata = financePayoutSchema.shape.data.shape.metadata.safeParse(data?.metadata);
+    const attributed = metadata.success ? metadata.data.order_id : undefined;
+    const legacy = typeof data?.order_id === "string" ? data.order_id :
+      typeof data?.transfer_group === "string" && data.transfer_group.startsWith("order_") ? data.transfer_group : undefined;
+    // A shared transfer without an order identity is ambiguous for every order
+    // of that seller; it must not disappear from the local payout guard.
+    return !(attributed ?? legacy) || (attributed ?? legacy) === orderId;
+  });
   let payout: FinancePayout | undefined;
   let payoutProblem: string | null = null;
   if (matchingPayouts.length) {
@@ -234,7 +295,8 @@ export async function readOrderFinance(
     if (
       matchingPayouts.length !== 1 ||
       !parsedPayout.success ||
-      parsedPayout.data.data.transfer_group !== orderId
+      (parsedPayout.data.data.metadata.order_id ??
+        parsedPayout.data.data.transfer_group) !== orderId
     ) {
       payoutProblem =
         "La liquidación de esta tienda requiere conciliación antes del reembolso.";
@@ -255,6 +317,58 @@ export async function readOrderFinance(
       Boolean(state?.review_required) ||
       Boolean(state?.active_token && state.active_token !== ownedToken),
   });
+  const original = originals.find((sale) => sale.order_id === orderId);
+  if (original && view.finance.captured_total > 0) {
+    const adjustments = operations.flatMap((operation) => {
+      const parsedOperation = financeOperationSchema.safeParse(
+        operation.result,
+      );
+      return operation.state === "complete" &&
+        parsedOperation.success &&
+        parsedOperation.data.order_id === orderId &&
+        parsedOperation.data.settlement
+        ? [parsedOperation.data.settlement]
+        : [];
+    });
+    try {
+      verifySettlementHistory({
+        gross: view.finance.captured_total,
+        sellerNet: original.seller_entitlement,
+        refunded: view.finance.refunded_total,
+        prior: adjustments,
+      });
+      const reducedBeforeTransfer = adjustments
+        .filter((part) => !part.transfer_id)
+        .reduce(
+          (sum, part) => sum + Math.round(settlementReduction(part) * 100),
+          0,
+        );
+      if (
+        payout &&
+        Math.round(financeAmount(payout.amount) * 100) !==
+          Math.round(original.seller_entitlement * 100) - reducedBeforeTransfer
+      )
+        throw new MedusaError(MedusaError.Types.NOT_ALLOWED,
+          "Transfer principal differs from original less prior adjustments.",
+        );
+    } catch {
+      originalProblem =
+        "Los ajustes y la transferencia requieren conciliación con el derecho original de la tienda.";
+    }
+  }
+  if (originalProblem) {
+    view.finance.refund = { allowed: false, reason: originalProblem };
+    view.finance.capture = {
+      ...view.finance.capture,
+      allowed: false,
+      reason: originalProblem,
+    };
+    view.finance.cancellation = {
+      ...view.finance.cancellation,
+      allowed: false,
+      reason: originalProblem,
+    };
+  }
   if (pendingChanges.data.length) {
     const reason =
       "Finaliza o descarta la modificación o devolución pendiente del pedido antes de continuar.";
@@ -275,5 +389,15 @@ export async function readOrderFinance(
     journal,
     state,
     view,
+    original,
+    originals,
+    originalProblem,
+    hasPendingChanges: pendingChanges.data.length > 0,
+    financialProblem:
+      originalProblem ??
+      payoutProblem ??
+      (invalidOperation
+        ? "Hay un registro financiero que requiere conciliación."
+        : null),
   };
 }

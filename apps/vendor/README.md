@@ -57,7 +57,6 @@ requires an explicit HTTPS origin.
 ```bash
 pnpm lint:vendor
 pnpm typecheck:vendor
-pnpm test:vendor
 pnpm build:vendor
 ```
 

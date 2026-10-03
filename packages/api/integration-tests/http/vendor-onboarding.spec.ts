@@ -187,6 +187,22 @@ if (!enabled) {
         track("member", memberId);
         return { ...account, sellerId: seller.id, memberId, token: await login("member", account.email, account.password) };
       }
+      async function approvedVendor(admin: Awaited<ReturnType<typeof reviewer>>) {
+        const account = await customer();
+        const application = await submitted(account);
+        const approved = await request("POST", `/admin/vendor-applications/${application.id}/review`, admin.token, { mutation_id: randomUUID(), expected_version: application.version, decision: "approve" });
+        expect(approved.status).toBe(200);
+        const stored = await journal().retrieveVendorApplication(application.id);
+        if (!stored.seller_id || !stored.member_id) throw new Error("Approved vendor fixture was not provisioned");
+        const sellerId = track("seller", stored.seller_id);
+        const memberId = track("member", stored.member_id);
+        const token = await login("member", account.email, account.password);
+        const warehouse = await request("GET", "/vendor/warehouse", token, undefined, sellerId);
+        expect(warehouse.status).toBe(200);
+        expect(warehouse.data.stock_location.id).toEqual(expect.any(String));
+        const locationId = track("stock_location", warehouse.data.stock_location.id);
+        return { ...account, sellerId, memberId, locationId, token };
+      }
       beforeEach(async () => {
         tracked.clear();
         const { result: keys } = await createApiKeysWorkflow(getContainer()).run({ input: {
@@ -300,8 +316,17 @@ if (!enabled) {
         } finally { fault.mockRestore(); }
         expect(injected).toBe(true);
         expect((await auth().retrieveAuthIdentity(buyer.id)).app_metadata).toMatchObject({ customer_id: buyer.customerId });
-        expect((await auth().retrieveAuthIdentity(buyer.id)).app_metadata?.member_id).toBeUndefined();
+        expect((await auth().retrieveAuthIdentity(buyer.id)).app_metadata?.member_id).toBeNull();
         expect(await native().listSellers({ external_id: `vendor-application:${application.id}` })).toHaveLength(0);
+        const [failedMutation] = await service.listVendorApplicationMutations({ application_id: application.id, operation: "review", state: "failed" });
+        expect(failedMutation?.member_id).toEqual(expect.any(String));
+        expect(await native().listMembers({ id: failedMutation.member_id! })).toHaveLength(0);
+        const customerToken = await login("customer", buyer.email, buyer.password);
+        expect((await request("GET", "/store/customers/me", customerToken)).data.customer.id).toBe(buyer.customerId);
+        const memberToken = await login("member", buyer.email, buyer.password);
+        const memberClaims = JSON.parse(Buffer.from(memberToken.split(".")[1], "base64url").toString("utf8")) as { actor_id?: unknown };
+        expect(memberClaims.actor_id).toBe("");
+        expect((await request("GET", "/vendor/onboarding", memberToken)).status).toBe(401);
         const failedApp = await service.retrieveVendorApplication(application.id);
         expect(failedApp.status).toBe("submitted");
         expect(failedApp.approval_state).toBe("failed");
@@ -369,7 +394,7 @@ if (!enabled) {
       it("denies foreign private product reads, nested variants, previews, and edits", async () => {
         const owner = await nativeVendor();
         const other = await nativeVendor();
-        const created = await request("POST", "/vendor/products", owner.token, { title: "Private fixture", status: "draft", options: [{ title: "Size", values: ["One"] }], variants: [{ title: "One", options: { Size: "One" } }] }, owner.sellerId);
+        const created = await request("POST", "/vendor/products", owner.token, { title: "Private fixture", status: "proposed", attributes: [], variants: [{ title: "One", sku: `fixture-${randomUUID()}`, options: {} }] }, owner.sellerId);
         expect(created.status).toBe(201);
         const productId = track("product", created.data.product.id);
         const variantId = track("variant", created.data.product.variants[0].id);
@@ -378,20 +403,20 @@ if (!enabled) {
           expect((await request("GET", `/vendor/products/${productId}${suffix}`, other.token, undefined, other.sellerId)).status).toBe(404);
         }
         expect((await request("POST", `/vendor/products/${productId}`, other.token, { title: "Unauthorized change" }, other.sellerId)).status).toBe(404);
-        expect((await request("GET", `/vendor/products/${productId}`, other.token, undefined, owner.sellerId)).status).toBe(403);
+        const forgedSeller = await request("GET", `/vendor/products/${productId}`, other.token, undefined, owner.sellerId);
+        expect(forgedSeller.status).toBe(400);
+        expect(forgedSeller.data).toMatchObject({ type: "not_allowed", message: "You are not a member of this seller account" });
         await native().updateMembers({ id: owner.memberId, is_active: false });
         expect((await request("GET", "/vendor/onboarding", owner.token, undefined, owner.sellerId)).status).toBe(403);
       });
 
       it("rejects foreign inventory locations on direct and batch writes without changing stock", async () => {
-        const owner = await nativeVendor();
-        const other = await nativeVendor();
-        const ownLocation = await request("POST", "/vendor/stock-locations", owner.token, { name: "Own fixture location" }, owner.sellerId);
-        const foreignLocation = await request("POST", "/vendor/stock-locations", other.token, { name: "Foreign fixture location" }, other.sellerId);
-        expect(ownLocation.status).toBe(201);
-        expect(foreignLocation.status).toBe(201);
-        const locationId = track("stock_location", ownLocation.data.stock_location.id);
-        const foreignId = track("stock_location", foreignLocation.data.stock_location.id);
+        const admin = await reviewer(true);
+        const owner = await approvedVendor(admin);
+        const other = await approvedVendor(admin);
+        expect((await request("POST", "/vendor/stock-locations", owner.token, { name: "Unmanaged fixture location" }, owner.sellerId)).status).toBe(403);
+        const locationId = owner.locationId;
+        const foreignId = other.locationId;
         const item = await request("POST", "/vendor/inventory-items", owner.token, { sku: `fixture-${randomUUID()}` }, owner.sellerId);
         expect(item.status).toBe(200);
         const itemId = track("inventory_item", item.data.inventory_item.id);

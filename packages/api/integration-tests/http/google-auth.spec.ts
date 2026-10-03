@@ -90,7 +90,15 @@ if (process.env.GOOGLE_AUTH_TESTS !== "disposable-local") {
         for (const actorType of ["user", "member"]) {
           const provider = actorType === "user" ? "google-admin" : "google";
           const identity = await googleIdentity(`${randomUUID()}@example.invalid`, provider);
-          await expect(api.post("/auth/google/complete", { actor_type: actorType }, { headers: headers(token(identity.id, provider, "", actorType)) })).rejects.toMatchObject({ response: { status: 403 } });
+          await expect(api.post("/auth/google/complete", { actor_type: actorType }, { headers: headers(token(identity.id, provider, "", actorType)) })).rejects.toMatchObject({
+            response: {
+              status: 400,
+              data: {
+                type: "not_allowed",
+                message: "No account has access to this panel. Sign in with an existing account.",
+              },
+            },
+          });
           expect((await auth().retrieveAuthIdentity(identity.id)).app_metadata?.[`${actorType}_id`]).toBeUndefined();
         }
       });

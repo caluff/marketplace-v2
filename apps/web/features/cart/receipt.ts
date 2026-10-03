@@ -1,3 +1,49 @@
+import { FetchError } from "@medusajs/js-sdk"
+import type Medusa from "@medusajs/js-sdk"
+
+export async function retrieveReceiptOrders(
+  client: Pick<Medusa["store"]["order"], "retrieve">,
+  value: string | undefined,
+) {
+  const receipt = readReceipt(value)
+  if (!receipt) return []
+  try {
+    return await Promise.all(
+      receipt.orderIds.map(async (id) =>
+        (await client.retrieve(id, undefined, {
+          "x-marketplace-cart-id": receipt.cartId,
+        })).order,
+      ),
+    )
+  } catch (error) {
+    if (error instanceof FetchError && error.status === 404) return []
+    throw error
+  }
+}
+
+export function readReceipt(value: string | undefined): {
+  cartId: string
+  orderIds: string[]
+} | null {
+  if (!value) return null
+  try {
+    const receipt: unknown = JSON.parse(value)
+    if (
+      !receipt || typeof receipt !== "object" ||
+      !("cartId" in receipt) || typeof receipt.cartId !== "string" ||
+      !/^cart_[a-zA-Z0-9]+$/.test(receipt.cartId) ||
+      !("orderIds" in receipt) || !Array.isArray(receipt.orderIds) ||
+      receipt.orderIds.length === 0 || receipt.orderIds.length > 30 ||
+      !receipt.orderIds.every((id): id is string =>
+        typeof id === "string" && /^order_[a-zA-Z0-9]+$/.test(id),
+      )
+    ) return null
+    return { cartId: receipt.cartId, orderIds: receipt.orderIds }
+  } catch {
+    return null
+  }
+}
+
 export function getReceiptOrderIds(group: unknown, cartId: string): string[] {
   if (
     !group ||

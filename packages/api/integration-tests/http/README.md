@@ -1,19 +1,30 @@
 # HTTP integration tests
 
 Suites use installed `@medusajs/test-utils` 2.18.0 and real Medusa wiring.
-They are separate from the API unit-test command.
+The repository retains integration tests only. `pnpm test` and `pnpm test:api`
+run module integration followed by HTTP integration; both require isolated test
+infrastructure and the explicit opt-ins documented in each selected suite.
 
 | Suite                       | Coverage / opt-in                                                                                                         |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `health.spec.ts`            | Health endpoint; no dedicated local-environment guard. Run only with deliberately isolated test configuration.            |
+| `health.spec.ts`            | Health endpoint; protected by the global isolated-environment preflight.                                                 |
 | `google-auth.spec.ts`       | Google completion/account association with local fixtures; `GOOGLE_AUTH_TESTS=disposable-local`. No Google network calls. |
 | `vendor-onboarding.spec.ts` | Lifecycle, authorization and native onboarding; `VENDOR_ONBOARDING_TESTS=disposable-local`.                               |
 
-Read the selected file header first. Opt-in suites require `NODE_ENV=test`,
-localhost PostgreSQL (`DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`, `DB_PORT`),
-dedicated localhost TLS Redis with credentials and a nonzero database, and
-test-only signing secrets. They reject `DB_TEMP_NAME`/`MEDUSA_DB_SCHEMA`
-overrides and disable outbound email.
+Read the selected file header first. Before any suite loads, the global setup
+requires `NODE_ENV=test`, PostgreSQL at `DB_HOST=localhost`, `DB_PORT=55432`,
+`DB_USERNAME=closure_test`, an explicit `DB_PASSWORD`, and a `DATABASE_URL`
+matching those credentials and that local destination. TLS requires
+`PGSSLMODE=require`, an existing `NODE_EXTRA_CA_CERTS` file, and no disabled
+certificate verification. Redis must use `rediss://closure:<password>@localhost:56379/15`
+without URL query or fragment overrides. `DB_TEMP_NAME`/`MEDUSA_DB_SCHEMA` are
+rejected; an optional `DB_WAITINGROOM_DATABASE` must be `postgres`.
+
+External provider credentials must be explicitly blank; setup preserves that
+opt-out against root dotenv loading and disables outbound email and financial
+jobs. Suites require test-only signing secrets and their own documented opt-ins.
+Ordinary development configuration is rejected before metadata initialization
+or application startup. This also applies to the health suite and module tests.
 
 **The runner creates and drops disposable databases.** Do not use shared
 Supabase/PostgreSQL or a normal development database. Set isolated configuration

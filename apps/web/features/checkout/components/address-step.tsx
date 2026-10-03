@@ -75,6 +75,12 @@ export function AddressStep({
     {},
   )
 
+  function updateValue(name: string, value: string) {
+    setValues((current) =>
+      current[name] === value ? current : { ...current, [name]: value },
+    )
+  }
+
   const fields = [
     {
       name: "first_name",
@@ -124,7 +130,7 @@ export function AddressStep({
           autoComplete="email"
           value={values.email}
           onChange={(event) =>
-            setValues((current) => ({ ...current, email: event.target.value }))
+            updateValue("email", event.currentTarget.value)
           }
           required
           maxLength={254}
@@ -233,10 +239,7 @@ export function AddressStep({
                 type="text"
                 value={values[field.name]}
                 onChange={(event) =>
-                  setValues((current) => ({
-                    ...current,
-                    [field.name]: event.target.value,
-                  }))
+                  updateValue(field.name, event.currentTarget.value)
                 }
                 autoComplete={field.autoComplete}
                 required={field.name !== "address_2"}
@@ -262,10 +265,7 @@ export function AddressStep({
               name="province"
               value={values.province}
               onChange={(event) =>
-                setValues((current) => ({
-                  ...current,
-                  province: event.target.value,
-                }))
+                updateValue("province", event.currentTarget.value)
               }
               required
               autoComplete="shipping address-level1"
@@ -296,9 +296,7 @@ export function AddressStep({
             <UsPhoneInput
               id={`${id}-phone`}
               value={values.phone}
-              onChange={(phone) =>
-                setValues((current) => ({ ...current, phone }))
-              }
+              onChange={(phone) => updateValue("phone", phone)}
               required
               disabled={pending}
             />

@@ -4,9 +4,10 @@ import type { HttpTypes as MercurHttpTypes } from "@mercurjs/types"
 import { cookies } from "next/headers"
 import { cache } from "react"
 import { createCustomerSdk, getCustomerSessionToken } from "@/lib/auth-sdk"
+import { readReceipt, retrieveReceiptOrders } from "./receipt"
+import { CART_COOKIE, RECEIPT_COOKIE } from "./session"
 
-export const CART_COOKIE = "marketplace_cart"
-export const RECEIPT_COOKIE = "marketplace_receipt"
+export { CART_COOKIE, RECEIPT_COOKIE } from "./session"
 export const CART_FIELDS =
   "*items,*items.variant,*items.variant.options,*items.variant.product,*items.variant.product.images,*items.offer,*items.offer.seller,*region,*region.countries,*shipping_address,*billing_address,*shipping_methods,*payment_collection,*payment_collection.payment_sessions"
 
@@ -69,23 +70,7 @@ export async function getPaymentProviders(regionId: string) {
 
 export async function getReceiptOrders(): Promise<HttpTypes.StoreOrder[]> {
   const value = (await cookies()).get(RECEIPT_COOKIE)?.value
-  if (!value) return []
-  let ids: unknown
-  try {
-    ids = JSON.parse(value)
-  } catch {
-    return []
-  }
-  if (
-    !Array.isArray(ids) ||
-    ids.length > 30 ||
-    !ids.every(
-      (id) => typeof id === "string" && /^order_[a-zA-Z0-9]+$/.test(id),
-    )
-  )
-    return []
+  if (!readReceipt(value)) return []
   const sdk = await cartSdk()
-  return Promise.all(
-    ids.map(async (id) => (await sdk.store.order.retrieve(id)).order),
-  )
+  return retrieveReceiptOrders(sdk.store.order, value)
 }

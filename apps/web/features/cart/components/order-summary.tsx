@@ -1,5 +1,7 @@
 import type { HttpTypes } from "@medusajs/types"
 import type { ReactNode } from "react"
+import { getMoneyRoundingAdjustment } from "@/lib/money-rounding"
+import { getDiscountSubtotal } from "../discount-subtotal"
 import { formatMoney } from "../presentation"
 
 export function OrderSummary({
@@ -10,6 +12,20 @@ export function OrderSummary({
   children?: ReactNode
 }) {
   const money = (amount: number) => formatMoney(amount, cart.currency_code)
+  const discount = getDiscountSubtotal(cart)
+  const roundingAdjustment =
+    cart.shipping_methods?.length && cart.shipping_address?.address_1
+      ? getMoneyRoundingAdjustment({
+          amounts: [
+            cart.item_subtotal ?? cart.subtotal ?? 0,
+            discount > 0 ? -discount : 0,
+            cart.shipping_subtotal ?? 0,
+            cart.tax_total ?? 0,
+          ],
+          total: cart.total ?? 0,
+          currency: cart.currency_code,
+        })
+      : 0
   const itemCount =
     cart.items?.reduce((total, item) => total + item.quantity, 0) ?? 0
   return (
@@ -30,11 +46,11 @@ export function OrderSummary({
             {money(cart.item_subtotal ?? cart.subtotal ?? 0)}
           </dd>
         </div>
-        {cart.discount_total ? (
+        {discount > 0 ? (
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Descuentos</dt>
             <dd className="font-medium tabular-nums">
-              −{money(cart.discount_total)}
+              −{money(discount)}
             </dd>
           </div>
         ) : null}
@@ -54,6 +70,14 @@ export function OrderSummary({
               : "A calcular"}
           </dd>
         </div>
+        {roundingAdjustment !== 0 ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">Ajuste por redondeo</dt>
+            <dd className="font-medium tabular-nums">
+              {money(roundingAdjustment)}
+            </dd>
+          </div>
+        ) : null}
         <div className="flex justify-between gap-3 border-t border-foreground pt-5 text-lg font-black">
           <dt>Total (USD)</dt>
           <dd className="tabular-nums">{money(cart.total ?? 0)}</dd>

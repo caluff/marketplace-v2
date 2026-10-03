@@ -3,7 +3,9 @@
 The three applications mount `ThemeSync` inside their existing `next-themes`
 provider. This CSS-free package synchronizes only `light`, `dark`, or `system`;
 it does not share authentication, profile data, or resolved operating-system
-colors. Each application keeps ownership of its CSS tokens.
+colors. The canonical CSS tokens, component primitives, and motion rules live in
+`@marketplace-v2/ui`; each application only keeps composition styles that are
+specific to that product surface.
 
 The non-sensitive `marketplace-v2-theme` cookie takes precedence over stale
 origin-local storage when an application mounts. Subsequent user changes are

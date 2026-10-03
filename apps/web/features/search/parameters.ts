@@ -82,3 +82,24 @@ export function clearSearchFilters(
     page: 1,
   };
 }
+
+export function getSearchPagination(
+  parameters: SearchParameters,
+  pages: number,
+) {
+  const lastPage = Math.max(1, pages);
+  const isOutOfRange = parameters.page > lastPage;
+  return {
+    lastPage,
+    isOutOfRange,
+    recoveryHref: searchHref({ ...parameters, page: lastPage }),
+    previousHref:
+      !isOutOfRange && parameters.page > 1
+        ? searchHref({ ...parameters, page: parameters.page - 1 })
+        : null,
+    nextHref:
+      parameters.page < lastPage
+        ? searchHref({ ...parameters, page: parameters.page + 1 })
+        : null,
+  };
+}

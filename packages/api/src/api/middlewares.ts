@@ -19,28 +19,16 @@ import { productSaleStatusMiddlewares } from "./vendor/product-sale-status/middl
 import { storeProductSaleStatusMiddlewares } from "./store/product-sale-status/middlewares";
 import { performanceTrace } from "../lib/performance/http-trace";
 import { nativeStripePayoutWebhookGuard } from "../lib/stripe-connect/native-guards";
-import { assertPaymentCollectionSellersReadyForSale } from "../lib/stripe-connect/sale-readiness";
-import { assertPaymentCollectionProductsNotPaused } from "../lib/catalog/sale-pause";
 import { vendorOfferPriceMiddlewares } from "./vendor/offers/[id]/price/middlewares";
 import { algoliaMiddlewares } from "./store/products/search/middlewares";
 import { vendorOrderStageMiddlewares } from "./vendor/orders/middlewares";
 import { orderFinanceMiddlewares } from "./order-finance-middlewares";
 import { googleAuthMiddlewares } from "./auth/google/complete/middlewares";
 import { vendorSessionMiddlewares } from "./auth/vendor-session/middlewares";
-
-async function requireReadyPaymentSellers(
-  req: MedusaRequest,
-  _res: MedusaResponse,
-  next: MedusaNextFunction,
-) {
-  try {
-    await assertPaymentCollectionSellersReadyForSale(req.scope, req.params.id);
-    await assertPaymentCollectionProductsNotPaused(req.scope, req.params.id);
-    next();
-  } catch (error) {
-    next(error);
-  }
-}
+import { commissionFinanceMiddlewares } from "./commission-finance-middlewares";
+import { storeCartOwnershipMiddlewares } from "./store/cart-ownership/middlewares";
+import { storeCartPricingMiddlewares } from "./store/cart-pricing/middlewares";
+import { financeReportingMiddlewares } from "./finance-reporting/middlewares";
 
 const requireSellerRegistrationFlag = (
   _req: MedusaRequest,
@@ -59,6 +47,10 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
+    ...commissionFinanceMiddlewares,
+    ...storeCartOwnershipMiddlewares,
+    ...storeCartPricingMiddlewares,
+    ...financeReportingMiddlewares,
     ...googleAuthMiddlewares,
     ...vendorSessionMiddlewares,
     {
@@ -81,11 +73,6 @@ export default defineMiddlewares({
     ...customerAccountMiddlewares,
     ...favoriteMiddlewares,
     ...algoliaMiddlewares,
-    {
-      matcher: "/store/payment-collections/:id/payment-sessions",
-      method: "POST",
-      middlewares: [requireReadyPaymentSellers],
-    },
     {
       matcher: "/hooks/payout",
       method: "POST",

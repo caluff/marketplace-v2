@@ -14,6 +14,7 @@ import {
   cartSdk,
   getPaymentProviders,
   getShippingOptions,
+  getReceiptOrders,
 } from "./data"
 import {
   hasShippingCoverage,
@@ -23,6 +24,7 @@ import {
 } from "./presentation"
 import { getReceiptOrderIds } from "./receipt"
 import { cookieOptions, failure } from "./server-state"
+import { ensureCustomerCart } from "./session"
 
 export type CartActionState = {
   error?: string
@@ -41,7 +43,18 @@ async function currentCart(fields = CART_FIELDS) {
   if (!id || !/^cart_[a-zA-Z0-9]+$/.test(id))
     throw new Error("Tu carrito está vacío o venció. Vuelve al catálogo.")
   const sdk = await cartSdk()
-  const { cart } = await sdk.store.cart.retrieve(id, { fields })
+  const [{ cart: existingCart }, account] = await Promise.all([
+    sdk.store.cart.retrieve(id, { fields: `${fields},+customer_id` }),
+    getCustomerAccount(),
+  ])
+  const cart = account
+    ? await ensureCustomerCart(
+        sdk.store.cart,
+        existingCart,
+        account.customer.id,
+        `${fields},+customer_id`,
+      )
+    : existingCart
   if (!isUsCart(cart))
     throw new Error(
       "Esta tienda solo acepta compras en USD con entrega en Estados Unidos.",
@@ -220,7 +233,7 @@ export async function completeCheckoutAction(): Promise<CartActionState> {
     const cookieStore = await cookies()
     if (
       !cookieStore.get(CART_COOKIE)?.value &&
-      cookieStore.get(RECEIPT_COOKIE)?.value
+      (await getReceiptOrders()).length
     )
       return { redirectTo: "/checkout/confirmation" }
     const { sdk, cart } = await currentCart()
@@ -235,7 +248,7 @@ export async function completeCheckoutAction(): Promise<CartActionState> {
       )
     const ids = getReceiptOrderIds(result.order_group, cart.id)
     const store = await cookies()
-    store.set(RECEIPT_COOKIE, JSON.stringify(ids), {
+    store.set(RECEIPT_COOKIE, JSON.stringify({ cartId: cart.id, orderIds: ids }), {
       ...cookieOptions,
       maxAge: 60 * 60 * 24,
     })

@@ -5,6 +5,7 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
+import { catalogHref } from "@/features/catalog/catalog-navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +39,7 @@ export function CatalogMenu({ children }: { children: ReactNode }) {
           <Link href="/">Inicio</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="min-h-11 px-3">
-          <Link href="/search">Todo el catálogo</Link>
+          <Link href={catalogHref({})}>Todo el catálogo</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="px-3 text-xs text-muted-foreground">

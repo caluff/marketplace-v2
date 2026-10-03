@@ -22,6 +22,7 @@ La implementación permanece **NOT STARTED**. La siguiente fase es **Phase 1 —
 | Admin                | `apps/admin`                           | Operación del marketplace, revisión de vendedores, catálogo y pedidos | `http://localhost:7000/dashboard` |
 | Vendor               | `apps/vendor`                          | Ofertas, inventario, almacén, envíos, pedidos y cuenta Connect        | `http://localhost:7001/seller`    |
 | API / worker         | `packages/api`                         | Mercur 2.3.3 / Medusa 2.18.0; modos server, worker y shared           | API: `http://localhost:9000`      |
+| Sistema visual       | `packages/ui`                          | Componentes, tokens y motion canónicos para los tres frontends       | —                                 |
 | Tema                 | `packages/theme-sync`                  | Contrato y sincronización de preferencias visuales                    | —                                 |
 | Contratos onboarding | `packages/vendor-onboarding-contracts` | Contratos de transporte compartidos del alta de vendedor              | —                                 |
 
@@ -80,9 +81,9 @@ pnpm build
 pnpm peers check
 ```
 
-`lint:*`, `typecheck:*`, `test:*` y `build:*` tienen variantes `web`, `admin`, `vendor` y `api`. `pnpm test` incluye además `test:theme`. Un cambio exclusivamente documental necesita revisión de formato, enlaces y diff; no requiere builds de aplicaciones.
+`lint:*`, `typecheck:*` y `build:*` tienen variantes `web`, `admin`, `vendor` y `api`, además de lint y typecheck para `ui`. Los tests unitarios se retiraron por decisión del usuario. `pnpm test` y `pnpm test:api` ejecutan las integraciones de módulos y HTTP del backend. Un cambio exclusivamente documental necesita revisión de formato, enlaces y diff; no requiere builds de aplicaciones.
 
-`pnpm test:smoke` ejecuta los tests admin y la integración HTTP de API. Los comandos `test:api:integration:http` y `test:api:integration:modules` requieren infraestructura de pruebas y pueden preparar/modificar datos: consultar su [guía](packages/api/integration-tests/http/README.md). No tratar scripts operativos de QA como tests unitarios ni ejecutarlos contra datos compartidos sin comprobar su alcance.
+`pnpm test:smoke` ejecuta la integración HTTP de API. Todos los comandos de tests restantes, incluidos `test:api:integration:http` y `test:api:integration:modules`, requieren infraestructura aislada de pruebas y pueden crear/modificar/eliminar bases y datos: consultar su [guía](packages/api/integration-tests/http/README.md) antes de ejecutarlos. No tratar scripts operativos de QA como tests unitarios ni ejecutarlos contra datos compartidos sin comprobar su alcance.
 
 Los resultados históricos están fechados en informes y auditoría. No constituyen verificación del siguiente cambio: cada fase exige registrar comandos, resultados y verificaciones pendientes en el handoff.
 

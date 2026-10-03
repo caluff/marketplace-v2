@@ -6,6 +6,7 @@
 | `auth-password-reset.ts`         | Password-reset notifications through the same adapter.               |
 | `algolia-catalog-changed.ts`     | Search projections after catalog, offer, seller and related changes. |
 | `order-shipped.ts`               | Shipment notification workflow for native shipment-created events.   |
+| `order-completed-settlement.ts`  | Observes completed orders through a workflow and records the immutable 72-hour settlement clock when separately enabled. |
 
 Installed Mercur/Medusa packages also register subscribers; these files are not
 the entire event graph. Inspect native consumers before extending events that
@@ -20,3 +21,9 @@ Retries must retain stable event/operation identity. Provider acceptance differs
 from confirmed delivery or fully reconciled persistence. The
 [development audit](../../../../docs/develpment/development-completion-audit.md)
 records financial recovery and idempotency limits.
+
+Automatic settlement uses its own flag and retains the first observed clock
+across event retries. It never transfers money in the subscriber. The
+[settlement job](../jobs/README.md) performs fresh checks and invokes the existing
+financial executor after the retention expires. Changed order versions and
+ambiguous money operations remain for manual review.

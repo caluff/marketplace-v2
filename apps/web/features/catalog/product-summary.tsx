@@ -1,5 +1,6 @@
 import type { HttpTypes } from "@medusajs/types"
 import Link from "next/link"
+import { catalogHref } from "./catalog-navigation"
 
 export function ProductSummary({
   product,
@@ -11,7 +12,7 @@ export function ProductSummary({
     <header>
       {category ? (
         <Link
-          href={`/search?category_id=${encodeURIComponent(category.id)}`}
+          href={catalogHref({ categoryId: category.id })}
           className="inline-flex min-h-8 items-center border border-border bg-muted/40 px-2.5 font-sans text-xs font-semibold text-muted-foreground hover:text-brand-accent"
         >
           {category.name}

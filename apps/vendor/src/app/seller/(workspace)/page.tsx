@@ -6,13 +6,40 @@ import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RecentOrders } from "@/components/vendor/recent-orders";
 import { PageHeading } from "@/features/workspace/components";
+import { FinanceReport } from "@/features/finance-reporting/report";
+import { Button } from "@/components/ui/button";
+import type { FinanceReportingPeriod } from "@marketplace-v2/api/finance-contracts";
 import {
   ORDER_LIST_FIELDS,
   resultOf,
   workspace,
 } from "@/features/workspace/data";
 
-export default async function DashboardPage() {
+const periods = [
+  "today",
+  "last_7_days",
+  "last_30_days",
+  "current_month",
+] as const;
+const periodLabels = ["Hoy", "Últimos 7 días", "Últimos 30 días", "Mes actual"];
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string; data_kind?: string; page?: string }>;
+}) {
+  const search = await searchParams;
+  const period: FinanceReportingPeriod = periods.includes(
+    search.period as (typeof periods)[number],
+  )
+    ? (search.period as FinanceReportingPeriod)
+    : "last_30_days";
+  const dataKind =
+    search.data_kind === "qa_fixture" ? "qa_fixture" : "ordinary";
+  const page =
+    search.page && /^\d+$/.test(search.page)
+      ? Math.max(1, Math.min(Number(search.page), 100_000))
+      : 1;
   const { client, membership } = await workspace();
   const [products, orders, inventory, setup] = [
     resultOf(
@@ -63,6 +90,78 @@ export default async function DashboardPage() {
         eyebrow="Tu operación"
         title={`Hola, ${membership.member.first_name || membership.seller.name}`}
       />
+      <Card>
+        <CardHeader>
+          <CardTitle>Informe financiero</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="grid gap-2 text-sm">
+              <span id="finance-period-label">Período</span>
+              <nav
+                aria-labelledby="finance-period-label"
+                className="flex flex-wrap gap-2"
+              >
+                {periods.map((value, index) => (
+                  <Button
+                    asChild
+                    key={value}
+                    size="sm"
+                    variant={period === value ? "default" : "outline"}
+                  >
+                    <Link
+                      href={`/seller?period=${value}&data_kind=${dataKind}&page=1`}
+                      aria-current={period === value ? "page" : undefined}
+                    >
+                      {periodLabels[index]}
+                    </Link>
+                  </Button>
+                ))}
+              </nav>
+            </div>
+            <div className="grid gap-2 text-sm">
+              <span id="finance-kind-label">Datos</span>
+              <nav
+                aria-labelledby="finance-kind-label"
+                className="flex flex-wrap gap-2"
+              >
+                {[
+                  { value: "ordinary", label: "Operación normal" },
+                  { value: "qa_fixture", label: "Fixtures QA" },
+                ].map((option) => (
+                  <Button
+                    asChild
+                    key={option.value}
+                    size="sm"
+                    variant={dataKind === option.value ? "default" : "outline"}
+                  >
+                    <Link
+                      href={`/seller?period=${period}&data_kind=${option.value}&page=1`}
+                      aria-current={
+                        dataKind === option.value ? "page" : undefined
+                      }
+                    >
+                      {option.label}
+                    </Link>
+                  </Button>
+                ))}
+              </nav>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Pruebas · USD</p>
+          <Suspense
+            fallback={
+              <div
+                role="status"
+                aria-label="Cargando informe financiero"
+                className="h-48 animate-pulse bg-muted"
+              />
+            }
+          >
+            <FinanceReport period={period} dataKind={dataKind} page={page} />
+          </Suspense>
+        </CardContent>
+      </Card>
       <div className="grid gap-4 lg:grid-cols-3">
         {metrics.map((metric) => (
           <Card key={metric.title}>

@@ -2,6 +2,10 @@ import type { HttpTypes, PaginatedResponse } from "@medusajs/types"
 import { cache } from "react"
 import { createCatalogSdk } from "@/lib/catalog-sdk"
 import type { StorefrontOffer } from "@/features/catalog/offers"
+import {
+  CATALOG_PAGE_SIZE,
+  parseCatalogPage,
+} from "@/features/catalog/catalog-navigation"
 
 import {
   classifyCatalogError,
@@ -11,7 +15,6 @@ import {
 } from "@/lib/catalog-state"
 import { validateStorefrontEnvironment } from "@/lib/storefront-config"
 
-const CATALOG_LIMIT = 12
 const STORE_API_TIMEOUT_MS = 8_000
 
 const storefrontConfiguration = validateStorefrontEnvironment({
@@ -25,10 +28,12 @@ export type StorefrontCatalogResult =
       status: "products"
       products: HttpTypes.StoreProduct[]
       count: number
+      page: number
       offers: StorefrontOffer[]
       hasRegion: boolean
     }
   | { status: "empty"; products: []; count: 0 }
+  | { status: "out_of_range"; products: []; count: number; page: number }
   | {
       status: "configuration_missing"
       missing: Array<"backend_url" | "publishable_key">
@@ -58,6 +63,7 @@ function configurationFailure(): StorefrontCatalogResult | null {
 
 export async function getStorefrontCatalog(options?: {
   categoryId?: string
+  page?: number
 }): Promise<StorefrontCatalogResult> {
   const invalidConfiguration = configurationFailure()
 
@@ -66,6 +72,7 @@ export async function getStorefrontCatalog(options?: {
   }
 
   const categoryId = options?.categoryId?.trim()
+  const page = parseCatalogPage(options?.page)
   const deadline = Date.now() + STORE_API_TIMEOUT_MS
 
   try {
@@ -75,7 +82,9 @@ export async function getStorefrontCatalog(options?: {
       async (signal) => {
         const sdk = createCatalogSdk(config, signal)
         const query: HttpTypes.StoreProductListParams = {
-          limit: CATALOG_LIMIT,
+          limit: CATALOG_PAGE_SIZE,
+          offset: (page - 1) * CATALOG_PAGE_SIZE,
+          order: "id",
           fields:
             "id,title,subtitle,description,handle,thumbnail,*images,*categories",
         }
@@ -99,6 +108,8 @@ export async function getStorefrontCatalog(options?: {
     )
 
     if (getCatalogContentStatus(result.products) === "empty") {
+      if (page > 1)
+        return { status: "out_of_range", products: [], count: result.count, page }
       return {
         status: "empty",
         products: [],
@@ -110,6 +121,7 @@ export async function getStorefrontCatalog(options?: {
       status: "products",
       products: result.products,
       count: result.count,
+      page,
       offers: region
         ? await getStorefrontOffers(
             result.products.map((product) => product.id),

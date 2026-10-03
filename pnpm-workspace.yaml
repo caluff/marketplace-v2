@@ -4,6 +4,7 @@ packages:
 
 patchedDependencies:
   '@medusajs/framework@2.18.0': patches/@medusajs__framework@2.18.0.patch
+  '@medusajs/payment@2.18.0': patches/@medusajs__payment@2.18.0.patch
   '@mercurjs/core@2.3.3': patches/@mercurjs__core@2.3.3.patch
   '@mercurjs/payout-stripe-connect@2.3.3': patches/@mercurjs__payout-stripe-connect@2.3.3.patch
 overrides:

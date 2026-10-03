@@ -31,13 +31,12 @@ export async function reconcileVendorApplication(container: MedusaContainer, ope
     const identity = await auth.retrieveAuthIdentity(application.auth_identity_id);
     if (identity.app_metadata?.customer_id !== application.customer_id) throw new OnboardingError("approval_recovery_required");
     if (identity.app_metadata.member_id === mutation.member_id) {
-      const metadata = { ...identity.app_metadata };
-      delete metadata.member_id;
+      // Native JSON updates merge properties; omission does not remove the actor binding.
+      const metadata = { ...identity.app_metadata, member_id: null };
       try { await auth.updateAuthIdentities({ id: identity.id, app_metadata: metadata }); }
-      catch {
-        const current = await auth.retrieveAuthIdentity(identity.id);
-        if (current.app_metadata?.member_id === mutation.member_id) throw new OnboardingError("approval_recovery_required");
-      }
+      catch { /* Verify a possible committed write with a lost response below. */ }
+      const current = await auth.retrieveAuthIdentity(identity.id);
+      if (current.app_metadata?.member_id === mutation.member_id || current.app_metadata?.customer_id !== application.customer_id) throw new OnboardingError("approval_recovery_required");
     }
     const member = (await native.listMembers({ id: mutation.member_id }))[0];
     if (member) {

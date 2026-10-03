@@ -1,6 +1,7 @@
 import Medusa, { FetchError } from "@medusajs/js-sdk"
 import type { HttpTypes } from "@medusajs/types"
 import { cookies } from "next/headers"
+import { adoptCustomerCart, clearCartSession } from "@/features/cart/session"
 
 import {
   WEB_MFA_COOKIE,
@@ -40,6 +41,10 @@ const secureCookie = process.env.NODE_ENV === "production"
 
 export async function setCustomerSession(token: string, preserveVerificationCode = false) {
   const store = await cookies()
+  const sdk = createCustomerSdk(token)
+  if (!sdk) throw new Error("El servicio de cuenta no está disponible.")
+  const { customer } = await sdk.store.customer.retrieve()
+  await adoptCustomerCart(store, sdk.store.cart, customer.id)
   store.set(WEB_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: secureCookie,
@@ -55,6 +60,7 @@ export async function setCustomerSession(token: string, preserveVerificationCode
 
 export async function clearCustomerSession() {
   const store = await cookies()
+  clearCartSession(store)
   store.delete(WEB_SESSION_COOKIE)
   store.delete(WEB_MFA_COOKIE)
   store.delete(WEB_RESET_COOKIE)
@@ -78,6 +84,10 @@ export async function setMfaSecret(secret: MfaSecret) {
 
 export async function getMfaSecret() {
   return unpackSecret<MfaSecret>((await cookies()).get(WEB_MFA_COOKIE)?.value)
+}
+
+export async function clearMfaSecret() {
+  ;(await cookies()).delete(WEB_MFA_COOKIE)
 }
 
 export async function setVerificationSecret(secret: VerificationSecret) {

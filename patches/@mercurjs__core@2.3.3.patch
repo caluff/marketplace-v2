@@ -1,3 +1,74 @@
+diff --git a/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch b/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
+--- a/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
++++ b/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
+@@ -1,6 +1,5 @@
+ diff --git a/dist/cart/workflows/refresh-cart-shipping-methods.js b/dist/cart/workflows/refresh-cart-shipping-methods.js
+-index 74e27fb..016edc9 100644
+ --- a/dist/cart/workflows/refresh-cart-shipping-methods.js
+ +++ b/dist/cart/workflows/refresh-cart-shipping-methods.js
+ @@ -107,7 +107,15 @@ exports.refreshCartShippingMethodsWorkflow = (0, workflows_sdk_1.createWorkflow)
+              // Collect profile IDs still required by remaining cart items so that
+@@ -19,3 +18,17 @@
+              const requiredProfileIds = new Set(items
+                  .filter((item) => item.requires_shipping)
+                  .map((item) => item.variant?.product?.shipping_profile?.id)
++diff --git a/dist/order/workflows/create-order-credit-lines.js b/dist/order/workflows/create-order-credit-lines.js
++--- a/dist/order/workflows/create-order-credit-lines.js
+++++ b/dist/order/workflows/create-order-credit-lines.js
++@@ -37,7 +37,9 @@
++     const orderQuery = (0, common_1.useQueryGraphStep)({
++         entity: "orders",
++-        fields: ["id", "status", "summary", "total"],
+++        // Use the persisted accounting summary. Requesting total decorates
+++        // pending_difference and erases an exact one-cent USD balance.
+++        fields: ["id", "status", "summary"],
++         filters: { id: input.id },
++         options: { throwIfKeyNotFound: true },
++     }).config({ name: "get-order" });
++     const order = (0, workflows_sdk_1.transform)({ orderQuery }, ({ orderQuery }) => orderQuery.data[0]);
+diff --git a/.medusa/server/src/api/store/carts/[id]/line-items/route.js b/.medusa/server/src/api/store/carts/[id]/line-items/route.js
+index e26bb387b5ab9d172b1adeee76fec2f1b7c3a3e4..e0b9bf1dc4b0bf22d84fb9d17c80a4db298200c8 100644
+--- a/.medusa/server/src/api/store/carts/[id]/line-items/route.js
++++ b/.medusa/server/src/api/store/carts/[id]/line-items/route.js
+@@ -32,7 +32,7 @@ const POST = async (req, res) => {
+             additional_data,
+         },
+     });
+-    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, helpers_1.defaultStoreCartFields);
++    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, req.queryConfig.fields);
+     res.status(200).json({ cart });
+ };
+ exports.POST = POST;
+diff --git a/.medusa/server/src/api/store/carts/middlewares.js b/.medusa/server/src/api/store/carts/middlewares.js
+index 3cd42c73530b855e3c4027c7b9a1d2afa81d2615..b39dede2e6d2c3a2355e08404a4a6f7f5445d1c6 100644
+--- a/.medusa/server/src/api/store/carts/middlewares.js
++++ b/.medusa/server/src/api/store/carts/middlewares.js
+@@ -6,6 +6,9 @@ const disable_medusa_middlewares_1 = require("../../../utils/disable-medusa-midd
+ const query_config_1 = require("./[id]/complete/query-config");
+ const validators_1 = require("./[id]/complete/validators");
+ const validators_2 = require("./[id]/line-items/validators");
++const cart_validators = require("@medusajs/medusa/api/store/carts/validators");
++const cart_query_config = require("@medusajs/medusa/api/store/carts/query-config");
++const cart_helpers = require("./helpers");
+ const OVERRIDDEN_ROUTES = new Set([
+     "POST /store/carts/:id/complete",
+     "POST /store/carts/:id/line-items",
+@@ -35,7 +38,13 @@ exports.storeCartsMiddlewares = [
+     {
+         method: ["POST"],
+         matcher: "/store/carts/:id/line-items",
+-        middlewares: [(0, http_1.validateAndTransformBody)(validators_2.StoreAddCartLineItem)],
++        middlewares: [
++            (0, http_1.validateAndTransformBody)(validators_2.StoreAddCartLineItem),
++            (0, http_1.validateAndTransformQuery)(cart_validators.StoreGetCartsCart, {
++                ...cart_query_config.retrieveTransformQueryConfig,
++                defaults: cart_helpers.defaultStoreCartFields,
++            }),
++        ],
+     },
+ ];
+ //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoibWlkZGxld2FyZXMuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi8uLi8uLi8uLi9zcmMvYXBpL3N0b3JlL2NhcnRzL21pZGRsZXdhcmVzLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7OztBQUFBLG1EQUdpQztBQUdqQywwRkFBZ0Y7QUFDaEYsK0RBQTJFO0FBQzNFLDJEQUFvRTtBQUNwRSw2REFBbUU7QUFFbkUsTUFBTSxpQkFBaUIsR0FBRyxJQUFJLEdBQUcsQ0FBQztJQUM5QixnQ0FBZ0M7SUFDaEMsa0NBQWtDO0NBQ3JDLENBQUMsQ0FBQTtBQUVGLHlFQUF5RTtBQUN6RSx3RUFBd0U7QUFDeEUsNEVBQTRFO0FBQzVFLHlFQUF5RTtBQUN6RSxNQUFNLFlBQVksR0FBRyxDQUFDLGlEQUFvQixDQUN0QyxxQ0FBcUMsQ0FDeEMsSUFBSSxFQUFFLENBQXNCLENBQUE7QUFFN0IsTUFBTSxvQkFBb0IsR0FBRyxZQUFZLENBQUMsTUFBTSxDQUFDLENBQUMsS0FBSyxFQUFFLEVBQUU7SUFDdkQsTUFBTSxPQUFPLEdBQUcsS0FBSyxDQUFDLE9BQU8sQ0FBQyxLQUFLLENBQUMsTUFBTSxDQUFDO1FBQ3ZDLENBQUMsQ0FBQyxLQUFLLENBQUMsTUFBTTtRQUNkLENBQUMsQ0FBQyxLQUFLLENBQUMsTUFBTTtZQUNkLENBQUMsQ0FBQyxDQUFDLEtBQUssQ0FBQyxNQUFNLENBQUM7WUFDaEIsQ0FBQyxDQUFDLEVBQUUsQ0FBQTtJQUNSLE9BQU8sQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUMsTUFBTSxFQUFFLEVBQUUsQ0FDNUIsaUJBQWlCLENBQUMsR0FBRyxDQUFDLEdBQUcsTUFBTSxJQUFJLEtBQUssQ0FBQyxPQUFPLEVBQUUsQ0FBQyxDQUN0RCxDQUFBO0FBQ0wsQ0FBQyxDQUFDLENBQUE7QUFFVyxRQUFBLHFCQUFxQixHQUFzQjtJQUNwRCxHQUFHLG9CQUFvQjtJQUN2QjtRQUNJLE1BQU0sRUFBRSxDQUFDLE1BQU0sQ0FBQztRQUNoQixPQUFPLEVBQUUsMkJBQTJCO1FBQ3BDLFdBQVcsRUFBRTtZQUNULElBQUEsZ0NBQXlCLEVBQ3JCLG9DQUF1QixFQUN2QiwyQ0FBNEIsQ0FDL0I7U0FDSjtLQUNKO0lBQ0Q7UUFDSSxNQUFNLEVBQUUsQ0FBQyxNQUFNLENBQUM7UUFDaEIsT0FBTyxFQUFFLDZCQUE2QjtRQUN0QyxXQUFXLEVBQUUsQ0FBQyxJQUFBLCtCQUF3QixFQUFDLGlDQUFvQixDQUFDLENBQUM7S0FDaEU7Q0FDSixDQUFBIn0=
+\ No newline at end of file
 diff --git a/.medusa/server/src/api/utils/ensure-seller-middleware.js b/.medusa/server/src/api/utils/ensure-seller-middleware.js
 index 5da074a05b02520c8348cfe445cbcce21679cf26..f801cbfd0c7537aead8a80625320187343381dcc 100644
 --- a/.medusa/server/src/api/utils/ensure-seller-middleware.js
@@ -78,8 +149,59 @@ index f450c0c76732b6209e2249caa8d49fe19ac22591..2e6945364833f22aa506512721370b76
      ]);
      req.filterableFields ??= {};
      const existingAnd = req.filterableFields.$and ?? [];
+diff --git a/.medusa/server/src/modules/payout/services/payout-module-service.d.ts b/.medusa/server/src/modules/payout/services/payout-module-service.d.ts
+index 6827d089cd024befdd982e78c78273dd20722108..7782f4814a553d270db800ac878b8dfa7cbee7ef 100644
+--- a/.medusa/server/src/modules/payout/services/payout-module-service.d.ts
++++ b/.medusa/server/src/modules/payout/services/payout-module-service.d.ts
+@@ -101,6 +101,8 @@ export default class PayoutModuleService extends PayoutModuleService_base {
+     createPayoutAccount(input: CreatePayoutAccountDTO, sharedContext?: Context<EntityManager>): Promise<PayoutAccountDTO>;
+     createOnboarding(input: CreateOnboardingDTO, sharedContext?: Context<EntityManager>): Promise<OnboardingDTO>;
+     createPayouts(input: CreatePayoutDTO, sharedContext?: Context<EntityManager>): Promise<PayoutDTO>;
++    /** Persist an externally verified transfer without calling the provider. The caller owns reconciliation and exclusion. */
++    recordReconciledPayout(input: Pick<PayoutDTO, "id" | "account_id" | "amount" | "currency_code" | "status" | "data">, sharedContext?: Context<EntityManager>): Promise<PayoutDTO>;
+     getWebhookActionAndData(input: PayoutWebhookActionInput): Promise<PayoutWebhookResult>;
+ }
+ export {};
+diff --git a/.medusa/server/src/modules/payout/services/payout-module-service.js b/.medusa/server/src/modules/payout/services/payout-module-service.js
+index aac5c5353e5d78991d6369a8255c3f8a9ab187c5..86ec7a1486b94152b5718042258eb8a5ad9c5506 100644
+--- a/.medusa/server/src/modules/payout/services/payout-module-service.js
++++ b/.medusa/server/src/modules/payout/services/payout-module-service.js
+@@ -129,6 +129,20 @@ class PayoutModuleService extends (0, utils_1.MedusaService)({
+         }, sharedContext);
+         return await this.baseRepository_.serialize(payout);
+     }
++    // The caller must verify the provider fact and hold its reconciliation fence.
++    // Recording an existing transfer must not issue another provider operation or
++    // require the destination account to still be active.
++    async recordReconciledPayout(input, sharedContext) {
++        const payout = await super.createPayouts({
++            id: input.id,
++            amount: input.amount,
++            currency_code: input.currency_code,
++            account_id: input.account_id,
++            data: input.data,
++            status: input.status,
++        }, sharedContext);
++        return await this.baseRepository_.serialize(payout);
++    }
+     async getWebhookActionAndData(input) {
+         return await this.payoutProviderService_.getWebhookActionAndData(input);
+     }
+@@ -160,4 +174,12 @@ __decorate([
+     __metadata("design:paramtypes", [Object, Object]),
+     __metadata("design:returntype", Promise)
+ ], PayoutModuleService.prototype, "createPayouts", null);
++__decorate([
++    (0, utils_1.InjectTransactionManager)(),
++    (0, utils_1.EmitEvents)(),
++    __param(1, (0, utils_1.MedusaContext)()),
++    __metadata("design:type", Function),
++    __metadata("design:paramtypes", [Object, Object]),
++    __metadata("design:returntype", Promise)
++], PayoutModuleService.prototype, "recordReconciledPayout", null);
+ //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicGF5b3V0LW1vZHVsZS1zZXJ2aWNlLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vLi4vLi4vLi4vc3JjL21vZHVsZXMvcGF5b3V0L3NlcnZpY2VzL3BheW91dC1tb2R1bGUtc2VydmljZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7OztBQUFBLHFEQU9rQztBQUNsQywyQ0Fhd0I7QUFFeEIsc0NBQTZEO0FBUzdELE1BQXFCLG1CQUFvQixTQUFRLElBQUEscUJBQWEsRUFBQztJQUMzRCxVQUFVLEVBQVYsbUJBQVU7SUFDVixNQUFNLEVBQU4sZUFBTTtJQUNOLGFBQWEsRUFBYixzQkFBYTtDQUNoQixDQUFDO0lBS0UsWUFBWSxFQUFFLHFCQUFxQixFQUFFLGNBQWMsRUFBd0IsRUFBRSxPQUE0QjtRQUNyRyxhQUFhO1FBQ2IsS0FBSyxDQUFDLEdBQUcsU0FBUyxDQUFDLENBQUE7UUFDbkIsSUFBSSxDQUFDLHNCQUFzQixHQUFHLHFCQUFxQixDQUFBO1FBQ25ELElBQUksQ0FBQyxlQUFlLEdBQUcsY0FBYyxDQUFBO1FBQ3JDLElBQUksQ0FBQyxRQUFRLEdBQUc7WUFDWixHQUFHLHFDQUE2QjtZQUNoQyxHQUFHLENBQUMsT0FBTyxJQUFJLEVBQUUsQ0FBQztTQUNyQixDQUFBO0lBQ0wsQ0FBQztJQUVELFVBQVU7UUFDTixPQUFPO1lBQ0gsR0FBRyxxQ0FBNkI7WUFDaEMsR0FBRyxDQUFDLElBQUksQ0FBQyxRQUFRLElBQUksRUFBRSxDQUFDO1NBQzNCLENBQUE7SUFDTCxDQUFDO0lBSUssQUFBTixLQUFLLENBQUMsbUJBQW1CLENBQ3JCLEtBQTZCLEVBQ1osYUFBc0M7UUFFdkQsSUFBSSxhQUFhLEdBQWlELElBQUksQ0FBQTtRQUN0RSxJQUFJLGVBQWUsR0FBdUMsSUFBSSxDQUFBO1FBRTlELElBQUksQ0FBQztZQUNELGFBQWEsR0FBRyxNQUFNLElBQUksQ0FBQyxvQkFBb0IsQ0FDM0MsRUFBRSxJQUFJLEVBQUUs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
 diff --git a/.medusa/server/src/modules/seller/repositories/order-group.js b/.medusa/server/src/modules/seller/repositories/order-group.js
-index a64058b778254434d80188ac20e2902a9cbba5de..df63873b35232deacfb5a534f2cf21e935c09413 100644
+index a64058b778254434d80188ac20e2902a9cbba5de..84fdf54aedb0f0ea368b8901ba8563e099cfccfb 100644
 --- a/.medusa/server/src/modules/seller/repositories/order-group.js
 +++ b/.medusa/server/src/modules/seller/repositories/order-group.js
 @@ -56,6 +56,9 @@ class OrderGroupRepository extends utils_1.DALUtils.mikroOrmBaseRepositoryFactor
@@ -164,84 +286,8 @@ index 421ad74978a9bfe6b28456f541f71484e6d6cbf8..daee4b54067c5e7e02ced7a44a6cd866
      await wfEngine.run(payout_1.processPayoutForWebhookWorkflowId, { input: processedEvent });
  }
  exports.config = {
-diff --git a/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js b/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
-index 2f5c4545425355ecefff8d0a3515ef20be8c0372..32e94d2c5ef70ccbf9c7b90758e52a9763c06821 100644
---- a/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
-+++ b/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
-@@ -23,12 +23,13 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
- }, (input) => {
-     (0, core_flows_1.acquireLockStep)({
-         key: input.cart_id,
--        timeout: exports.THIRTY_SECONDS,
--        ttl: exports.TWO_MINUTES,
-+        timeout: exports.THIRTY_SECONDS / 1000,
-+        ttl: exports.TWO_MINUTES / 1000,
-+        executeOnSubWorkflow: true,
-     });
-     const [orderGroup, cartData] = (0, workflows_sdk_1.parallelize)((0, core_flows_1.useQueryGraphStep)({
-         entity: "order_group",
--        fields: ["cart_id"],
-+        fields: ["id", "cart_id"],
-         filters: { cart_id: input.cart_id },
-         options: {
-             isList: false,
-@@ -43,7 +44,10 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
-     }).config({
-         name: "cart-query",
-     }));
--    const orderGroupId = (0, workflows_sdk_1.transform)({ orderGroup }, ({ orderGroup }) => {
-+    const orderGroupId = (0, workflows_sdk_1.transform)({ orderGroup, input }, ({ orderGroup, input }) => {
-+        if (orderGroup?.data && orderGroup.data.cart_id !== input.cart_id) {
-+            throw new utils_1.MedusaError(utils_1.MedusaError.Types.NOT_ALLOWED, "The existing order group does not belong to this cart.");
-+        }
-         return orderGroup?.data?.id;
-     });
-     const paymentSessions = (0, core_flows_1.validateCartPaymentsStep)({ cart: cartData.data });
-@@ -431,6 +435,7 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
-     });
-     (0, core_flows_1.releaseLockStep)({
-         key: input.cart_id,
-+        executeOnSubWorkflow: true,
-     });
-     const result = (0, workflows_sdk_1.transform)({ createdOrderGroup, orderGroupId }, ({ createdOrderGroup, orderGroupId }) => {
-         return { order_group_id: createdOrderGroup?.id ?? orderGroupId };
-diff --git a/.medusa/server/src/api/store/carts/middlewares.js b/.medusa/server/src/api/store/carts/middlewares.js
---- a/.medusa/server/src/api/store/carts/middlewares.js
-+++ b/.medusa/server/src/api/store/carts/middlewares.js
-@@ -6,6 +6,9 @@
- const query_config_1 = require("./[id]/complete/query-config");
- const validators_1 = require("./[id]/complete/validators");
- const validators_2 = require("./[id]/line-items/validators");
-+const cart_validators = require("@medusajs/medusa/api/store/carts/validators");
-+const cart_query_config = require("@medusajs/medusa/api/store/carts/query-config");
-+const cart_helpers = require("./helpers");
- const OVERRIDDEN_ROUTES = new Set([
-     "POST /store/carts/:id/complete",
-     "POST /store/carts/:id/line-items",
-@@ -40,5 +43,11 @@
-         method: ["POST"],
-         matcher: "/store/carts/:id/line-items",
--        middlewares: [(0, http_1.validateAndTransformBody)(validators_2.StoreAddCartLineItem)],
-+        middlewares: [
-+            (0, http_1.validateAndTransformBody)(validators_2.StoreAddCartLineItem),
-+            (0, http_1.validateAndTransformQuery)(cart_validators.StoreGetCartsCart, {
-+                ...cart_query_config.retrieveTransformQueryConfig,
-+                defaults: cart_helpers.defaultStoreCartFields,
-+            }),
-+        ],
-     },
- ];
-diff --git a/.medusa/server/src/api/store/carts/[id]/line-items/route.js b/.medusa/server/src/api/store/carts/[id]/line-items/route.js
---- a/.medusa/server/src/api/store/carts/[id]/line-items/route.js
-+++ b/.medusa/server/src/api/store/carts/[id]/line-items/route.js
-@@ -33,4 +33,4 @@
-         },
-     });
--    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, helpers_1.defaultStoreCartFields);
-+    const cart = await (0, helpers_1.refetchCart)(cart_id, req.scope, req.queryConfig.fields);
-     res.status(200).json({ cart });
 diff --git a/.medusa/server/src/workflows/cart/hooks/validate.js b/.medusa/server/src/workflows/cart/hooks/validate.js
-index 3950571..4af2ee2 100644
+index 3950571624a6871318ec672f353ad74954dddc09..4af2ee277e672cf5a469f43b850b74b03f3a1783 100644
 --- a/.medusa/server/src/workflows/cart/hooks/validate.js
 +++ b/.medusa/server/src/workflows/cart/hooks/validate.js
 @@ -16,23 +16,41 @@ core_flows_1.addToCartWorkflow.hooks.validate(async ({ input, cart }, { containe
@@ -328,3 +374,85 @@ index 3950571..4af2ee2 100644
                      offer: { id: offerId },
                  },
              ],
+diff --git a/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js b/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
+index 2f5c4545425355ecefff8d0a3515ef20be8c0372..e00e7198e2540b1b7e299e68505b77f4001d9f79 100644
+--- a/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
++++ b/.medusa/server/src/workflows/cart/workflows/complete-cart-with-split-orders.js
+@@ -23,12 +23,13 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
+ }, (input) => {
+     (0, core_flows_1.acquireLockStep)({
+         key: input.cart_id,
+-        timeout: exports.THIRTY_SECONDS,
+-        ttl: exports.TWO_MINUTES,
++        timeout: exports.THIRTY_SECONDS / 1000,
++        ttl: exports.TWO_MINUTES / 1000,
++        executeOnSubWorkflow: true,
+     });
+     const [orderGroup, cartData] = (0, workflows_sdk_1.parallelize)((0, core_flows_1.useQueryGraphStep)({
+         entity: "order_group",
+-        fields: ["cart_id"],
++        fields: ["id", "cart_id"],
+         filters: { cart_id: input.cart_id },
+         options: {
+             isList: false,
+@@ -43,7 +44,10 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
+     }).config({
+         name: "cart-query",
+     }));
+-    const orderGroupId = (0, workflows_sdk_1.transform)({ orderGroup }, ({ orderGroup }) => {
++    const orderGroupId = (0, workflows_sdk_1.transform)({ orderGroup, input }, ({ orderGroup, input }) => {
++        if (orderGroup?.data && orderGroup.data.cart_id !== input.cart_id) {
++            throw new utils_1.MedusaError(utils_1.MedusaError.Types.NOT_ALLOWED, "The existing order group does not belong to this cart.");
++        }
+         return orderGroup?.data?.id;
+     });
+     const paymentSessions = (0, core_flows_1.validateCartPaymentsStep)({ cart: cartData.data });
+@@ -431,6 +435,7 @@ exports.completeCartWithSplitOrdersWorkflow = (0, workflows_sdk_1.createWorkflow
+     });
+     (0, core_flows_1.releaseLockStep)({
+         key: input.cart_id,
++        executeOnSubWorkflow: true,
+     });
+     const result = (0, workflows_sdk_1.transform)({ createdOrderGroup, orderGroupId }, ({ createdOrderGroup, orderGroupId }) => {
+         return { order_group_id: createdOrderGroup?.id ?? orderGroupId };
+diff --git a/.medusa/server/src/workflows/payout/workflows/create-payout.d.ts b/.medusa/server/src/workflows/payout/workflows/create-payout.d.ts
+index f03dcf6d711075a4c1437a87fe833e872dadb79b..7c3158609a4ccdb3eab16b30a1a118e378b33a2e 100644
+--- a/.medusa/server/src/workflows/payout/workflows/create-payout.d.ts
++++ b/.medusa/server/src/workflows/payout/workflows/create-payout.d.ts
+@@ -2,5 +2,10 @@ type CreatePayoutWorkflowInput = {
+     order_id: string;
+ };
+ export declare const createPayoutWorkflowId = "create-payout";
+-export declare const createPayoutWorkflow: import("@medusajs/framework/workflows-sdk").ReturnWorkflow<CreatePayoutWorkflowInput, import("@mercurjs/types").PayoutDTO, []>;
++export declare const createPayoutWorkflow: import("@medusajs/framework/workflows-sdk").ReturnWorkflow<CreatePayoutWorkflowInput, import("@mercurjs/types").PayoutDTO, [import("@medusajs/framework/workflows-sdk").Hook<"validatePayout", {
++    order_id: string;
++    amount: import("@medusajs/framework/types").BigNumberInput;
++    currency_code: string;
++    seller_id: string;
++}, unknown>]>;
+ export {};
+diff --git a/.medusa/server/src/workflows/payout/workflows/create-payout.js b/.medusa/server/src/workflows/payout/workflows/create-payout.js
+index f05294969a4e9cb30745f2f429cae61ea85a93f5..c70bf3101c6293db65be1f597815969347a96a3e 100644
+--- a/.medusa/server/src/workflows/payout/workflows/create-payout.js
++++ b/.medusa/server/src/workflows/payout/workflows/create-payout.js
+@@ -61,6 +61,12 @@ exports.createPayoutWorkflow = (0, workflows_sdk_1.createWorkflow)(exports.creat
+             },
+         };
+     });
++    const validatePayout = (0, workflows_sdk_1.createHook)("validatePayout", {
++        order_id: input.order_id,
++        amount: payoutInput.amount,
++        currency_code: payoutInput.currency_code,
++        seller_id: payoutInput.seller_id,
++    });
+     const payout = (0, steps_1.createPayoutStep)({
+         account_id: payoutInput.account_id,
+         amount: payoutInput.amount,
+@@ -78,6 +84,6 @@ exports.createPayoutWorkflow = (0, workflows_sdk_1.createWorkflow)(exports.creat
+             },
+         },
+     ]);
+-    return new workflows_sdk_1.WorkflowResponse(payout);
++    return new workflows_sdk_1.WorkflowResponse(payout, { hooks: [validatePayout] });
+ });
+ //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY3JlYXRlLXBheW91dC5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uLy4uLy4uL3NyYy93b3JrZmxvd3MvcGF5b3V0L3dvcmtmbG93cy9jcmVhdGUtcGF5b3V0LnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7OztBQUFBLDREQUFxRjtBQUNyRixxRUFBNkc7QUFDN0cscURBQStEO0FBQy9ELDJDQUErQztBQUUvQyxvQ0FBMkM7QUFNOUIsUUFBQSxzQkFBc0IsR0FBRyxlQUFlLENBQUE7QUFFeEMsUUFBQSxvQkFBb0IsR0FBRyxJQUFBLDhCQUFjLEVBQ2hELDhCQUFzQixFQUN0QixVQUFVLEtBQThDO0lBQ3RELE1BQU0sRUFBRSxJQUFJLEVBQUUsTUFBTSxFQUFFLEdBQUcsSUFBQSw4QkFBaUIsRUFBQztRQUN6QyxNQUFNLEVBQUUsT0FBTztRQUNmLE1BQU0sRUFBRTtZQUNOLElBQUk7WUFDSixlQUFlO1lBQ2YsT0FBTztZQUNQLFVBQVU7WUFDVix5QkFBeUI7WUFDekIsU0FBUztZQUNULG9CQUFvQjtTQUNyQjtRQUNELE9BQU8sRUFBRSxFQUFFLEVBQUUsRUFBRSxLQUFLLENBQUMsUUFBUSxFQUFFO1FBQy9CLE9BQU8sRUFBRSxFQUFFLGtCQUFrQixFQUFFLElBQUksRUFBRTtLQUN0QyxDQUFDLENBQUMsTUFBTSxDQUFDLEVBQUUsSUFBSSxFQUFFLGFBQWEsRUFBRSxDQUFDLENBQUE7SUFFbEMsTUFBTSxLQUFLLEdBQUcsSUFBQSx5QkFBUyxFQUFDLEVBQUUsTUFBTSxFQUFFLEVBQUUsQ0FBQyxFQUFFLE1BQU0sRUFBRSxFQUFFLEVBQUUsQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQTtJQUU5RCxNQUFNLGlCQUFpQixHQUFHLElBQUEseUJBQVMsRUFBQyxFQUFFLEtBQUssRUFBRSxFQUFFLENBQUMsRUFBRSxLQUFLLEVBQUUsRUFBRSxFQUFFLENBQUMsQ0FBQztRQUM3RCxHQUFHLEVBQUU7WUFDSCxFQUFFLE9B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

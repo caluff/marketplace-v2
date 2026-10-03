@@ -46,7 +46,15 @@ export const prepareVendorMemberStep = createStep("prepare-vendor-member", async
   const memberships = await native.listSellerMembers({ member_id: input.member_id });
   if (memberships.length) throw new OnboardingError("approval_recovery_required");
   const member = (await native.listMembers({ id: input.member_id }))[0];
-  if (member?.metadata?.vendor_application_operation === input.operation_id) await native.deleteMembers(input.member_id);
+  if (member?.metadata?.vendor_application_operation !== input.operation_id) return;
+  const service = onboardingService(container);
+  const mutation = await service.retrieveVendorApplicationMutation(input.operation_id);
+  const application = await service.retrieveVendorApplication(mutation.application_id);
+  if (!mutation.created_member || mutation.member_id !== input.member_id || mutation.state !== "processing" || application.approval_operation_id !== input.operation_id || application.customer_id !== mutation.customer_id || application.status === "approved") throw new OnboardingError("approval_recovery_required");
+  const identity = await container.resolve<IAuthModuleService>(Modules.AUTH).retrieveAuthIdentity(application.auth_identity_id);
+  // Medusa continues other compensations after a failure; never delete an actor still bound to this identity.
+  if (identity.app_metadata?.customer_id !== application.customer_id || identity.app_metadata?.member_id === input.member_id) throw new OnboardingError("approval_recovery_required");
+  await native.deleteMembers(input.member_id);
 });
 
 export const journalVendorSellerStep = createStep("journal-vendor-seller", async (input: { operation_id: string; seller_id: string }, { container }) => {
@@ -78,17 +86,21 @@ export const bindVendorIdentityStep = createStep("bind-vendor-identity", async (
   return new StepResponse(input, input.created_member ? input : null);
 }, async (input, { container }) => {
   if (!input) return;
+  const onboarding = onboardingService(container);
+  const mutation = await onboarding.retrieveVendorApplicationMutation(input.operation_id);
+  const application = await onboarding.retrieveVendorApplication(mutation.application_id);
+  if (!mutation.created_member || mutation.member_id !== input.member_id || mutation.state !== "processing" || application.approval_operation_id !== input.operation_id || application.auth_identity_id !== input.auth_identity_id || application.customer_id !== mutation.customer_id || application.status === "approved") throw new OnboardingError("approval_recovery_required");
   const service = container.resolve<IAuthModuleService>(Modules.AUTH);
   const identity = await service.retrieveAuthIdentity(input.auth_identity_id);
+  if (identity.app_metadata?.customer_id !== application.customer_id) throw new OnboardingError("approval_recovery_required");
   // Native setAuthAppMetadataStep compensation deletes unconditionally; preserve a concurrently replaced key.
   if (identity.app_metadata?.member_id !== input.member_id) return;
-  const metadata = { ...identity.app_metadata };
-  delete metadata.member_id;
+  // Native JSON updates merge properties. Null explicitly removes the actor association.
+  const metadata = { ...identity.app_metadata, member_id: null };
   try { await service.updateAuthIdentities({ id: identity.id, app_metadata: metadata }); }
-  catch (error) {
-    const current = await service.retrieveAuthIdentity(identity.id);
-    if (current.app_metadata?.member_id === input.member_id) throw error;
-  }
+  catch { /* A lost write response is accepted only after the readback below. */ }
+  const current = await service.retrieveAuthIdentity(identity.id);
+  if (current.app_metadata?.member_id === input.member_id || current.app_metadata?.customer_id !== application.customer_id) throw new OnboardingError("approval_recovery_required");
 });
 
 export const finalizeVendorApprovalStep = createStep("finalize-vendor-approval", async (input: { operation_id: string }, { container }) => {

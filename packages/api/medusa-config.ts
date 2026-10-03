@@ -201,6 +201,7 @@ module.exports = withMercur({
       : []),
     { resolve: "./src/modules/vendor-onboarding" },
     { resolve: "./src/modules/inventory" },
+    { resolve: "./src/modules/commission" },
     { resolve: "./src/modules/commerce-automation" },
     {
       resolve: "./src/modules/catalog-media",

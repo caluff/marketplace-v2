@@ -39,19 +39,14 @@ The package exposes the required native model/repository classes through its
 Medusa internal-import lint warning and require review when upgrading Medusa.
 Keep `@medusajs/inventory` pinned to the same version as the framework.
 
-Focused verification:
+Historical unit verification (the unit suites were removed at the user's request):
 
-```text
-pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/lib/__tests__/inventory-registration.unit.spec.ts src/lib/__tests__/inventory-concurrency.unit.spec.ts src/lib/__tests__/inventory-scope.unit.spec.ts
-pnpm --filter @marketplace-v2/vendor test
-```
-
-The concurrency unit fixture executes installed native module methods through
+The former concurrency unit fixture executed installed native module methods through
 the real repository override and simulates transactional row locks. It is not a
 PostgreSQL integration test. Real database races must also be verified using
 dedicated QA inventory and the configured module.
 
-The registration test uses Medusa's actual resource discovery and container
+The former registration test used Medusa's actual resource discovery and container
 loader with MikroORM metadata initialization and `connect: false`. It detects
 missing internal services and mismatched dependency instances without opening a
 database connection. Native inventory and the API framework must resolve to the

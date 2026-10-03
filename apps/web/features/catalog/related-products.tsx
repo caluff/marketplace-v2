@@ -3,6 +3,7 @@ import { ArrowRight, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { getStorefrontCatalog } from "@/lib/medusa"
+import { catalogHref } from "./catalog-navigation"
 import { getProductImage } from "./image"
 import { formatPrice, getLowestOfferPrice } from "./offers"
 
@@ -17,9 +18,7 @@ export async function RelatedProducts({
     result.status === "products"
       ? result.products.filter((item) => item.id !== product.id).slice(0, 4)
       : []
-  const href = category
-    ? `/search?category_id=${encodeURIComponent(category.id)}`
-    : "/search"
+  const href = catalogHref({ categoryId: category?.id })
   return (
     <section
       className="mt-8 border-t border-border pt-6"

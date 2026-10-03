@@ -35,6 +35,7 @@ function getServerActionAllowedOrigins() {
 }
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@marketplace-v2/ui"],
   reactStrictMode: true,
   experimental: {
     serverActions: {

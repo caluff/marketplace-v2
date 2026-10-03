@@ -39,7 +39,12 @@ export default async function LoginPage({
   if (await getCurrentCustomer())
     redirect(safeRedirectPath(params.next, "/account"))
   const isLinkingGoogle = params.google === "link_required"
-  const feedback = isLinkingGoogle ? undefined : googleFeedback(params.google)
+  const feedback =
+    params.reason === "session_unavailable"
+      ? "No pudimos completar el acceso. Tu carrito se conserva. Vuelve a intentarlo."
+      : isLinkingGoogle
+        ? undefined
+        : googleFeedback(params.google)
   return (
     <AuthShell
       variant="compact"

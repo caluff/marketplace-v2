@@ -17,6 +17,11 @@ import { ProductGridSkeleton } from "@/components/product-grid-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FavoriteButton } from "@/features/account/components/favorite-button"
 import { getFavoriteProductIds } from "@/features/account/favorites"
+import {
+  CATALOG_PAGE_SIZE,
+  catalogHref,
+  getCatalogPagination,
+} from "@/features/catalog/catalog-navigation"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -30,12 +35,13 @@ type CatalogSectionProps = {
   categories: Promise<HttpTypes.StoreProductCategory[]>
   result: Promise<StorefrontCatalogResult>
   activeCategoryId: Promise<string | undefined>
+  page: Promise<number>
   customer: Promise<HttpTypes.StoreCustomer | null>
 }
 
 type ErrorStatus = Exclude<
   StorefrontCatalogResult["status"],
-  "products" | "empty"
+  "products" | "empty" | "out_of_range"
 >
 
 const errorContent: Record<
@@ -96,12 +102,19 @@ const errorContent: Record<
   },
 }
 
-function RetryButton({ activeCategoryId }: { activeCategoryId?: string }) {
+function RetryButton({
+  activeCategoryId,
+  page,
+}: {
+  activeCategoryId?: string
+  page: number
+}) {
   return (
-    <form action="/" method="get">
+    <form action="/#catalog" method="get">
       {activeCategoryId ? (
         <input type="hidden" name="category_id" value={activeCategoryId} />
       ) : null}
+      {page > 1 ? <input type="hidden" name="page" value={page} /> : null}
       <Button type="submit" variant="outline">
         <RefreshCw aria-hidden="true" className="size-4" />
         Reintentar
@@ -140,7 +153,7 @@ export function CatalogSection(props: CatalogSectionProps) {
           </Suspense>
         </div>
         <Suspense fallback={<ProductGridSkeleton />}>
-          <CatalogContent {...props} />
+          <CatalogResults {...props} />
         </Suspense>
       </div>
     </section>
@@ -163,9 +176,23 @@ async function CatalogCount({ result }: Pick<CatalogSectionProps, "result">) {
   const catalog = await result
   return catalog.status === "products" ? (
     <p className="font-sans text-sm text-muted-foreground">
-      Mostrando {catalog.products.length} de {catalog.count}
+      Mostrando {(catalog.page - 1) * CATALOG_PAGE_SIZE + 1}–
+      {(catalog.page - 1) * CATALOG_PAGE_SIZE + catalog.products.length} de{" "}
+      {catalog.count}
     </p>
   ) : null
+}
+
+async function CatalogResults(props: CatalogSectionProps) {
+  const [categoryId, page] = await Promise.all([props.activeCategoryId, props.page])
+  return (
+    <Suspense
+      key={catalogHref({ categoryId, page })}
+      fallback={<ProductGridSkeleton />}
+    >
+      <CatalogContent {...props} />
+    </Suspense>
+  )
 }
 
 async function ProductFavorite({
@@ -184,11 +211,13 @@ async function ProductFavorite({
 }
 
 async function CatalogContent(props: CatalogSectionProps) {
-  const [result, activeCategoryId] = await Promise.all([
+  const [result, activeCategoryId, page] = await Promise.all([
     props.result,
     props.activeCategoryId,
+    props.page,
   ])
   const activeCategory = Boolean(activeCategoryId)
+  const pagination = getCatalogPagination(result, activeCategoryId)
   return (
     <>
       {result.status === "products" ? (
@@ -235,6 +264,30 @@ async function CatalogContent(props: CatalogSectionProps) {
               />
             ))}
           </div>
+          {pagination && pagination.lastPage > 1 ? (
+            <nav
+              aria-label="Páginas del catálogo"
+              className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6"
+            >
+              {pagination.previousHref ? (
+                <Button asChild variant="outline" className="min-h-11">
+                  <Link href={pagination.previousHref}>Anterior</Link>
+                </Button>
+              ) : (
+                <span />
+              )}
+              <span className="text-sm tabular-nums text-muted-foreground">
+                Página {result.page} de {pagination.lastPage}
+              </span>
+              {pagination.nextHref ? (
+                <Button asChild variant="outline" className="min-h-11">
+                  <Link href={pagination.nextHref}>Siguiente</Link>
+                </Button>
+              ) : (
+                <span />
+              )}
+            </nav>
+          ) : null}
         </>
       ) : null}
 
@@ -265,7 +318,27 @@ async function CatalogContent(props: CatalogSectionProps) {
         </Card>
       ) : null}
 
-      {result.status !== "products" && result.status !== "empty" ? (
+      {result.status === "out_of_range" && pagination ? (
+        <Card className="mx-auto max-w-2xl bg-background text-center">
+          <CardHeader className="items-center px-6 py-12 sm:px-12">
+            <CardTitle className="text-3xl">
+              Esta página del catálogo no está disponible
+            </CardTitle>
+            <CardDescription className="max-w-md text-base">
+              Volvé a la última página disponible para seguir explorando.
+            </CardDescription>
+            <Button asChild variant="outline" className="mt-4 min-h-11">
+              <Link href={pagination.recoveryHref}>
+                Ir a la página {pagination.lastPage}
+              </Link>
+            </Button>
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      {result.status !== "products" &&
+      result.status !== "empty" &&
+      result.status !== "out_of_range" ? (
         <Card className="mx-auto max-w-2xl bg-background">
           <CardHeader className="px-6 py-10 sm:px-10 sm:py-12">
             {(() => {
@@ -286,7 +359,7 @@ async function CatalogContent(props: CatalogSectionProps) {
                     {content.description}
                   </CardDescription>
                   <div className="mt-5">
-                    <RetryButton activeCategoryId={activeCategoryId} />
+                    <RetryButton activeCategoryId={activeCategoryId} page={page} />
                   </div>
                 </>
               )

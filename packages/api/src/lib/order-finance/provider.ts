@@ -1,6 +1,7 @@
 import { MathBN, MedusaError } from "@medusajs/framework/utils";
 import Stripe from "stripe";
 import { getStripeConnectConfiguration } from "../stripe-connect-configuration";
+import { readStripeFactPages } from "./provider-facts";
 
 export function financeStripeClient() {
   const configuration = getStripeConnectConfiguration();
@@ -21,12 +22,20 @@ export async function readFinanceProvider(paymentIntentId: string) {
   const stripe = financeStripeClient();
   const [intent, refunds] = await Promise.all([
     stripe.paymentIntents.retrieve(paymentIntentId),
-    stripe.refunds.list({ payment_intent: paymentIntentId, limit: 100 }),
+    readStripeFactPages(
+      (cursor) =>
+        stripe.refunds.list({
+          payment_intent: paymentIntentId,
+          limit: 100,
+          ...(cursor ? { starting_after: cursor } : {}),
+        }),
+      100,
+    ),
   ]);
   if (
     intent.livemode ||
     intent.currency !== "usd" ||
-    refunds.has_more ||
+    !refunds.complete ||
     refunds.data.some((refund) => refund.status !== "succeeded")
   ) {
     throw new MedusaError(

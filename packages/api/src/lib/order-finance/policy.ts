@@ -38,8 +38,19 @@ export const financeGroupSchema = z.object({
             amount: signedDecimal,
             reference: z.string(),
             reference_id: z.string(),
+            currency_code: z.string().optional(),
           }),
         ),
+        credit_lines: z
+          .array(
+            z.object({
+              id: z.string(),
+              amount: decimal,
+              reference: z.string().nullable(),
+              reference_id: z.string().nullable(),
+            }),
+          )
+          .optional(),
         items: z
           .array(
             z.object({
@@ -61,6 +72,7 @@ export const financeGroupSchema = z.object({
               z.object({
                 id: z.string(),
                 provider_id: z.string(),
+                payment_session_id: z.string().optional(),
                 amount: decimal,
                 canceled_at: instant.nullable(),
                 data: z
@@ -101,7 +113,19 @@ export const finalCaptureSchema = z.object({
   released_refund_ids: z.array(z.string()),
 });
 export type FinalCapture = z.infer<typeof finalCaptureSchema>;
+export const captureEvidenceSchema = z.object({
+  payment_intent_id: z.string().min(1),
+  charge_id: z.string().min(1),
+  amount: decimal.transform(financeAmount),
+  released_refund_ids: z.array(z.string().min(1)),
+  orders: financeAllocationSchema.shape.orders,
+});
+export type CaptureEvidence = z.infer<typeof captureEvidenceSchema>;
 export const financeOperationSchema = z.object({
+  actor_id: z.string().optional(),
+  execution_owner_id: z.string().optional(),
+  execution_host: z.string().optional(),
+  execution_pid: z.number().int().positive().optional(),
   order_id: z.string(),
   request_id: z.uuid(),
   action: z.enum(["cancel", "refund", "capture"]),
@@ -109,17 +133,30 @@ export const financeOperationSchema = z.object({
   note: z.string(),
   fingerprint: z.string(),
   refund_ids: z.array(z.string()).default([]),
+  credit_amount: decimal.optional(),
+  provider_refund_id: z.string().optional(),
+  refund_attempted: z.boolean().optional(),
+  reversal_attempted: z.boolean().optional(),
+  capture_attempted: z.boolean().optional(),
+  cancel_authorization_attempted: z.boolean().optional(),
   capture_orders: financeAllocationSchema.shape.orders.optional(),
+  capture_evidence: captureEvidenceSchema.optional(),
   settlement: z
     .object({
-      payout_id: z.string(),
-      transfer_id: z.string(),
-      destination: z.string(),
+      version: z.literal(2).optional(),
+      payout_id: z.string().optional(),
+      transfer_id: z.string().optional(),
+      transfer_group: z.string().optional(),
+      source_transaction: z.string().optional(),
+      destination: z.string().optional(),
       gross: decimal,
       seller_net: decimal,
+      seller_entitlement_reduced: decimal.optional(),
+      seller_reversal_amount: decimal.optional(),
       seller_reversed: decimal,
       commission_returned: decimal,
       reversal_id: z.string().optional(),
+      component_attribution: z.literal("unallocated").optional(),
     })
     .optional(),
 });

@@ -41,7 +41,7 @@ const result =
   declarations +
   "\n";
 if (process.argv.includes("--check")) {
-  if (!fs.existsSync(target) || fs.readFileSync(target, "utf8") !== result)
+  if (!fs.existsSync(target) || fs.readFileSync(target, "utf8").replaceAll("\r\n", "\n") !== result)
     throw new Error(
       "Search contracts are stale; run pnpm search:contracts:generate",
     );

@@ -16,7 +16,10 @@ export function VendorShell({
   defaultOpen?: boolean;
 }) {
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider
+      cookieName="vendor_sidebar_state"
+      defaultOpen={defaultOpen}
+    >
       <a
         href="#vendor-content"
         className="fixed left-4 top-3 z-[70] -translate-y-20 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-transform focus:translate-y-0"

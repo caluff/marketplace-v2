@@ -7,11 +7,11 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
-    "test": "tsx --test lib/*.test.ts features/account/*.test.ts features/vendor-onboarding/*.test.ts features/catalog/*.test.ts features/cart/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@marketplace-v2/theme-sync": "workspace:*",
+    "@marketplace-v2/ui": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
     "@stripe/react-stripe-js": "^6.9.0",

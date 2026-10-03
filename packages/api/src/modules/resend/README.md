@@ -38,11 +38,9 @@ Resend 6.26.0 itself logs raw API error objects to `console.error` outside produ
 
 Mercur 2.3.3 `createSellerAccountWorkflow` and `approveSellerWorkflow` emit seller events without calling the Notification Module, and the installed core subscribers do not send additional seller lifecycle emails. The separate native seller invitation workflow uses another template and is intentionally outside this allowlist and task scope.
 
-## Focused verification
+## Verification history
 
-`pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/modules/resend/__tests__/resend.unit.spec.ts src/lib/__tests__/deliver-email-notification.unit.spec.ts src/lib/__tests__/auth-email.unit.spec.ts`
-
-Provider tests mock the Resend SDK. Retry tests exercise the installed Medusa notification service implementation against an in-memory repository and simulated locking, covering failed sends, reuse of the failed record, duplicate events, concurrent replays, and pending records. No live emails, database writes, migrations, server restarts, or builds are required.
+The repository's unit suites were removed at the user's request. The former provider suites mocked the Resend SDK; their retry fixtures exercised the installed Medusa notification service against an in-memory repository and simulated locking. Those suites are no longer executable in this checkout.
 
 The earlier implementation report recorded 46 passing tests across these three suites, API `tsc --noEmit`, and targeted ESLint without warnings. That is historical evidence, not verification of the current checkout/shipment flow or live delivery. The documentation refresh did not rerun application tests. Record new commands and results in [development progress](../../../../../docs/develpment/development-progress.md); current financial closure requirements are in the [audit](../../../../../docs/develpment/development-completion-audit.md).
 

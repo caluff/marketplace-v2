@@ -58,8 +58,15 @@ export async function guardOrderFinanceWriters(
   const changeMatch = route.match(
     /^\/(?:admin|vendor)\/(returns|claims|exchanges)(?:\/([^/]+))?(?:\/.*)?$/,
   );
+  const orderEditMatch = route.match(
+    /^\/(?:admin|vendor)\/order-edits(?:\/([^/]+))?(?:\/.*)?$/,
+  );
   if (
-    (!orderMatch && !paymentMatch && !collectionMatch && !changeMatch) ||
+    (!orderMatch &&
+      !paymentMatch &&
+      !collectionMatch &&
+      !changeMatch &&
+      !orderEditMatch) ||
     route.endsWith("/finance")
   )
     return next();
@@ -86,7 +93,18 @@ export async function guardOrderFinanceWriters(
         changeOrderId = parsed.data.order_id;
       }
     }
-    const orderId = orderMatch?.[1] ?? changeOrderId;
+    let editOrderId: string | undefined;
+    if (orderEditMatch) {
+      // Both native APIs use the order ID in this route, not an order-change ID.
+      const parsed = z
+        .object({ order_id: z.string().min(1) })
+        .safeParse(req.body);
+      editOrderId =
+        orderEditMatch[1] ??
+        (parsed.success ? parsed.data.order_id : undefined);
+      if (!editOrderId) return next();
+    }
+    const orderId = orderMatch?.[1] ?? changeOrderId ?? editOrderId;
     const { data: carts } = orderId
       ? await query.graph(
           {
@@ -139,6 +157,12 @@ export async function guardOrderFinanceWriters(
         MedusaError.Types.NOT_ALLOWED,
         "El grupo de compra requiere revisión.",
       );
+    if (orderEditMatch) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "La edición de pedidos del marketplace no está habilitada.",
+      );
+    }
     if (
       collectionMatch ||
       paymentMatch?.[2] === "refund" ||
@@ -203,7 +227,7 @@ export async function guardOrderFinanceWriters(
 export const orderFinanceMiddlewares: MiddlewareRoute[] = [
   {
     matcher:
-      /^\/(?:admin|vendor)\/(?:(?:orders|payments|payment-collections)\/[^/]+(?:\/.*)?|(?:returns|claims|exchanges)(?:\/.*)?)$/i,
+      /^\/(?:admin|vendor)\/(?:(?:orders|payments|payment-collections)\/[^/]+(?:\/.*)?|(?:returns|claims|exchanges|order-edits)(?:\/.*)?)$/i,
     method: ["POST", "DELETE"],
     middlewares: [guardOrderFinanceWriters],
   },
