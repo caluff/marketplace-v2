@@ -16,9 +16,7 @@ export default function ProductReviewPage({
 }) {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Revisión de productos
-      </h1>
+      <h1 className="sr-only">Revisión de productos</h1>
       <Suspense fallback={<ProductReviewSkeleton />}>
         <ProductReviewBrowser searchParams={searchParams} />
       </Suspense>

@@ -68,7 +68,7 @@ export function VariantForm({
     return (
       <p className="text-sm text-muted-foreground">
         Ya están creadas todas las combinaciones disponibles. Para añadir otras,
-        solicita primero nuevos tamaños, colores u opciones.
+        añade primero nuevos tamaños, colores u opciones.
       </p>
     );
   return (
@@ -167,7 +167,7 @@ export function VariantForm({
           </Field>
         ))}
         <Button className="w-fit sm:col-span-2" type="submit">
-          {isPending ? "Enviando…" : "Enviar a revisión"}
+          {isPending ? "Guardando…" : "Guardar presentación"}
         </Button>
       </fieldset>
       {state.message ? (

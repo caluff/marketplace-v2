@@ -1,13 +1,11 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { listProductsForReview } from "../data";
 import {
   parseProductReviewFilters,
@@ -53,12 +51,41 @@ export async function ProductReviewBrowser({
   const filters = parseProductReviewFilters(await searchParams);
   return (
     <>
-      <form
-        action="/dashboard/product-review"
-        className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]"
-      >
-        <Field>
-          <FieldLabel htmlFor="product-search">Buscar producto</FieldLabel>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <nav
+          aria-label="Estados del catálogo"
+          className="flex min-w-0 max-w-full self-start gap-1 overflow-x-auto border-b md:self-auto"
+        >
+          {Object.entries({ all: "Todos", ...PRODUCT_STATUS_LABELS }).map(
+            ([value, label]) => (
+              <Link
+                key={value}
+                href={productReviewHref(
+                  { ...filters, status: value as typeof filters.status },
+                  0,
+                )}
+                aria-current={filters.status === value ? "page" : undefined}
+                className={cn(
+                  "shrink-0 border-b-2 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  filters.status === value
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                )}
+              >
+                {label}
+              </Link>
+            ),
+          )}
+        </nav>
+        <form
+          action="/dashboard/product-review"
+          method="get"
+          role="search"
+          className="relative mb-3 w-full shrink-0 md:mb-0 md:w-52 lg:w-64"
+        >
+          <label htmlFor="product-search" className="sr-only">
+            Buscar producto
+          </label>
           <Input
             key={filters.q}
             id="product-search"
@@ -66,30 +93,21 @@ export async function ProductReviewBrowser({
             maxLength={100}
             defaultValue={filters.q}
             placeholder="Título o identificador"
+            className="pr-12"
           />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="product-status">Estado</FieldLabel>
-          <NativeSelect
-            key={filters.status}
-            id="product-status"
-            name="status"
-            defaultValue={filters.status}
+          <input type="hidden" name="status" value={filters.status} />
+          <Button
+            type="submit"
+            variant="ghost"
+            size="icon"
+            static
+            aria-label="Buscar productos"
+            className="absolute right-1 top-1 size-8"
           >
-            <NativeSelectOption value="all">
-              Todos los estados
-            </NativeSelectOption>
-            {Object.entries(PRODUCT_STATUS_LABELS).map(([value, label]) => (
-              <NativeSelectOption key={value} value={value}>
-                {label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-        <Button type="submit" variant="outline">
-          Filtrar
-        </Button>
-      </form>
+            <Search aria-hidden="true" strokeWidth={1.5} />
+          </Button>
+        </form>
+      </div>
       <Suspense
         key={`${filters.status}:${filters.q}:${filters.offset}`}
         fallback={<ProductReviewSkeleton />}

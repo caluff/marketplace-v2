@@ -8,6 +8,32 @@ Extensión solicitada después del cierre — liquidación automática a las 72 
 
 ACTIVACIÓN PASS — extensión automática activa, código y gates backend PASS. Pedido nuevo TEST #16 completado, captura y reloj verificados; cero transferencias antes del vencimiento. Prueba integral NEEDS VERIFICATION hasta el 6 de octubre de 2026, 12:51:00.416 America/Montevideo, y la conciliación posterior. F01–F12 DONE en el alcance histórico. Producción y el resto de F13–F17 continúan fuera de alcance.
 
+## Permisos de catálogo por tienda — 2026-10-03
+
+- Implementación y QA **PASS**. Admin → Tiendas incluye columna y control de
+  detalle para Supervisado/Autorizado. Todas las tiendas empiezan supervisadas.
+  Autorizado publica altas y aplica cambios nuevos mediante Mercur; no aprueba
+  solicitudes anteriores ni amplía la visibilidad del catálogo.
+- Autoridad privada en `catalogPermission`, independiente de metadata del
+  vendedor. RBAC `seller.update` en middleware y workflow; locks por tienda y
+  por producto compartido. No se registraron hooks nuevos. Feedback vendor según
+  los estados finales, con CTAs neutrales.
+- Gates raíz de lint, tipos y build **PASS**, peers y contratos **PASS**.
+  Integraciones API **120/120 PASS** en 16 suites, sin omisiones ni conexiones
+  prohibidas; catálogo 7/7 y harness admin 17/17. QA visual local de lista,
+  detalle y formulario vendor completado. La infraestructura temporal se retiró.
+- Migración `Migration20261003173018` aplicada por el CLI nativo al entorno
+  habitual tras preflight readonly y QA aislado. Ledger, RLS/ACL y cero permisos
+  concedidos auditados. Reloj del pedido TEST #16, operaciones financieras,
+  tiendas y `.env` permanecieron idénticos.
+- Instrucción vigente del usuario: **un único commit con todos los cambios
+  pendientes; no hacer push**, excepto el test
+  `apps/admin/tests/product-review-commerce.test.ts`, que se conserva localmente
+  por pertenecer a una tarea paralela. Esta instrucción sustituye la separación
+  de los demás cambios ajenos para este commit. No cambia el plazo financiero ni autoriza
+  producción. [Guía](../catalog-permissions.md) y
+  [evidencia de esta sesión](evidence/catalog-permissions-20261003.md).
+
 ## Extensión autorizada — 2026-10-03
 
 - El usuario solicita liberar dinero automáticamente tres días después de completar el pedido. Se interpreta como 72 horas transcurridas, incluidos fines de semana, desde la primera observación servidor del evento nativo de finalización. La latencia del evento/job puede prolongar la espera; nunca reducirla. No modifica el calendario bancario de Stripe ni habilita LIVE.

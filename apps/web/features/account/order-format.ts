@@ -3,6 +3,8 @@ import { intlFormat } from "date-fns/intlFormat"
 import { isValid } from "date-fns/isValid"
 import { parseISO } from "date-fns/parseISO"
 
+export { formatOrderNumber } from "@marketplace-v2/order-reference"
+
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: "En proceso",
   completed: "Completado",
@@ -40,12 +42,6 @@ const PAYMENT_STATUS_LABELS: Record<
   refunded: "Reembolsado",
   canceled: "Cancelado",
   requires_action: "Requiere atención",
-}
-
-export function formatOrderNumber(
-  order: Pick<HttpTypes.StoreOrder, "id" | "display_id" | "custom_display_id">,
-) {
-  return order.custom_display_id || String(order.display_id ?? order.id)
 }
 
 export function formatOrderAmount(amount: number, currencyCode: string) {

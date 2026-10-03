@@ -11,6 +11,9 @@
     "./finance-contracts": {
       "types": "./.mercur/finance-contracts.d.ts"
     },
+    "./catalog-permission-contracts": {
+      "types": "./.mercur/catalog-permission-contracts.d.ts"
+    },
     "./search-contracts": {
       "types": "./.mercur/search-contracts.d.ts"
     },
@@ -19,6 +22,8 @@
     }
   },
   "scripts": {
+    "catalog:contracts:generate": "node scripts/generate-catalog-permission-contracts.cjs",
+    "catalog:contracts:check": "node scripts/generate-catalog-permission-contracts.cjs --check",
     "auth:contracts:generate": "node scripts/generate-auth-contracts.cjs",
     "auth:contracts:check": "node scripts/generate-auth-contracts.cjs --check",
     "finance:contracts:generate": "node scripts/generate-finance-contracts.cjs",

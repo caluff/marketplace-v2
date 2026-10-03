@@ -62,7 +62,7 @@ export function ProductForm({
           message:
             error instanceof Error
               ? error.message
-              : "No se pudo enviar el producto. Inténtalo nuevamente.",
+              : "No se pudo guardar el producto. Inténtalo nuevamente.",
         };
         notifyFeedback(result);
         return result;
@@ -107,7 +107,8 @@ export function ProductForm({
     <form
       action={formAction}
       onSubmit={(event) => {
-        if (isPending || isUploadingImages || hasUngeneratedChanges) event.preventDefault();
+        if (isPending || isUploadingImages || hasUngeneratedChanges)
+          event.preventDefault();
       }}
       onReset={(event) => event.preventDefault()}
       className="space-y-6"
@@ -145,7 +146,9 @@ export function ProductForm({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${prefix}-subtitle`}>Resumen breve</FieldLabel>
+            <FieldLabel htmlFor={`${prefix}-subtitle`}>
+              Resumen breve
+            </FieldLabel>
             <Input
               id={`${prefix}-subtitle`}
               name="subtitle"
@@ -171,14 +174,18 @@ export function ProductForm({
             />
             <FieldDescription id={`${prefix}-description-help`}>
               Describe sus características, uso y contenido. Separa las ideas en
-              párrafos; se conservarán los saltos de línea. Hasta 10.000 caracteres.
+              párrafos; se conservarán los saltos de línea. Hasta 10.000
+              caracteres.
             </FieldDescription>
           </Field>
         </div>
         <fieldset className="space-y-4 border-t pt-5">
-          <legend className="px-1 text-sm font-semibold">Especificaciones del producto</legend>
+          <legend className="px-1 text-sm font-semibold">
+            Especificaciones del producto
+          </legend>
           <FieldDescription>
-            Opcionales. Completa solo los datos que conozcas: aparecerán en la ficha técnica.
+            Opcionales. Completa solo los datos que conozcas: aparecerán en la
+            ficha técnica.
           </FieldDescription>
           <Field>
             <FieldLabel htmlFor={`${prefix}-material`}>Material</FieldLabel>
@@ -212,8 +219,7 @@ export function ProductForm({
           </legend>
           {categories}
           <p className="text-xs text-muted-foreground">
-            Si falta una categoría, solicita su incorporación al operador. La
-            selección se revisa junto con el producto.
+            Si falta una categoría, solicita su incorporación al operador.
           </p>
         </fieldset>
         {!product ? (
@@ -305,7 +311,7 @@ export function ProductForm({
             ) : null}
             <FieldDescription>
               Después de cambiar opciones o valores, actualiza las combinaciones
-              antes de enviar.
+              antes de guardar.
             </FieldDescription>
             <div className="space-y-3">
               {variants.map((variant, index) => (
@@ -361,7 +367,11 @@ export function ProductForm({
           type="submit"
           disabled={hasUngeneratedChanges || isUploadingImages}
         >
-          {isPending ? "Enviando…" : "Enviar a revisión"}
+          {isPending
+            ? "Guardando…"
+            : product
+              ? "Guardar cambios"
+              : "Guardar producto"}
         </Button>
       </fieldset>
       {state.message ? (

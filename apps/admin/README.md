@@ -12,7 +12,7 @@ listed mutations use the application SDK and backend authorization.
 | `/dashboard`                       | Operational counts and financial reporting: merchandise sales, commissions, result after confirmed fees and pending settlement; sale detail, periods and reconciliation. Unknown costs remain explicit. |
 | `/dashboard/vendor-applications`   | Application review, details, approval, rejection and requests for corrections; category-proposal handling.                                                                         |
 | `/dashboard/product-review`        | Review of proposed products and pending content/image changes.                                                                                                                     |
-| `/dashboard/stores`                | Store list and detail, including operational status. Store suspension/reactivation controls are not yet connected in this panel.                                                   |
+| `/dashboard/stores`                | Store list/detail and catalog permission selector: Supervised (admin review) or Authorized (native publication/confirmation). Store suspension/reactivation controls are not yet connected in this panel. |
 | `/dashboard/orders`                | Orders and details, supported order operations and financial controls for capture, cancellation and refunds in Stripe TEST. Availability comes from backend state and permissions. |
 | `/dashboard/commissions`           | Read and edit the global commission rule, subject to operator permissions. This is configuration, not financial reporting.                                                         |
 
@@ -57,5 +57,6 @@ primitives use `packages/ui` through application adapters under `src/components/
 - [Implementation phases](../../docs/develpment/development-implementation-plan.md)
 - [Session handoff/progress](../../docs/develpment/development-progress.md)
 - [Vendor operations](../../docs/vendor-operations.md)
+- [Catalog permissions](../../docs/catalog-permissions.md)
 - [Form feedback](../../docs/admin-vendor-form-notifications.md)
 - [Historical shell implementation report](IMPLEMENTATION_REPORT.md)

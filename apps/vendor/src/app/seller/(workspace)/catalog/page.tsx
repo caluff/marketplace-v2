@@ -184,7 +184,7 @@ export default async function CatalogPage({
       <PageHeading
         eyebrow="Catálogo"
         title="Productos disponibles"
-        description="Tus productos y el catálogo compartido publicado al que esta tienda tiene acceso. Los cambios se envían a revisión."
+        description="Tus productos y el catálogo compartido publicado al que esta tienda tiene acceso."
       >
         <Button asChild className="h-11">
           <Link href="/seller/catalog/new">

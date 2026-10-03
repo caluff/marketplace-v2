@@ -13,7 +13,7 @@ import type {
   ProviderFinanceCost,
   ProviderFinanceFact,
 } from "./provider-facts";
-import type { MedusaContainer } from "@medusajs/framework/types";
+import type { MedusaContainer, OrderDTO } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 import { readOrderFinanceReportingSources } from "./record-provider-facts";
 import { resolveFinanceReportingWindow } from "./reporting-period";
@@ -24,7 +24,11 @@ const SOURCE_CONCURRENCY = 4;
 
 type ReportingGroupProjection = {
   id: string;
-  orders?: Array<{ id?: string; seller?: { id?: string | null } | null }>;
+  orders?: Array<
+    Partial<Pick<OrderDTO, "id" | "display_id" | "custom_display_id">> & {
+      seller?: { id?: string | null } | null;
+    }
+  >;
 };
 
 async function readReportingGroups(container: MedusaContainer) {
@@ -37,7 +41,13 @@ async function readReportingGroups(container: MedusaContainer) {
     const { data } = await query.graph(
       {
         entity: "order_group",
-        fields: ["id", "orders.id", "orders.seller.id"],
+        fields: [
+          "id",
+          "orders.id",
+          "orders.display_id",
+          "orders.custom_display_id",
+          "orders.seller.id",
+        ],
         pagination: { skip, take, order: { id: "ASC" } },
       },
       { cache: { enable: false } },
@@ -111,9 +121,24 @@ export async function readFinanceReporting(
 ): Promise<FinanceReportingResponse> {
   const { groups, sourceLimitReached } = await readReportingGroups(container);
   const ownOrderByGroup = new Map<string, string>();
+  const orderReferences = new Map<
+    string,
+    Pick<FinanceReportingSale, "order_display_id" | "order_custom_display_id">
+  >();
   const relevantGroupIds: string[] = [];
   for (const group of groups) {
     const orders = group.orders ?? [];
+    for (const order of orders) {
+      if (
+        order.id &&
+        (input.seller_id === undefined || order.seller?.id === input.seller_id)
+      ) {
+        orderReferences.set(order.id, {
+          order_display_id: order.display_id ?? null,
+          order_custom_display_id: order.custom_display_id ?? null,
+        });
+      }
+    }
     if (input.seller_id === undefined) {
       const orderId = orders.find((order) => order.id)?.id;
       if (orderId) relevantGroupIds.push(group.id);
@@ -140,10 +165,15 @@ export async function readFinanceReporting(
     input.query.period,
     input.generated_at ?? new Date(),
   );
-  return aggregateFinanceReporting(input.query, window, sources, {
+  const result = aggregateFinanceReporting(input.query, window, sources, {
     sellerView: input.seller_id !== undefined,
     sourceLimitReached,
   });
+  result.report.sales = result.report.sales.map((sale) => ({
+    ...sale,
+    ...orderReferences.get(sale.order_id),
+  }));
+  return result;
 }
 
 type SaleAccumulator = {
@@ -661,6 +691,8 @@ export function aggregateFinanceReporting(
         sale.cumulative_earnings_cents - sale.cumulative_transfers_cents;
       return {
         order_id: sale.order_id,
+        order_display_id: null,
+        order_custom_display_id: null,
         capture_status: sale.capture_status,
         captured_at: sale.captured_at,
         captured_amount:

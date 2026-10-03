@@ -35,7 +35,7 @@ async function OrderList({ searchParams }: Props) {
     offset: (page - 1) * ACCOUNT_PAGE_SIZE,
     order: "-created_at",
     fields:
-      "+items.id,+items.title,+items.quantity,+items.variant_title,+items.thumbnail,+items.product_handle",
+      "+items.id,+items.title,+items.quantity,+items.variant_title,+items.thumbnail,+items.product_handle,+items.variant.product.thumbnail,+items.variant.product.images.url",
   })
   const lastPage = Math.max(1, Math.ceil(count / ACCOUNT_PAGE_SIZE))
   if (page > lastPage) redirect("/account/orders?page=" + lastPage)
@@ -58,7 +58,7 @@ async function OrderList({ searchParams }: Props) {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/40 px-5 py-4">
                 <div>
                   <h2 className="text-base font-semibold">
-                    Orden #{formatOrderNumber(order)}
+                    Orden {formatOrderNumber(order)}
                   </h2>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {formatOrderDate(order.created_at)}

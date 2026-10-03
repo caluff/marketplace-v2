@@ -90,7 +90,7 @@ export async function productDetail(id: string) {
 // Medusa formats quantities from the order-item relation: select its counters
 // explicitly; items.quantity plus items.detail.* can omit them in a narrow read.
 export const ORDER_FIELDS =
-  "id,display_id,status,email,currency_code,created_at,updated_at,total,payment_status,fulfillment_status,items.id,items.title,items.thumbnail,items.quantity,items.unit_price,items.total,items.requires_shipping,items.detail.quantity,items.detail.fulfilled_quantity,items.detail.shipped_quantity,items.detail.delivered_quantity,shipping_address.*,shipping_methods.*,fulfillments.id,fulfillments.packed_at,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.canceled_at,fulfillments.items.*,fulfillments.labels.*";
+  "id,display_id,custom_display_id,status,email,currency_code,created_at,updated_at,total,payment_status,fulfillment_status,items.id,items.title,items.thumbnail,items.product_id,items.quantity,items.unit_price,items.total,items.requires_shipping,items.detail.quantity,items.detail.fulfilled_quantity,items.detail.shipped_quantity,items.detail.delivered_quantity,shipping_address.*,shipping_methods.*,fulfillments.id,fulfillments.packed_at,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.canceled_at,fulfillments.items.*,fulfillments.labels.*";
 
 export const ORDER_LIST_FIELDS =
-  "id,display_id,status,email,currency_code,created_at,total,items.id,items.title,items.thumbnail,items.quantity,fulfillments.id,fulfillments.packed_at,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.canceled_at,payment_status";
+  "id,display_id,custom_display_id,status,email,currency_code,created_at,total,items.id,items.title,items.thumbnail,items.product_id,items.quantity,fulfillments.id,fulfillments.packed_at,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.canceled_at,payment_status";

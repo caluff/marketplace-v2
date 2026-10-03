@@ -1,3 +1,30 @@
+import type {
+  CatalogPermissionDTO,
+  CatalogPermissionMode,
+} from "@marketplace-v2/api/catalog-permission-contracts";
+
+export const CATALOG_PERMISSION_LABELS = {
+  supervised: "Supervisado",
+  authorized: "Autorizado",
+} satisfies Record<CatalogPermissionMode, string>;
+
+export type CatalogPermissionState =
+  | { status: "idle"; message?: undefined }
+  | { status: "error"; message: string }
+  | { status: "success"; message: string; mode: CatalogPermissionMode };
+
+export function parseCatalogReviewMode(
+  value: unknown,
+): CatalogPermissionMode | null {
+  return value === "supervised" || value === "authorized" ? value : null;
+}
+
+export function catalogReviewMode(
+  permission: CatalogPermissionDTO | undefined,
+): CatalogPermissionMode | null {
+  return permission ? parseCatalogReviewMode(permission.mode) : "supervised";
+}
+
 export const STORE_STATUS_LABELS = {
   open: "Activa",
   pending_approval: "Pendiente de aprobación",

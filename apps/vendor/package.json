@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@marketplace-v2/order-reference": "workspace:*",
     "@marketplace-v2/theme-sync": "workspace:*",
     "@marketplace-v2/ui": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",

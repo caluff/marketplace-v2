@@ -22,6 +22,8 @@ export type FinanceReportingQuery = z.infer<typeof financeReportingQuerySchema>;
 
 export type FinanceReportingSale = {
   order_id: string;
+  order_display_id: number | null;
+  order_custom_display_id: string | null;
   capture_status: "confirmed" | "not_captured" | "unknown";
   captured_at: string | null;
   captured_amount: number | null;

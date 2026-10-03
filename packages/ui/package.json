@@ -23,6 +23,7 @@
     "./table": "./src/table.tsx",
     "./textarea": "./src/textarea.tsx",
     "./theme.css": "./theme.css",
+    "./thumbnail": "./src/thumbnail.tsx",
     "./tooltip": "./src/tooltip.tsx",
     "./use-mobile": "./src/use-mobile.ts"
   },

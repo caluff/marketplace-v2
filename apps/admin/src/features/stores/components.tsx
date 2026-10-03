@@ -1,4 +1,6 @@
 import type { SellerDTO } from "@mercurjs/types";
+import type { CatalogPermissionListResponse } from "@marketplace-v2/api/catalog-permission-contracts";
+import { Suspense } from "react";
 import { FetchError } from "@medusajs/js-sdk";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,14 +23,61 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireAdminSdk } from "@/lib/auth-sdk";
-import { listStores, retrieveStore } from "./data";
+import { CatalogPermissionForm } from "./catalog-permission-form";
+import { listCatalogPermissions, listStores, retrieveStore } from "./data";
 import {
   isStoreId,
   parseStoreFilters,
   STORE_STATUS_LABELS,
+  catalogReviewMode,
   storeListHref,
   storeStatusLabel,
 } from "./helpers";
+
+type CatalogPermissionRead = Promise<CatalogPermissionListResponse | null>;
+
+async function CatalogPermissionRegion({
+  seller,
+  permissions,
+  href,
+}: {
+  seller: Pick<SellerDTO, "id" | "name">;
+  permissions: CatalogPermissionRead;
+  href: string;
+}) {
+  const result = await permissions;
+  const matches = result && Array.isArray(result.catalog_permissions)
+    ? result.catalog_permissions.filter(
+        (permission) => permission?.seller_id === seller.id,
+      )
+    : null;
+  const mode =
+    matches && matches.length <= 1 ? catalogReviewMode(matches[0]) : null;
+  if (!mode)
+    return (
+      <div role="alert" className="min-w-64 space-y-2">
+        <p className="text-xs text-destructive">Permiso no disponible.</p>
+        <Button asChild variant="outline" size="sm">
+          <a href={href}>Actualizar estado</a>
+        </Button>
+      </div>
+    );
+
+  return (
+    <CatalogPermissionForm
+      key={`${seller.id}:${mode}`}
+      sellerId={seller.id}
+      sellerName={seller.name}
+      mode={mode}
+    />
+  );
+}
+
+function CatalogPermissionSkeleton() {
+  return (
+    <Skeleton aria-label="Cargando permiso de catálogo" className="h-9 w-64" />
+  );
+}
 
 export function StoreRegionSkeleton() {
   return (
@@ -106,6 +155,11 @@ export async function StoreResults({
   } catch {
     return <StoreReadError href={storeListHref(filters, filters.offset)} />;
   }
+  const permissions = result.sellers.length
+    ? listCatalogPermissions(sdk, result.sellers.map((seller) => seller.id)).catch(
+        () => null,
+      )
+    : Promise.resolve({ catalog_permissions: [] });
   return (
     <Card>
       <CardHeader>
@@ -120,6 +174,7 @@ export async function StoreResults({
                 <TableHead>Contacto</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Moneda</TableHead>
+                <TableHead>Permiso de catálogo</TableHead>
                 <TableHead>
                   <span className="sr-only">Abrir</span>
                 </TableHead>
@@ -144,6 +199,15 @@ export async function StoreResults({
                   </TableCell>
                   <TableCell className="uppercase">
                     {seller.currency_code}
+                  </TableCell>
+                  <TableCell>
+                    <Suspense fallback={<CatalogPermissionSkeleton />}>
+                      <CatalogPermissionRegion
+                        seller={seller}
+                        permissions={permissions}
+                        href={storeListHref(filters, filters.offset)}
+                      />
+                    </Suspense>
                   </TableCell>
                   <TableCell>
                     <Button asChild variant="ghost" size="sm">
@@ -214,7 +278,13 @@ function DetailField({
   );
 }
 
-function StoreDetails({ seller }: { seller: SellerDTO }) {
+function StoreDetails({
+  seller,
+  permissions,
+}: {
+  seller: SellerDTO;
+  permissions: CatalogPermissionRead;
+}) {
   const address = seller.address;
   const business = seller.professional_details;
   return (
@@ -246,6 +316,20 @@ function StoreDetails({ seller }: { seller: SellerDTO }) {
               value={seller.status_reason}
             />
           </dl>
+          <div className="mt-6 max-w-md space-y-2 border-t border-border pt-5">
+            <p className="text-sm font-medium">Permiso de catálogo</p>
+            <Suspense fallback={<CatalogPermissionSkeleton />}>
+              <CatalogPermissionRegion
+                seller={seller}
+                permissions={permissions}
+                href={`/dashboard/stores/${encodeURIComponent(seller.id)}`}
+              />
+            </Suspense>
+            <p className="text-xs text-muted-foreground">
+              Supervisado requiere revisión del administrador. Autorizado permite
+              añadir y editar productos sin aprobación.
+            </p>
+          </div>
         </CardContent>
       </Card>
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -323,6 +407,7 @@ function StoreDetails({ seller }: { seller: SellerDTO }) {
 export async function StoreDetailRegion({ id }: { id: string }) {
   if (!isStoreId(id)) notFound();
   const sdk = await requireAdminSdk();
+  const permissions = listCatalogPermissions(sdk, [id]).catch(() => null);
   let result;
   try {
     result = await retrieveStore(sdk, id);
@@ -332,5 +417,5 @@ export async function StoreDetailRegion({ id }: { id: string }) {
       <StoreReadError href={`/dashboard/stores/${encodeURIComponent(id)}`} />
     );
   }
-  return <StoreDetails seller={result.seller} />;
+  return <StoreDetails seller={result.seller} permissions={permissions} />;
 }

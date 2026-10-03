@@ -13,11 +13,7 @@ export default async function NewProductPage() {
   await workspace();
   return (
     <div className="max-w-4xl space-y-6">
-      <PageHeading
-        eyebrow="Catálogo"
-        title="Crear producto"
-        description="Prepara un producto con sus variantes. Los SKU maestros se generan automáticamente y todo se revisa antes de publicarse."
-      />
+      <PageHeading eyebrow="Catálogo" title="Crear producto" />
       <Card>
         <CardHeader>
           <CardTitle>Información y variantes</CardTitle>

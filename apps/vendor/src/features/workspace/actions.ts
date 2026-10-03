@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { ProductChangeStatus, ProductStatus } from "@mercurjs/types";
 import { authorizeVendor, errorMessage } from "./data";
 import { vendorOperations } from "./operations";
 import type { MutationState } from "./presentation";
@@ -35,7 +36,10 @@ export async function createProductAction(
     revalidatePath("/seller/catalog");
     return {
       status: "success",
-      message: "Producto enviado a aprobación. Todavía no está publicado.",
+      message:
+        product.status === ProductStatus.PUBLISHED
+          ? "Producto publicado."
+          : "Producto enviado a aprobación. Todavía no está publicado.",
       href: `/seller/catalog/${product.id}`,
     };
   } catch (error) {
@@ -49,11 +53,16 @@ export async function editProductAction(
 ): Promise<MutationState> {
   try {
     const { product_change } = await operations.editProduct(form);
-    revalidatePath(`/seller/catalog/${resourceId(textField(form, "id", true))}`);
+    revalidatePath(
+      `/seller/catalog/${resourceId(textField(form, "id", true))}`,
+    );
     revalidatePath("/seller/catalog");
     return {
       status: "success",
-      message: `Cambios enviados para aprobación (${product_change.id}). Los datos actuales del producto se conservan hasta que se aprueben.`,
+      message:
+        product_change.status === ProductChangeStatus.CONFIRMED
+          ? "Cambios del producto guardados."
+          : "Cambios enviados a revisión. El producto se actualizará cuando el administrador los apruebe.",
     };
   } catch (error) {
     return { status: "error", message: errorMessage(error) };

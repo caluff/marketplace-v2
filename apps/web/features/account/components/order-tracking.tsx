@@ -6,8 +6,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { ProductThumbnail } from "@/components/ui/product-thumbnail"
 import type { AccountOrder } from "../order-data"
 import { formatOrderDate, getShippingStatusLabel } from "../order-format"
+import { getOrderItemThumbnail } from "../order-item-image"
 import { getOrderProgress, safeTrackingUrl } from "../order-progress"
 
 export function OrderTracking({ order }: { order: AccountOrder }) {
@@ -166,7 +168,7 @@ export function OrderShipmentHistory({ order }: { order: AccountOrder }) {
               {fulfillment.canceled_at ? " · Cancelado" : ""}
             </p>
             {fulfillment.items?.length ? (
-              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
                 {Array.from(
                   new Set(fulfillment.items.map((item) => item.line_item_id)),
                 ).map((lineItemId) => {
@@ -174,7 +176,15 @@ export function OrderShipmentHistory({ order }: { order: AccountOrder }) {
                     (line) => line.id === lineItemId,
                   )
                   return product ? (
-                    <li key={lineItemId}>{product.title}</li>
+                    <li key={lineItemId} className="flex items-center gap-3">
+                      <ProductThumbnail
+                        src={getOrderItemThumbnail(product)}
+                        alt={product.title}
+                        className="size-10"
+                        sizes="40px"
+                      />
+                      <span>{product.title}</span>
+                    </li>
                   ) : null
                 })}
               </ul>

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
+import { ProductThumbnail } from "@/components/ui/product-thumbnail"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   OrderAddress,
@@ -16,6 +17,7 @@ import {
   getOrderStatusLabel,
   getPaymentStatusLabel,
 } from "@/features/account/order-format"
+import { getOrderItemThumbnail } from "@/features/account/order-item-image"
 import styles from "./invoice.module.css"
 
 export const metadata: Metadata = {
@@ -46,7 +48,7 @@ async function Invoice({ params }: Props) {
         <header className="flex flex-wrap justify-between gap-4 border-b border-border pb-6">
           <div>
             <h1 className="text-2xl font-semibold">Comprobante del pedido</h1>
-            <p className="mt-2 text-sm">Orden #{formatOrderNumber(order)}</p>
+            <p className="mt-2 text-sm">Orden {formatOrderNumber(order)}</p>
           </div>
           <div className="text-sm">
             <p>{formatOrderDate(order.created_at)}</p>
@@ -79,6 +81,7 @@ async function Invoice({ params }: Props) {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-y border-border">
+                <th className="w-16 py-3 pr-4 font-medium">Imagen</th>
                 <th className="py-3 pr-4 font-medium">Producto</th>
                 <th className="p-3 text-right font-medium">Cantidad</th>
                 <th className="p-3 text-right font-medium">Precio unitario</th>
@@ -88,6 +91,13 @@ async function Invoice({ params }: Props) {
             <tbody>
               {order.items?.map((item) => (
                 <tr key={item.id} className="border-b border-border">
+                  <td className="py-4 pr-4">
+                    <ProductThumbnail
+                      src={getOrderItemThumbnail(item)}
+                      alt={item.title}
+                      loading="eager"
+                    />
+                  </td>
                   <td className="py-4 pr-4">{item.title}</td>
                   <td className="p-3 text-right">{item.quantity}</td>
                   <td className="whitespace-nowrap p-3 text-right">

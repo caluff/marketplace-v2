@@ -58,6 +58,13 @@ Los productos privados y los registros de inventario requieren el alcance de la
 tienda. La API vuelve a comprobar la membresía activa y el estado operativo; una
 cookie válida por sí sola no mantiene acceso a una tienda suspendida.
 
+El admin puede cambiar el **Permiso de catálogo** en Tiendas. **Supervisado**
+mantiene la revisión actual; **Autorizado** publica productos nuevos y aplica
+cambios nuevos mediante los flujos nativos, sin revisión. Todas las tiendas
+empiezan en Supervisado y las solicitudes ya pendientes no se aprueban al
+cambiar el permiso. El alcance, revocación y controles están descritos en
+[permisos de catálogo](catalog-permissions.md).
+
 El almacén se gestiona con la dirección aprobada. Si falta o no se puede confirmar
 uno único, la UI informa del bloqueo y requiere revisión del operador. Crear otra
 ubicación no es la solución del flujo actual. Los contratos y evidencia de esa

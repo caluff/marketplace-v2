@@ -112,6 +112,7 @@ export default defineRailway((ctx) => {
       watchPatterns: [
         "/apps/web/**",
         "/packages/theme-sync/**",
+        "/packages/order-reference/**",
         "/packages/vendor-onboarding-contracts/**",
         "/.railway/**",
         "/.npmrc",
@@ -155,6 +156,7 @@ export default defineRailway((ctx) => {
       watchPatterns: [
         "/apps/admin/**",
         "/packages/theme-sync/**",
+        "/packages/order-reference/**",
         "/packages/vendor-onboarding-contracts/**",
         "/.railway/**",
         "/.npmrc",
@@ -192,6 +194,7 @@ export default defineRailway((ctx) => {
       watchPatterns: [
         "/apps/vendor/**",
         "/packages/theme-sync/**",
+        "/packages/order-reference/**",
         "/packages/vendor-onboarding-contracts/**",
         "/.railway/**",
         "/.npmrc",

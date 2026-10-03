@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: light;
-  --noise-opacity: 0.04;
+  --noise-opacity: 0.03;
   --brand-accent: #7c3aed;
   --brand-accent-foreground: oklch(0.985 0 0);
   --cover-accent-purple: oklch(0.55 0.26 292);
@@ -102,7 +102,7 @@
 
 .dark {
   color-scheme: dark;
-  --noise-opacity: 0.1;
+  --noise-opacity: 0.075;
   --cover-accent-purple: oklch(0.68 0.22 292);
   --cover-accent-cyan: oklch(0.8 0.18 195);
   --cover-accent-orange: oklch(0.78 0.19 55);

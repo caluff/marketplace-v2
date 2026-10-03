@@ -1,15 +1,16 @@
 # HTTP integration tests
 
 Suites use installed `@medusajs/test-utils` 2.18.0 and real Medusa wiring.
-The repository retains integration tests only. `pnpm test` and `pnpm test:api`
+The API retains integration tests only. `pnpm test` and `pnpm test:api`
 run module integration followed by HTTP integration; both require isolated test
 infrastructure and the explicit opt-ins documented in each selected suite.
 
-| Suite                       | Coverage / opt-in                                                                                                         |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `health.spec.ts`            | Health endpoint; protected by the global isolated-environment preflight.                                                 |
-| `google-auth.spec.ts`       | Google completion/account association with local fixtures; `GOOGLE_AUTH_TESTS=disposable-local`. No Google network calls. |
-| `vendor-onboarding.spec.ts` | Lifecycle, authorization and native onboarding; `VENDOR_ONBOARDING_TESTS=disposable-local`.                               |
+| Suite                        | Coverage / opt-in                                                                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `health.spec.ts`             | Health endpoint; protected by the global isolated-environment preflight.                                                                                     |
+| `catalog-permission.spec.ts` | Per-store moderation authority, native publication, revocation, image ownership and shared catalog concurrency; `CATALOG_PERMISSION_TESTS=disposable-local`. |
+| `google-auth.spec.ts`        | Google completion/account association with local fixtures; `GOOGLE_AUTH_TESTS=disposable-local`. No Google network calls.                                    |
+| `vendor-onboarding.spec.ts`  | Lifecycle, authorization and native onboarding; `VENDOR_ONBOARDING_TESTS=disposable-local`.                                                                  |
 
 Read the selected file header first. Before any suite loads, the global setup
 requires `NODE_ENV=test`, PostgreSQL at `DB_HOST=localhost`, `DB_PORT=55432`,

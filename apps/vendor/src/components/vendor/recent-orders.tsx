@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { HttpTypes } from "@mercurjs/types";
 import type { OrderDetailDTO } from "@medusajs/types";
+import { formatOrderNumber } from "@marketplace-v2/order-reference";
 import {
   Table,
   TableBody,
@@ -11,8 +12,9 @@ import {
 } from "@/components/ui/table";
 import { DataEmpty, StatusBadge } from "@/features/workspace/components";
 import { formatDate, formatMoney } from "@/features/workspace/presentation";
-import { CatalogThumbnail } from "@/features/catalog/catalog-thumbnail";
 import { getOrderDisplayStatus } from "@/features/orders/status";
+import { OrderImages } from "@/features/orders/order-images";
+import { productThumbnailsForOrderItems } from "@/features/orders/image-data";
 
 export function RecentOrders({
   orders,
@@ -37,12 +39,16 @@ export function RecentOrders({
         }
       />
     );
+  const products = productThumbnailsForOrderItems(
+    orders.flatMap((order) => order.items ?? []),
+  );
   return (
     <Table>
       <caption className="sr-only">Pedidos de esta tienda</caption>
       <TableHeader>
         <TableRow>
-          <TableHead>Productos</TableHead>
+          <TableHead>Imágenes</TableHead>
+          <TableHead>Pedido</TableHead>
           <TableHead>Cliente</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Fecha</TableHead>
@@ -55,21 +61,20 @@ export function RecentOrders({
             <TableCell>
               <Link
                 href={`/seller/orders/${order.id}`}
-                className="flex min-w-44 items-center gap-3 text-sm font-semibold underline-offset-4 hover:underline"
-                aria-label={`Ver pedido #${order.display_id ?? order.id}`}
+                className="block w-fit rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                aria-label={`Ver productos del pedido ${formatOrderNumber(order)}`}
               >
-                <span className="flex -space-x-3">
-                  {order.items?.length ? (
-                    order.items
-                      .slice(0, 3)
-                      .map((item) => (
-                        <CatalogThumbnail key={item.id} src={item.thumbnail} />
-                      ))
-                  ) : (
-                    <CatalogThumbnail />
-                  )}
-                </span>
+                <OrderImages items={order.items} products={products} />
+              </Link>
+            </TableCell>
+            <TableCell>
+              <Link
+                href={`/seller/orders/${order.id}`}
+                className="block min-w-44 text-sm font-semibold underline-offset-4 hover:underline"
+                aria-label={`Ver pedido ${formatOrderNumber(order)}`}
+              >
                 <span className="min-w-0">
+                  <span className="block">{formatOrderNumber(order)}</span>
                   <span className="block max-w-56 truncate">
                     {order.items?.[0]?.title ?? "Ver pedido"}
                   </span>

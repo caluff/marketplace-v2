@@ -5,7 +5,8 @@ import type {
 import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
+import { formatOrderNumber } from "@marketplace-v2/order-reference";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { workspace } from "@/features/workspace/data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { orderImageItems } from "@/features/orders/image-data";
+import { LoadedOrderImages } from "@/features/orders/order-images";
 
 const primaryMetrics = {
   net_captured_volume: "Ventas netas",
@@ -120,6 +124,7 @@ export async function FinanceReport({
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   );
+  const images = orderImageItems(sales.map((sale) => sale.order_id));
   return (
     <div className="space-y-4">
       {!report.coverage.complete ? (
@@ -221,6 +226,7 @@ export async function FinanceReport({
         </TableCaption>
         <TableHeader>
           <TableRow>
+            <TableHead>Imágenes</TableHead>
             <TableHead>Pedido</TableHead>
             <TableHead>Venta original</TableHead>
             <TableHead>Capturado período</TableHead>
@@ -240,11 +246,30 @@ export async function FinanceReport({
               <Fragment key={sale.order_id}>
                 <TableRow>
                   <TableCell>
+                    <Suspense
+                      fallback={
+                        <Skeleton
+                          className="size-12 rounded-md"
+                          aria-label="Cargando imágenes del pedido"
+                        />
+                      }
+                    >
+                      <LoadedOrderImages
+                        orderId={sale.order_id}
+                        result={images}
+                      />
+                    </Suspense>
+                  </TableCell>
+                  <TableCell>
                     <Link
                       className="font-medium text-primary hover:underline"
                       href={`/seller/orders/${sale.order_id}`}
                     >
-                      {sale.order_id}
+                      {formatOrderNumber({
+                        display_id: sale.order_display_id ?? undefined,
+                        custom_display_id:
+                          sale.order_custom_display_id ?? undefined,
+                      })}
                     </Link>
                     <details className="mt-1">
                       <summary className="cursor-pointer text-xs text-primary">
@@ -356,7 +381,7 @@ export async function FinanceReport({
           ) : (
             <TableRow>
               <TableCell
-                colSpan={11}
+                colSpan={12}
                 className="py-8 text-center text-muted-foreground"
               >
                 No hay ventas o reembolsos con movimientos en este período.

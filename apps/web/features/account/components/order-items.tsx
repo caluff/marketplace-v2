@@ -1,8 +1,8 @@
 import type { HttpTypes } from "@medusajs/types"
-import { Package } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
+import { ProductThumbnail } from "@/components/ui/product-thumbnail"
 import { formatOrderAmount } from "../order-format"
+import { getOrderItemThumbnail } from "../order-item-image"
 
 export function OrderItems({
   items,
@@ -16,10 +16,7 @@ export function OrderItems({
   return (
     <ul className="divide-y divide-border">
       {items.map((item) => {
-        const thumbnail =
-          item.thumbnail ||
-          item.variant?.product?.thumbnail ||
-          item.variant?.product?.images?.[0]?.url
+        const thumbnail = getOrderItemThumbnail(item)
         return (
           <li
             key={item.id}
@@ -29,24 +26,12 @@ export function OrderItems({
                 : "grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-2 py-5 first:pt-0 last:pb-0 sm:grid-cols-[6rem_minmax(0,1fr)_auto]"
             }
           >
-            <div
-              className={`relative shrink-0 overflow-hidden rounded-lg bg-muted ${compact ? "size-16" : "row-span-2 size-20 sm:size-24"}`}
-            >
-              {thumbnail ? (
-                <Image
-                  src={thumbnail}
-                  alt={item.title}
-                  fill
-                  sizes={compact ? "64px" : "96px"}
-                  className="object-contain"
-                />
-              ) : (
-                <Package
-                  className="absolute inset-0 m-auto size-6 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              )}
-            </div>
+            <ProductThumbnail
+              src={thumbnail}
+              alt={item.title}
+              sizes={compact ? "64px" : "(min-width: 640px) 96px, 80px"}
+              className={compact ? "size-16" : "row-span-2 size-20 sm:size-24"}
+            />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold leading-5">
                 {item.product_handle ? (

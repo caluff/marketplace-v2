@@ -8,6 +8,7 @@ Native Mercur/Medusa modules remain the backend core.
 | `vendor-onboarding/`                                           | Applications, durable mutation journal, notification outbox and seller warehouse records. |
 | `commerce-automation/`                                         | Scan, operation and group-state journals for finance/evaluation flows.                    |
 | `catalog-media/`                                               | Tracked catalog image records and ownership.                                              |
+| `catalog-permission/`                                          | Private per-store moderation authority, changed only by operators with seller.update. |
 | `product-media-file/`                                          | Configured file-provider adapter for catalog uploads.                                     |
 | [inventory](inventory/README.md)                               | Extends pinned native inventory service/repositories for concurrency.                     |
 | [stripe-allocated-payment](stripe-allocated-payment/README.md) | Native Stripe wrapper for allocated-capture webhook handling.                             |

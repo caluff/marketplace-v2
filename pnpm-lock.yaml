@@ -133,6 +133,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@marketplace-v2/order-reference':
+        specifier: workspace:*
+        version: link:../../packages/order-reference
       '@marketplace-v2/theme-sync':
         specifier: workspace:*
         version: link:../../packages/theme-sync
@@ -218,6 +221,9 @@ importers:
 
   apps/vendor:
     dependencies:
+      '@marketplace-v2/order-reference':
+        specifier: workspace:*
+        version: link:../../packages/order-reference
       '@marketplace-v2/theme-sync':
         specifier: workspace:*
         version: link:../../packages/theme-sync
@@ -303,6 +309,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@marketplace-v2/order-reference':
+        specifier: workspace:*
+        version: link:../../packages/order-reference
       '@marketplace-v2/theme-sync':
         specifier: workspace:*
         version: link:../../packages/theme-sync
@@ -509,6 +518,22 @@ importers:
       yalc:
         specifier: ^1.0.0-pre.53
         version: 1.0.0-pre.53
+
+  packages/order-reference:
+    dependencies:
+      '@medusajs/types':
+        specifier: 2.18.0
+        version: 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+    devDependencies:
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
+      eslint-config-next:
+        specifier: 16.3.4
+        version: 16.3.4(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
 
   packages/theme-sync:
     dependencies:

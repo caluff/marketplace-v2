@@ -1,5 +1,6 @@
 import type { HttpTypes } from "@medusajs/types"
 import type { ReactNode } from "react"
+import { ProductThumbnail } from "@/components/ui/product-thumbnail"
 import { getMoneyRoundingAdjustment } from "@/lib/money-rounding"
 import { getDiscountSubtotal } from "../discount-subtotal"
 import { formatMoney } from "../presentation"
@@ -37,6 +38,25 @@ export function OrderSummary({
         Resumen
       </p>
       <h2 className="mt-2 text-2xl font-semibold">Tu pedido</h2>
+      {cart.items?.length ? (
+        <ul className="mt-5 flex flex-wrap gap-2" aria-label="Productos del pedido">
+          {cart.items.map((item) => (
+            <li key={item.id} title={`${item.quantity} × ${item.title}`}>
+              <ProductThumbnail
+                src={
+                  item.thumbnail ||
+                  item.variant?.thumbnail ||
+                  item.product?.thumbnail ||
+                  item.product?.images?.[0]?.url ||
+                  item.variant?.product?.thumbnail ||
+                  item.variant?.product?.images?.[0]?.url
+                }
+                alt={item.title}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <dl className="mt-6 space-y-4 border-t border-border pt-5 font-sans text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">

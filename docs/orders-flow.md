@@ -2,6 +2,12 @@
 
 Guía vigente actualizada el 2026-10-03. La [auditoría de cierre](develpment/development-completion-audit.md) conserva los requisitos originales; el [progreso](develpment/development-progress.md) y su matriz final registran F01–F12 cerrados para Stripe TEST/USD/manual. Esta actualización documental no ejecuta pedidos ni repite pruebas de navegador.
 
+## Número de pedido
+
+La tienda y los paneles de operador y vendedor muestran la misma referencia pública: `PED-` seguido del `display_id` nativo, con un mínimo de nueve dígitos (`196762` → `PED-000196762`). Si el pedido ya tiene `custom_display_id`, se conserva esa referencia. El formato se comparte en `packages/order-reference` y no depende de la dirección de envío ni renumera pedidos existentes.
+
+Las búsquedas de los paneles aceptan la referencia visible o el número original. Los reportes financieros incluyen los campos de referencia del pedido sin modificar los cálculos; el vendedor recibe únicamente referencias de sus pedidos. Si falta el número público, la interfaz muestra «Sin número». El ID técnico `order_…` se conserva para enlaces, autorización y operaciones.
+
 ## Comprador
 
 - `/account/orders`: tarjetas con productos reales, estado de pago, entrega y paginación.

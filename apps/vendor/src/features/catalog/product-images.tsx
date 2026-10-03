@@ -123,8 +123,8 @@ export function ProductImages({
           Imágenes del producto
         </h3>
         <p id={`${id}-help`} className="mt-1 text-xs text-muted-foreground">
-          Hasta seis imágenes PNG, JPEG o WebP de 5 MB. Se guardarán al enviar
-          el producto a revisión.
+          Hasta seis imágenes PNG, JPEG o WebP de 5 MB. Se cargarán al guardar
+          el producto.
         </p>
       </div>
       <input

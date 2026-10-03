@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { HttpTypes } from "@mercurjs/types";
+import { orderSearchQuery } from "@marketplace-v2/order-reference";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Card } from "@/components/ui/card";
@@ -27,7 +28,7 @@ async function OrderList({
   const { client } = await workspace();
   const result = await resultOf(
     client.get<HttpTypes.VendorOrderListResponse>("/vendor/orders", {
-      q: input.q || undefined,
+      q: orderSearchQuery(input.q) || undefined,
       offset: input.offset,
       limit: input.limit,
       order: "-created_at",

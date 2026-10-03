@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatOrderNumber } from "@marketplace-v2/order-reference";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,9 +23,10 @@ import {
 } from "@/features/workspace/data";
 import { formatDate, formatMoney } from "@/features/workspace/presentation";
 import { resourceId } from "@/features/workspace/validation";
-import { CatalogThumbnail } from "@/features/catalog/catalog-thumbnail";
 import { OrderManagement } from "@/features/orders/order-management";
 import { getOrderDisplayStatus } from "@/features/orders/status";
+import { OrderItemThumbnail } from "@/features/orders/order-images";
+import { productThumbnailsForOrderItems } from "@/features/orders/image-data";
 
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,10 +70,11 @@ async function OrderDetail({ id }: { id: string }) {
   if (!result.data) return <DataError message={result.error} />;
   const { order } = result.data;
   const address = order.shipping_address;
+  const products = productThumbnailsForOrderItems(order.items ?? []);
   return (
     <div className="space-y-6">
       <PageHeading
-        title={`Pedido #${order.display_id ?? order.id}`}
+        title={`Pedido ${formatOrderNumber(order)}`}
         description={`${formatDate(order.created_at)} · ${order.email || "Sin correo"}`}
       >
         <div className="flex flex-wrap gap-2">
@@ -100,7 +103,7 @@ async function OrderDetail({ id }: { id: string }) {
                 <TableRow key={item.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <CatalogThumbnail src={item.thumbnail} />
+                      <OrderItemThumbnail item={item} products={products} />
                       <span>{item.title}</span>
                     </div>
                   </TableCell>
@@ -125,7 +128,7 @@ async function OrderDetail({ id }: { id: string }) {
           </CardContent>
         </Card>
         <div className="space-y-6">
-          <OrderManagement order={order} />
+          <OrderManagement order={order} products={products} />
           <Card>
             <CardHeader>
               <CardTitle>Dirección de entrega</CardTitle>

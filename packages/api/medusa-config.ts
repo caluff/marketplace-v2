@@ -203,6 +203,7 @@ module.exports = withMercur({
     { resolve: "./src/modules/inventory" },
     { resolve: "./src/modules/commission" },
     { resolve: "./src/modules/commerce-automation" },
+    { resolve: "./src/modules/catalog-permission" },
     {
       resolve: "./src/modules/catalog-media",
       options: { storage_enabled: Boolean(productImageStorageConfiguration) },

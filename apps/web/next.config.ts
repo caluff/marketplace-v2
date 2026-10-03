@@ -60,7 +60,7 @@ function getBackendImagePatterns() {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@marketplace-v2/ui"],
+  transpilePackages: ["@marketplace-v2/ui", "@marketplace-v2/order-reference"],
   experimental: {
     serverActions: {
       allowedOrigins: getServerActionAllowedOrigins(),

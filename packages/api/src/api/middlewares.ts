@@ -29,6 +29,7 @@ import { commissionFinanceMiddlewares } from "./commission-finance-middlewares";
 import { storeCartOwnershipMiddlewares } from "./store/cart-ownership/middlewares";
 import { storeCartPricingMiddlewares } from "./store/cart-pricing/middlewares";
 import { financeReportingMiddlewares } from "./finance-reporting/middlewares";
+import { catalogPermissionMiddlewares } from "./catalog-permission-middlewares";
 
 const requireSellerRegistrationFlag = (
   _req: MedusaRequest,
@@ -47,6 +48,7 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
+    ...catalogPermissionMiddlewares,
     ...commissionFinanceMiddlewares,
     ...storeCartOwnershipMiddlewares,
     ...storeCartPricingMiddlewares,

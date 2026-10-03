@@ -14,8 +14,16 @@ import {
   remainingToPrepare,
 } from "./operations";
 import { OrderActionForm } from "./order-action-form";
+import type { ProductThumbnails } from "./image-data";
+import { OrderItemThumbnail } from "./order-images";
 
-async function PreparationForm({ order }: { order: OrderDetailDTO }) {
+async function PreparationForm({
+  order,
+  products,
+}: {
+  order: OrderDetailDTO;
+  products: Promise<ProductThumbnails>;
+}) {
   const { client } = await workspace();
   const result = await resultOf(
     sellerWarehouse(client).catch((error: unknown) => {
@@ -66,10 +74,17 @@ async function PreparationForm({ order }: { order: OrderDetailDTO }) {
             <p className="text-sm">
               Se prepararán todas las unidades pendientes de estos artículos.
             </p>
-            <ul className="space-y-1 text-sm">
+            <ul className="space-y-2 text-sm">
               {items.map((item) => (
-                <li key={item.id}>
-                  {item.title} · {remainingToPrepare(item)} pendientes
+                <li key={item.id} className="flex items-center gap-3">
+                  <OrderItemThumbnail
+                    item={item}
+                    products={products}
+                    className="size-10"
+                  />
+                  <span>
+                    {item.title} · {remainingToPrepare(item)} pendientes
+                  </span>
                 </li>
               ))}
             </ul>
@@ -80,12 +95,22 @@ async function PreparationForm({ order }: { order: OrderDetailDTO }) {
               <div className="space-y-4 pt-3">
                 {items.map((item) => (
                   <div key={item.id} className="space-y-2">
-                    <label htmlFor={`quantity-${item.id}`} className="text-sm">
-                      {item.title}
-                      <span className="block text-xs text-muted-foreground">
-                        {remainingToPrepare(item)} pendientes
-                      </span>
-                    </label>
+                    <div className="flex items-center gap-3">
+                      <OrderItemThumbnail
+                        item={item}
+                        products={products}
+                        className="size-10"
+                      />
+                      <label
+                        htmlFor={`quantity-${item.id}`}
+                        className="text-sm"
+                      >
+                        {item.title}
+                        <span className="block text-xs text-muted-foreground">
+                          {remainingToPrepare(item)} pendientes
+                        </span>
+                      </label>
+                    </div>
                     <Input
                       id={`quantity-${item.id}`}
                       name={`quantity:${item.id}`}
@@ -121,7 +146,13 @@ function safeTrackingHref(value: string) {
   }
 }
 
-export function OrderManagement({ order }: { order: OrderDetailDTO }) {
+export function OrderManagement({
+  order,
+  products,
+}: {
+  order: OrderDetailDTO;
+  products: Promise<ProductThumbnails>;
+}) {
   const capabilities = orderCapabilities(order);
   return (
     <>
@@ -140,7 +171,11 @@ export function OrderManagement({ order }: { order: OrderDetailDTO }) {
                   />
                 }
               >
-                <PreparationForm key={String(order.updated_at)} order={order} />
+                <PreparationForm
+                  key={String(order.updated_at)}
+                  order={order}
+                  products={products}
+                />
               </Suspense>
             ) : (
               <p role="status" className="text-sm text-muted-foreground">
@@ -171,18 +206,33 @@ export function OrderManagement({ order }: { order: OrderDetailDTO }) {
                         ? "Enviada"
                         : "Preparada"}
                 </h3>
-                <ul className="space-y-1 text-sm text-muted-foreground">
+                <ul className="space-y-2 text-sm text-muted-foreground">
                   {[
                     ...new Map(
-                      fulfillment.items?.map((item) => [
-                        item.line_item_id ?? item.id,
-                        order.items?.find(
+                      fulfillment.items?.map((item) => {
+                        const line = order.items?.find(
                           (line) => line.id === item.line_item_id,
-                        )?.title ?? item.title,
-                      ]),
+                        );
+                        return [
+                          item.line_item_id ?? item.id,
+                          {
+                            id: item.line_item_id ?? item.id,
+                            title: line?.title ?? item.title,
+                            thumbnail: line?.thumbnail,
+                            product_id: line?.product_id,
+                          },
+                        ] as const;
+                      }),
                     ).entries(),
-                  ].map(([id, title]) => (
-                    <li key={id}>{title}</li>
+                  ].map(([id, item]) => (
+                    <li key={id} className="flex items-center gap-3">
+                      <OrderItemThumbnail
+                        item={item}
+                        products={products}
+                        className="size-10"
+                      />
+                      <span>{item.title}</span>
+                    </li>
                   ))}
                 </ul>
                 {fulfillment.shipped_at ? (

@@ -1,4 +1,5 @@
 import type Medusa from "@medusajs/js-sdk";
+import type { CatalogPermissionListResponse } from "@marketplace-v2/api/catalog-permission-contracts";
 import type { HttpTypes } from "@mercurjs/types";
 import type { parseStoreFilters } from "./helpers";
 
@@ -29,5 +30,12 @@ export function retrieveStore(sdk: Medusa, id: string) {
       },
       cache: "no-store",
     },
+  );
+}
+
+export function listCatalogPermissions(sdk: Medusa, sellerIds: string[]) {
+  return sdk.client.fetch<CatalogPermissionListResponse>(
+    "/admin/catalog-permissions",
+    { query: { seller_ids: sellerIds }, cache: "no-store" },
   );
 }

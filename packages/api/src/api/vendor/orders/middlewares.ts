@@ -83,11 +83,11 @@ async function applyFulfillmentStage(
         ]);
         for (const fulfillment of prepared) {
           const orderId = owners.get(fulfillment.id);
-          if (orderId) preparedOrders.add(orderId);
+          if (typeof orderId === "string" && orderId) preparedOrders.add(orderId);
         }
         for (const fulfillment of shipped) {
           const orderId = owners.get(fulfillment.id);
-          if (orderId) shippedOrders.add(orderId);
+          if (typeof orderId === "string" && orderId) shippedOrders.add(orderId);
         }
       }
     }

@@ -10,9 +10,18 @@ export async function retrieveReceiptOrders(
   try {
     return await Promise.all(
       receipt.orderIds.map(async (id) =>
-        (await client.retrieve(id, undefined, {
-          "x-marketplace-cart-id": receipt.cartId,
-        })).order,
+        (
+          await client.retrieve(
+            id,
+            {
+              fields:
+                "+items.thumbnail,+items.variant.product.thumbnail,+items.variant.product.images.url",
+            },
+            {
+              "x-marketplace-cart-id": receipt.cartId,
+            },
+          )
+        ).order,
       ),
     )
   } catch (error) {

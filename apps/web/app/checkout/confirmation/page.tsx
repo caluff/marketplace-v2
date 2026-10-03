@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Suspense } from "react"
 
 import { Button } from "@/components/ui/button"
+import { ProductThumbnail } from "@/components/ui/product-thumbnail"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   formatOrderNumber,
@@ -11,6 +12,7 @@ import {
   getPaymentStatusLabel,
   getShippingStatusLabel,
 } from "@/features/account/order-format"
+import { getOrderItemThumbnail } from "@/features/account/order-item-image"
 import { getReceiptOrders } from "@/features/cart/data"
 import { OrderReceiptTotals } from "@/features/cart/components/order-receipt-totals"
 import { formatMoney } from "@/features/cart/presentation"
@@ -87,7 +89,7 @@ function OrderReceipt({ order }: { order: HttpTypes.StoreOrder }) {
           Referencia del pedido
         </p>
         <h2 className="mt-2 break-all text-xl font-semibold">
-          #{formatOrderNumber(order)}
+          {formatOrderNumber(order)}
         </h2>
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
           <div>
@@ -119,8 +121,14 @@ function OrderReceipt({ order }: { order: HttpTypes.StoreOrder }) {
         {order.items?.map((item) => (
           <li
             key={item.id}
-            className="flex items-start justify-between gap-5 py-5"
+            className="grid grid-cols-[3rem_minmax(0,1fr)] items-start gap-x-4 gap-y-2 py-5 sm:grid-cols-[4rem_minmax(0,1fr)_auto]"
           >
+            <ProductThumbnail
+              src={getOrderItemThumbnail(item)}
+              alt={item.product_title || item.title}
+              className="row-span-2 size-12 sm:size-16"
+              sizes="(min-width: 640px) 64px, 48px"
+            />
             <div className="min-w-0">
               <p className="text-sm font-semibold">
                 {item.product_title || item.title}
@@ -136,7 +144,7 @@ function OrderReceipt({ order }: { order: HttpTypes.StoreOrder }) {
                 {formatMoney(item.unit_price, order.currency_code)}
               </p>
             </div>
-            <p className="shrink-0 text-sm font-medium">
+            <p className="col-start-2 text-sm font-medium tabular-nums sm:col-start-3 sm:row-start-1 sm:text-right">
               {formatMoney(item.total, order.currency_code)}
             </p>
           </li>

@@ -1,6 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
+import { formatOrderNumber } from "@marketplace-v2/order-reference";
 import { FetchError } from "@medusajs/js-sdk";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +41,7 @@ import {
   statusLabel,
 } from "./helpers";
 import { OrderActionForm } from "./action-form";
+import { OrderImages, OrderItemImage } from "./order-images";
 
 export function OrderRegionSkeleton() {
   return (
@@ -104,46 +104,6 @@ export function OrderFilters({
     </form>
   );
 }
-function ItemImage(props: {
-  src?: string | null;
-  title: string;
-  productId?: string | null;
-  images: Promise<Map<string, string>>;
-}) {
-  return (
-    <Suspense fallback={<Skeleton className="size-12 shrink-0 rounded-md" />}>
-      <ResolvedItemImage {...props} />
-    </Suspense>
-  );
-}
-async function ResolvedItemImage({
-  src,
-  title,
-  productId,
-  images,
-}: {
-  src?: string | null;
-  title: string;
-  productId?: string | null;
-  images: Promise<Map<string, string>>;
-}) {
-  const url =
-    safeUrl(src) ?? (productId ? (await images).get(productId) : null);
-  return url ? (
-    <Image
-      src={url}
-      alt={title}
-      width={48}
-      height={48}
-      unoptimized
-      className="size-12 shrink-0 rounded-md border border-border object-cover"
-    />
-  ) : (
-    <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-muted text-center text-[10px] text-muted-foreground">
-      Sin imagen
-    </span>
-  );
-}
 function Seller({ order }: { order: OperatorOrder }) {
   return order.seller ? (
     <Link
@@ -190,6 +150,7 @@ export async function OrderResults({
             <TableHeader>
               <TableRow>
                 {[
+                  "Imágenes",
                   "Pedido / artículos",
                   "Tienda",
                   "Comprador",
@@ -206,11 +167,14 @@ export async function OrderResults({
               {result.orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell>
+                    <OrderImages items={order.items} images={images} />
+                  </TableCell>
+                  <TableCell>
                     <Link
                       href={`/dashboard/orders/${order.id}`}
                       className="font-semibold hover:underline"
                     >
-                      #{order.display_id}
+                      {formatOrderNumber(order)}
                     </Link>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {orderDate(order.created_at)}
@@ -218,14 +182,6 @@ export async function OrderResults({
                     <div className="mt-2 space-y-2">
                       {order.items?.slice(0, 2).map((item) => (
                         <div key={item.id} className="flex items-center gap-2">
-                          <ItemImage
-                            src={
-                              item.thumbnail || item.variant?.product?.thumbnail
-                            }
-                            title={item.title}
-                            productId={item.product_id}
-                            images={images}
-                          />
                           <span className="max-w-48 truncate text-xs">
                             {item.quantity} × {item.title}
                           </span>
@@ -308,10 +264,9 @@ function OrderDetails({
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-3">
-            <CardTitle>Pedido #{order.display_id}</CardTitle>
+            <CardTitle>Pedido {formatOrderNumber(order)}</CardTitle>
             <Badge variant="neutral">{statusLabel(order.status)}</Badge>
           </div>
-          <p className="break-all text-xs text-muted-foreground">{order.id}</p>
           <p className="text-xs text-muted-foreground">
             Creado {orderDate(order.created_at)} · hora de Uruguay
           </p>
@@ -326,7 +281,9 @@ function OrderDetails({
             <Buyer order={order} />
           </div>
           <div>
-            <p className="mb-1 text-xs text-muted-foreground">Pago de la compra</p>
+            <p className="mb-1 text-xs text-muted-foreground">
+              Pago de la compra
+            </p>
             <p>{statusLabel(order.payment_status)}</p>
           </div>
         </CardContent>
@@ -342,12 +299,7 @@ function OrderDetails({
                 <ul className="divide-y divide-border">
                   {order.items.map((item) => (
                     <li key={item.id} className="flex gap-3 py-4 first:pt-0">
-                      <ItemImage
-                        src={item.thumbnail || item.variant?.product?.thumbnail}
-                        title={item.title}
-                        productId={item.product_id}
-                        images={images}
-                      />
+                      <OrderItemImage item={item} images={images} />
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{item.title}</p>
                         <p className="mt-1 text-sm text-muted-foreground">

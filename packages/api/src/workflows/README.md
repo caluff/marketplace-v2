@@ -7,6 +7,7 @@ This directory orchestrates local mutations around native Medusa/Mercur flows.
 | Onboarding           | `mutate-vendor-application.ts`, `recover-vendor-application.ts`, `vendor-application-notifications.ts`, `backfill-vendor-warehouse.ts`.           |
 | Auth                 | `complete-google-auth.ts`, `vendor-session.ts`.                                                                                                   |
 | Catalog/inventory    | `validate-vendor-catalog.ts`, `upload-catalog-images.ts`, `update-vendor-offer-price.ts`, `update-vendor-stock.ts`, `set-product-sale-status.ts`. |
+| Catalog permissions | `set-seller-catalog-permission.ts`, `catalog-permission-create-product.ts`, `catalog-permission-edit-product.ts`; native moderation with private per-store authority. |
 | Checkout/finance     | `validate-cart-sale-status.ts`, `guard-order-finance-writer.ts`, `operate-order-finance.ts`, `order-finance-native.ts`.                           |
 | Settlement/recovery  | `settle-order-finance.ts`, `settlement-native.ts`, `recover-order-finance.ts`, `recover-finance-execution-lock.ts`, `refresh-order-finance-provider-facts.ts`. |
 | Automatic settlement | `record-order-completions.ts`, `automatically-settle-orders.ts`; server-observed 72-hour clock and the guarded settlement executor.              |

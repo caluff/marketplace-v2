@@ -78,7 +78,7 @@ async function ProductContent({ id }: { id: string }) {
       {changes.length ? (
         <details id="solicitudes" className="rounded-xl border bg-card px-5">
           <summary className="cursor-pointer py-4 text-sm font-semibold focus-visible:outline-2">
-            Solicitudes de cambios · {changes.length}
+            Historial de cambios · {changes.length}
             {hasPending ? " · Pendiente de revisión" : " · Ver historial"}
           </summary>
           <div className="max-h-72 space-y-3 overflow-y-auto border-t py-4">
@@ -104,18 +104,14 @@ async function ProductContent({ id }: { id: string }) {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <CardTitle>Solicitar cambios de contenido y categorías</CardTitle>
+            <CardTitle>Contenido y categorías</CardTitle>
             <StatusBadge status={product.status} />
           </div>
-          <p className="text-sm leading-6 text-muted-foreground">
-            El contenido actual se conserva hasta que el operador revise la
-            solicitud.
-          </p>
         </CardHeader>
         <CardContent>
           {hasPending ? (
             <p className="text-sm text-muted-foreground">
-              Ya hay una solicitud pendiente. Espera su resolución para proponer
+              Ya hay una solicitud pendiente. Espera su resolución para guardar
               otros cambios.
             </p>
           ) : (
@@ -128,10 +124,6 @@ async function ProductContent({ id }: { id: string }) {
           <Card>
             <CardHeader>
               <CardTitle>Presentaciones del producto</CardTitle>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Solicita cambios de tamaños, colores u otras presentaciones. Los
-                cambios deben aprobarse antes de usarlos para vender.
-              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {!hasPending ? (
@@ -168,7 +160,7 @@ async function ProductContent({ id }: { id: string }) {
                   ))}
                   {!product.variants?.length ? (
                     <p className="text-sm text-muted-foreground">
-                      Sin presentaciones aprobadas.
+                      Sin presentaciones.
                     </p>
                   ) : null}
                 </div>
@@ -193,7 +185,7 @@ async function ProductContent({ id }: { id: string }) {
                               id: product.id,
                               attribute_id: attribute.id,
                             }}
-                            submit="Enviar valores a revisión"
+                            submit="Guardar valores"
                             disableAfterSuccess
                             fields={[
                               {

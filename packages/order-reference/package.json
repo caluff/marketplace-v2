@@ -1,0 +1,21 @@
+{
+  "name": "@marketplace-v2/order-reference",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@medusajs/types": "2.18.0"
+  },
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.4",
+    "typescript": "5.9.3"
+  }
+}
