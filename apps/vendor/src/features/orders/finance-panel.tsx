@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { formatMoney as money } from "../workspace/presentation";
 import { OrderFinanceHistory } from "./finance-history";
 import { orderFinanceAction } from "./finance-actions";
+import { ORDER_NOTIFICATION_CHANGED } from "./notification-monitor";
 import {
   financePayload,
   financeRequest,
@@ -55,7 +56,10 @@ export function OrderFinancePanel({ data }: { data: OrderFinanceResponse }) {
             "Se interrumpió la conexión. Reintenta con los mismos datos para consultar la misma solicitud.",
         };
       }
-      if (result.status === "success") request.current = null;
+      if (result.status === "success") {
+        request.current = null;
+        window.dispatchEvent(new Event(ORDER_NOTIFICATION_CHANGED));
+      }
       return result;
     },
     { status: "idle" },

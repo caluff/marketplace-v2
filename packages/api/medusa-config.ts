@@ -183,6 +183,7 @@ module.exports = withMercur({
     seller_registration: false,
   },
   modules: [
+    { resolve: "./src/modules/order-notifications", options: { redisUrl } },
     ...(googleAuthConfiguration
       ? [{
           resolve: "@medusajs/medusa/auth",
@@ -201,6 +202,8 @@ module.exports = withMercur({
       : []),
     { resolve: "./src/modules/vendor-onboarding" },
     { resolve: "./src/modules/inventory" },
+    { resolve: "./src/modules/order" },
+    { resolve: "./src/modules/seller" },
     { resolve: "./src/modules/commission" },
     { resolve: "./src/modules/commerce-automation" },
     { resolve: "./src/modules/catalog-permission" },

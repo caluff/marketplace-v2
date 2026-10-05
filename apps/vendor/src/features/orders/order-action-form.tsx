@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { notifyFeedback } from "@/lib/feedback";
 import type { MutationState } from "../workspace/presentation";
 import { updateOrderAction } from "./actions";
+import { ORDER_NOTIFICATION_CHANGED } from "./notification-monitor";
 
 export function OrderActionForm({
   orderId,
@@ -28,6 +29,8 @@ export function OrderActionForm({
     async (previous: MutationState, form: FormData) => {
       const result = await updateOrderAction(previous, form);
       notifyFeedback(result);
+      if (result.status === "success")
+        window.dispatchEvent(new Event(ORDER_NOTIFICATION_CHANGED));
       return result;
     },
     { status: "idle" },

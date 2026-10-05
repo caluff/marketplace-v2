@@ -6,6 +6,8 @@
 | `vendor-application-notifications.ts` | Every minute     | Requires enabled email; drains up to 20 successful deliveries, stopping at an empty claim or failure.            |
 | `evaluate-commerce.ts`                | Every 15 minutes | Requires `STRIPE_AUTOMATIC_JOBS_ENABLED=true` and valid TEST Connect configuration before invoking its workflow. |
 | `automatically-settle-orders.ts`      | Every minute     | Requires `STRIPE_AUTOMATIC_SETTLEMENT_ENABLED=true`, valid TEST Connect and general commerce jobs disabled; settles verified orders after 72 elapsed hours. |
+| `reconcile-vendor-settlements.ts`     | Every minute     | Updates the seller's persisted pending-settlement read model from existing financial records. Uses a dedicated lock and bounded sequential batches; never captures, refunds or transfers funds. |
+| `reconcile-vendor-finance-reporting.ts` | Every minute | Discovers native order references by durable pages and refreshes up to two groups of the seller and private operator financial-report read models under one dedicated lock. Shared native evidence is read once per group; both projections commit atomically. It preserves verified source timestamps and never executes financial movements. |
 
 General commerce evaluation remains disabled by default. Enabling its environment flag
 does not complete capture, payout or recovery:

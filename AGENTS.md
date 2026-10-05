@@ -157,6 +157,15 @@ Frontend rules:
   affected frontends together and verify the behavior in each application.
 - Motion must use shared tokens, remain restrained for high-frequency dashboard
   interactions, and preserve keyboard usability and `prefers-reduced-motion`.
+- When a flow needs a confirmation dialog, reuse `ConfirmationDialog` from
+  `@marketplace-v2/ui/confirmation-dialog` through the application's
+  `components/ui/confirmation-dialog` adapter. Its implementation is in
+  `packages/ui/src/confirmation-dialog.tsx`, based on the shared Radix alert
+  dialog. Do not create another confirmation modal or use `window.confirm`.
+  The caller owns the requested change, persistence, and error feedback: cancel
+  must leave saved data unchanged, and asynchronous confirmations must pass
+  `isPending`, close after the request completes, and restore focus to their
+  control with `returnFocusRef` when there is no dialog trigger.
 
 ### Progressive rendering and loading states
 

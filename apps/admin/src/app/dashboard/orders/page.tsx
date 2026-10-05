@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import {
   OrderFilters,
-  OrderRegionSkeleton,
+  OrderListSkeleton,
   OrderResults,
 } from "@/features/orders/components";
 import { parseOrderFilters } from "@/features/orders/helpers";
@@ -16,14 +16,9 @@ export default async function OrdersPage({
   const filters = parseOrderFilters(await searchParams);
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        Pedidos
-      </h1>
+      <h1 className="sr-only">Pedidos</h1>
       <OrderFilters filters={filters} />
-      <Suspense
-        key={JSON.stringify(filters)}
-        fallback={<OrderRegionSkeleton />}
-      >
+      <Suspense key={JSON.stringify(filters)} fallback={<OrderListSkeleton />}>
         <OrderResults filters={filters} />
       </Suspense>
     </div>

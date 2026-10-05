@@ -23,6 +23,10 @@ import {
 } from "@/features/cart/actions"
 import { formatMoney } from "@/features/cart/presentation"
 import {
+  pickupAddress,
+  type CheckoutShippingOptions,
+} from "@/features/cart/shipping"
+import {
   paymentBillingDetails,
   storefrontPaymentAppearance,
 } from "../payment-presentation"
@@ -40,10 +44,13 @@ const ACCEPTED_PAYMENT_STATUSES = [
 export function PaymentStep({
   cart,
   providers,
+  shippingOptions,
 }: {
   cart: HttpTypes.StoreCart
   providers: HttpTypes.StorePaymentProvider[]
+  shippingOptions: CheckoutShippingOptions
 }) {
+  const deliveryOptions = Object.values(shippingOptions).flat()
   const availableProviders = providers.filter((provider) =>
     provider.id.startsWith("pp_stripe_"),
   )
@@ -102,15 +109,28 @@ export function PaymentStep({
             className="size-4 shrink-0 text-muted-foreground"
           />
           <div className="min-w-0 flex-1 space-y-1">
-            {cart.shipping_methods?.map((method) => (
-              <p key={method.id}>
-                {method.name} · {formatMoney(method.amount, cart.currency_code)}
-              </p>
-            ))}
+            {cart.shipping_methods?.map((method) => {
+              const option = deliveryOptions.find(
+                (entry) => entry.id === method.shipping_option_id,
+              )
+              const address = option ? pickupAddress(option) : null
+              return (
+                <div key={method.id}>
+                  <p>
+                    {method.name} · {formatMoney(method.amount, cart.currency_code)}
+                  </p>
+                  {address ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Recogida en tienda: {address}
+                    </p>
+                  ) : null}
+                </div>
+              )
+            })}
           </div>
           <Link
             href="/checkout?step=shipping"
-            aria-label="Cambiar envío"
+            aria-label="Cambiar entrega"
             className="inline-flex min-h-11 shrink-0 items-center underline underline-offset-4"
           >
             Cambiar

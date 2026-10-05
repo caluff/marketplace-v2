@@ -11,6 +11,12 @@ overrides:
   vite: 5.4.21
   fdir@6.1.1>picomatch: 3.0.1
 packageExtensions:
+  next@16.3.4:
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
   next-themes@0.4.6:
     peerDependencies:
       '@types/react': '*'

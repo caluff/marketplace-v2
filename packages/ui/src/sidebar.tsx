@@ -10,12 +10,7 @@ import { useIsMobile } from "./use-mobile";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Separator } from "./separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from "./sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "./sheet";
 import { Skeleton } from "./skeleton";
 import {
   Tooltip,
@@ -189,6 +184,8 @@ function Sidebar({
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
+          closeLabel="Cerrar navegación"
+          closeTestId="mobile-navigation-close"
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"

@@ -1,4 +1,6 @@
+import { TablePagination } from "@/components/table-pagination";
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { formatOrderNumber } from "@marketplace-v2/order-reference";
 import { FetchError } from "@medusajs/js-sdk";
 import { notFound } from "next/navigation";
@@ -6,11 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -21,6 +18,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { requireAdminSdk } from "@/lib/auth-sdk";
+import { cn } from "@/lib/utils";
 import {
   listOrders,
   orderProductImages,
@@ -42,6 +40,71 @@ import {
 } from "./helpers";
 import { OrderActionForm } from "./action-form";
 import { OrderImages, OrderItemImage } from "./order-images";
+import { AdminAutoRefresh } from "@/features/realtime/auto-refresh";
+
+const ORDER_LIST_HEADERS = [
+  "Imágenes",
+  "Pedido / artículos",
+  "Tienda",
+  "Comprador",
+  "Estado",
+  "Pago de la compra",
+  "Preparación / envío",
+  "Total",
+];
+
+export function OrderListSkeleton() {
+  return (
+    <div aria-busy="true">
+      <p role="status" className="sr-only">
+        Cargando pedidos
+      </p>
+      <Table aria-hidden="true">
+        <TableHeader>
+          <TableRow>
+            {ORDER_LIST_HEADERS.map((label) => (
+              <TableHead key={label}>{label}</TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 5 }, (_, index) => (
+            <TableRow key={index}>
+              <TableCell>
+                <Skeleton data-slot="thumbnail" className="size-12" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-1 h-3 w-32" />
+                <Skeleton className="mt-2 h-3 w-40" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-32" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-1 h-4 w-40" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-6 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-36" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <Skeleton className="mt-5 h-4 w-20" />
+    </div>
+  );
+}
 
 export function OrderRegionSkeleton() {
   return (
@@ -69,45 +132,69 @@ export function OrderFilters({
   filters: ReturnType<typeof parseOrderFilters>;
 }) {
   return (
-    <form
-      action="/dashboard/orders"
-      className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_240px_auto]"
-    >
-      <Field>
-        <FieldLabel htmlFor="order-search">Búsqueda general</FieldLabel>
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <nav
+        aria-label="Estados de pedidos"
+        className="flex min-w-0 max-w-full self-start gap-1 overflow-x-auto border-b md:self-auto"
+      >
+        {Object.entries({ all: "Todos", ...ORDER_STATUSES }).map(
+          ([value, label]) => (
+            <Link
+              key={value}
+              href={orderListHref(
+                { ...filters, status: value as typeof filters.status },
+                0,
+              )}
+              aria-current={filters.status === value ? "page" : undefined}
+              className={cn(
+                "shrink-0 border-b-2 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                filters.status === value
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+              )}
+            >
+              {label}
+            </Link>
+          ),
+        )}
+      </nav>
+      <form
+        action="/dashboard/orders"
+        method="get"
+        role="search"
+        className="relative mb-3 w-full shrink-0 md:mb-0 md:w-52 lg:w-64"
+      >
+        <label className="sr-only" htmlFor="order-search">
+          Buscar pedidos
+        </label>
         <Input
+          key={filters.q}
           id="order-search"
           name="q"
           defaultValue={filters.q}
           maxLength={100}
           placeholder="Número, email o dirección"
+          className="pr-12"
         />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="order-status">Estado del pedido</FieldLabel>
-        <NativeSelect
-          id="order-status"
-          name="status"
-          defaultValue={filters.status}
+        <input type="hidden" name="status" value={filters.status} />
+        <Button
+          variant="ghost"
+          type="submit"
+          size="icon"
+          static
+          aria-label="Buscar pedidos"
+          className="absolute right-1 top-1 size-8"
         >
-          <NativeSelectOption value="all">Todos los estados</NativeSelectOption>
-          {Object.entries(ORDER_STATUSES).map(([value, label]) => (
-            <NativeSelectOption key={value} value={value}>
-              {label}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </Field>
-      <Button variant="outline" type="submit">
-        Filtrar
-      </Button>
-    </form>
+          <Search aria-hidden="true" strokeWidth={1.5} />
+        </Button>
+      </form>
+    </div>
   );
 }
 function Seller({ order }: { order: OperatorOrder }) {
   return order.seller ? (
     <Link
-      className="hover:underline"
+      className="relative z-10 inline-block hover:underline"
       href={`/dashboard/stores/${encodeURIComponent(order.seller.id)}`}
     >
       {order.seller.name}
@@ -139,44 +226,40 @@ export async function OrderResults({
   try {
     result = await listOrders(sdk, filters);
   } catch {
-    return <OrderReadError href={orderListHref(filters, filters.offset)} />;
+    return (
+      <AdminAutoRefresh eventName="orders-changed">
+        <OrderReadError href={orderListHref(filters, filters.offset)} />
+      </AdminAutoRefresh>
+    );
   }
   const images = orderProductImages(sdk, result.orders);
   return (
-    <Card>
-      <CardContent className="pt-6">
+    <AdminAutoRefresh eventName="orders-changed">
+      <div>
         {result.orders.length ? (
           <Table>
             <TableHeader>
               <TableRow>
-                {[
-                  "Imágenes",
-                  "Pedido / artículos",
-                  "Tienda",
-                  "Comprador",
-                  "Estado",
-                  "Pago de la compra",
-                  "Preparación / envío",
-                  "Total",
-                ].map((label) => (
+                {ORDER_LIST_HEADERS.map((label) => (
                   <TableHead key={label}>{label}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {result.orders.map((order) => (
-                <TableRow key={order.id}>
+                <TableRow key={order.id} className="relative">
                   <TableCell>
                     <OrderImages items={order.items} images={images} />
                   </TableCell>
                   <TableCell>
                     <Link
-                      href={`/dashboard/orders/${order.id}`}
-                      className="font-semibold hover:underline"
+                      href={`/dashboard/orders/${encodeURIComponent(order.id)}`}
+                      aria-label={`Ver pedido ${formatOrderNumber(order)}`}
+                      className="whitespace-nowrap font-semibold outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
                     >
                       {formatOrderNumber(order)}
                     </Link>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 whitespace-nowrap text-xs text-muted-foreground">
                       {orderDate(order.created_at)}
                     </p>
                     <div className="mt-2 space-y-2">
@@ -217,38 +300,16 @@ export async function OrderResults({
             No hay pedidos con estos filtros.
           </p>
         )}
-        <nav
-          aria-label="Páginas de pedidos"
-          className="mt-5 flex flex-wrap items-center justify-between gap-3"
-        >
-          <p className="text-xs text-muted-foreground">
-            {result.orders.length
-              ? `${result.offset + 1}–${result.offset + result.orders.length} de ${result.count}`
-              : `0 de ${result.count}`}
-          </p>
-          <div className="flex gap-2">
-            {result.offset > 0 && (
-              <Button asChild size="sm" variant="outline">
-                <Link
-                  href={orderListHref(filters, result.offset - result.limit)}
-                >
-                  Anterior
-                </Link>
-              </Button>
-            )}
-            {result.offset + result.limit < result.count && (
-              <Button asChild size="sm" variant="outline">
-                <Link
-                  href={orderListHref(filters, result.offset + result.limit)}
-                >
-                  Siguiente
-                </Link>
-              </Button>
-            )}
-          </div>
-        </nav>
-      </CardContent>
-    </Card>
+        <TablePagination
+          label="Páginas de pedidos"
+          count={result.count}
+          offset={result.offset}
+          limit={result.limit}
+          itemCount={result.orders.length}
+          hrefForOffset={(offset) => orderListHref(filters, offset)}
+        />
+      </div>
+    </AdminAutoRefresh>
   );
 }
 function OrderDetails({

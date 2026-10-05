@@ -62,14 +62,14 @@ export function isUsCart(cart: HttpTypes.StoreCart) {
   )
 }
 
-export function shippingGroups(
-  options: Record<string, ShippingOptionDTO[]>,
+export function shippingGroups<Option extends ShippingOptionDTO>(
+  options: Record<string, Option[]>,
   cart?: HttpTypes.StoreCart,
 ) {
   return Object.entries(options).flatMap(([sellerId, entries]) => {
     const profiles = new Map<
       ShippingOptionDTO["shipping_profile_id"],
-      ShippingOptionDTO[]
+      Option[]
     >()
     for (const option of entries) {
       const choices = profiles.get(option.shipping_profile_id)
@@ -155,4 +155,21 @@ export function selectedShippingOptions(
     }
     return id
   })
+}
+
+export function hasEligibleShippingSelection(
+  cart: HttpTypes.StoreCart,
+  options: Record<string, ShippingOptionDTO[]>,
+) {
+  const methods = cart.shipping_methods ?? []
+  const groups = shippingGroups(options, cart)
+  if (!hasShippingCoverage(cart, options) || methods.length !== groups.length) {
+    return false
+  }
+  return groups.every(
+    (group) =>
+      methods.filter((method) =>
+        group.choices.some((choice) => choice.id === method.shipping_option_id),
+      ).length === 1,
+  )
 }

@@ -6,7 +6,10 @@ import type {
   WizardStep,
 } from "@marketplace-v2/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
+import { UsAddressFields } from "@marketplace-v2/ui/us-address-fields"
+import { normalizeUsState } from "@marketplace-v2/ui/us-states"
 import type { ChangeEvent, ComponentProps } from "react"
+import { useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Field,
@@ -19,7 +22,6 @@ import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"
 import { UsPhoneInput } from "@/features/account/components/us-phone-input"
-import { US_STATES } from "@/features/account/us-states"
 import { copyBusinessAddress } from "../validation"
 
 function TextField({
@@ -75,6 +77,7 @@ export function ApplicationFields({
   categories: HttpTypes.StoreProductCategory[]
   addresses: HttpTypes.StoreCustomerAddress[]
 }) {
+  const [addressSelectionKey, setAddressSelectionKey] = useState(0)
   const responsible = (key: keyof DraftData["responsible"], value: string) =>
     onChange({ ...draft, responsible: { ...draft.responsible, [key]: value } })
   const store = (key: keyof DraftData["store"], value: string) =>
@@ -232,8 +235,10 @@ export function ApplicationFields({
               const selected = addresses.find(
                 (item) => item.id === e.target.value,
               )
-              if (selected)
+              if (selected) {
                 activity("business_address", copyBusinessAddress(selected))
+                setAddressSelectionKey((current) => current + 1)
+              }
             }}
           >
             <NativeSelectOption value="">
@@ -270,36 +275,22 @@ export function ApplicationFields({
         onChange={(e) => changeAddress("address_2", e.target.value)}
       />
       <div className="grid gap-6 sm:grid-cols-2">
-        <TextField
-          id="activity.business_address.city"
-          label="Ciudad"
-          autoComplete="address-level2"
-          value={address.city}
-          maxLength={100}
-          onChange={(e) => changeAddress("city", e.target.value)}
-          error={errors["activity.business_address.city"]}
+        <UsAddressFields
+          key={addressSelectionKey}
+          idPrefix="activity.business_address"
+          provinceName="activity.business_address.province"
+          cityName="activity.business_address.city"
+          province={normalizeUsState(address.province)}
+          city={address.city}
+          onChange={(location) =>
+            activity("business_address", { ...address, ...location })
+          }
+          autoCompletePrefix=""
+          errors={{
+            province: errors["activity.business_address.province"],
+            city: errors["activity.business_address.city"],
+          }}
         />
-        <Field>
-          <FieldLabel htmlFor="province">Estado</FieldLabel>
-          <NativeSelect
-            id="province"
-            autoComplete="address-level1"
-            value={address.province.toLowerCase()}
-            aria-invalid={Boolean(errors["activity.business_address.province"])}
-            aria-describedby="province-error"
-            onChange={(e) => changeAddress("province", e.target.value)}
-          >
-            <NativeSelectOption value="">Seleccionar estado</NativeSelectOption>
-            {US_STATES.map((state) => (
-              <NativeSelectOption key={state.value} value={state.value}>
-                {state.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-          <FieldError id="province-error">
-            {errors["activity.business_address.province"]}
-          </FieldError>
-        </Field>
         <TextField
           id="activity.business_address.postal_code"
           label="Código postal (ZIP)"

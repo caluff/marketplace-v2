@@ -31,12 +31,13 @@ type ReportingGroupProjection = {
   >;
 };
 
-async function readReportingGroups(container: MedusaContainer) {
+async function readReportingGroups(container: MedusaContainer, signal?: AbortSignal) {
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   const groups: ReportingGroupProjection[] = [];
   let sourceLimitReached = false;
 
   for (let skip = 0; skip <= MAX_REPORT_GROUPS; skip += GROUP_PAGE_SIZE) {
+    signal?.throwIfAborted();
     const take = Math.min(GROUP_PAGE_SIZE, MAX_REPORT_GROUPS + 1 - skip);
     const { data } = await query.graph(
       {
@@ -52,6 +53,7 @@ async function readReportingGroups(container: MedusaContainer) {
       },
       { cache: { enable: false } },
     );
+    signal?.throwIfAborted();
     const page = data as unknown as ReportingGroupProjection[];
     groups.push(...page);
     if (groups.length > MAX_REPORT_GROUPS) {
@@ -70,13 +72,15 @@ async function readSources(
   selectOrderId: (groupId: string) => string | undefined,
   actorId: string,
   sellerId?: string,
+  signal?: AbortSignal,
 ) {
   const sources: FinanceReportingSources[] = [];
   const failures: FinanceReportingSources[] = [];
   let nextIndex = 0;
-  await Promise.all(
-    Array.from({ length: SOURCE_CONCURRENCY }, async () => {
+  const workers = await Promise.allSettled(
+    Array.from({ length: sellerId === undefined ? 2 : SOURCE_CONCURRENCY }, async () => {
       while (nextIndex < groupIds.length) {
+        signal?.throwIfAborted();
         const groupId = groupIds[nextIndex++];
         const orderId = selectOrderId(groupId);
         if (!orderId) continue;
@@ -89,6 +93,7 @@ async function readSources(
             }),
           );
         } catch {
+          signal?.throwIfAborted();
           failures.push({
             facts: [],
             costs: [],
@@ -107,6 +112,10 @@ async function readSources(
       }
     }),
   );
+  // Keep an abandoned flight alive until every active source read has drained.
+  signal?.throwIfAborted();
+  const failure = workers.find((worker) => worker.status === "rejected");
+  if (failure?.status === "rejected") throw failure.reason;
   return [...sources, ...failures];
 }
 
@@ -117,9 +126,10 @@ export async function readFinanceReporting(
     query: FinanceReportingQuery;
     seller_id?: string;
     generated_at?: Date;
+    signal?: AbortSignal;
   },
 ): Promise<FinanceReportingResponse> {
-  const { groups, sourceLimitReached } = await readReportingGroups(container);
+  const { groups, sourceLimitReached } = await readReportingGroups(container, input.signal);
   const ownOrderByGroup = new Map<string, string>();
   const orderReferences = new Map<
     string,
@@ -160,7 +170,9 @@ export async function readFinanceReporting(
     (groupId) => ownOrderByGroup.get(groupId),
     input.actor_id,
     input.seller_id,
+    input.signal,
   );
+  input.signal?.throwIfAborted();
   const window = resolveFinanceReportingWindow(
     input.query.period,
     input.generated_at ?? new Date(),

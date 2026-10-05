@@ -5,12 +5,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DataError,
-  PageHeading,
   StatusBadge,
 } from "@/features/workspace/components";
+import { AddressForm } from "@/features/workspace/address-form";
 import { MutationForm } from "@/features/workspace/mutation-form";
 import {
-  updateAddressAction,
   updateCompanyAction,
   updateProfileAction,
 } from "@/features/workspace/actions";
@@ -28,15 +27,8 @@ export default async function SettingsPage({
     params.section === "address" || params.section === "company"
       ? params.section
       : "profile";
-  const title =
-    section === "address"
-      ? "Dirección comercial"
-      : section === "company"
-        ? "Información de la empresa"
-        : "Perfil público";
   return (
     <div className="max-w-4xl space-y-6">
-      <PageHeading eyebrow="Ajustes" title={title} />
       <Suspense
         key={section}
         fallback={
@@ -136,47 +128,7 @@ async function SellerSettingsContent({
             </p>
           </CardHeader>
           <CardContent>
-            <MutationForm
-              action={updateAddressAction}
-              submit="Guardar dirección"
-              hidden={{ country_code: "us" }}
-              fields={[
-                {
-                  name: "company",
-                  label: "Empresa",
-                  value: address?.company ?? "",
-                },
-                {
-                  name: "address_1",
-                  label: "Dirección",
-                  value: address?.address_1 ?? "",
-                  required: true,
-                },
-                {
-                  name: "address_2",
-                  label: "Apartamento / complemento",
-                  value: address?.address_2 ?? "",
-                },
-                {
-                  name: "city",
-                  label: "Ciudad",
-                  value: address?.city ?? "",
-                  required: true,
-                },
-                {
-                  name: "province",
-                  label: "Departamento / provincia",
-                  value: address?.province ?? "",
-                },
-                {
-                  name: "postal_code",
-                  label: "Código postal",
-                  value: address?.postal_code ?? "",
-                  required: true,
-                  maxLength: 30,
-                },
-              ]}
-            />
+            <AddressForm address={address} />
           </CardContent>
         </Card>
       ) : null}

@@ -5,6 +5,7 @@ import type {
   WizardStep,
 } from "@marketplace-v2/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
+import { normalizeUsState } from "@marketplace-v2/ui/us-states"
 import { normalizeUsPhone } from "../account/validation"
 import { US_STATES } from "../account/us-states"
 
@@ -67,7 +68,7 @@ export function copyBusinessAddress(
     address_1: address.address_1 ?? "",
     address_2: address.address_2 ?? "",
     city: address.city ?? "",
-    province: address.province?.toLowerCase() ?? "",
+    province: normalizeUsState(address.province ?? ""),
     postal_code: address.postal_code ?? "",
     country_code: address.country_code?.toLowerCase() ?? "",
   }

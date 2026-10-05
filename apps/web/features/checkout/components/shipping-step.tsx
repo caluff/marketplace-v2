@@ -1,7 +1,6 @@
 "use client"
 
 import type { HttpTypes, ShippingOptionDTO } from "@medusajs/types"
-import type { HttpTypes as MercurHttpTypes } from "@mercurjs/types"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useActionState, useState } from "react"
@@ -16,6 +15,11 @@ import {
   hasShippingCoverage,
   shippingGroups,
 } from "@/features/cart/presentation"
+import {
+  isStorePickup,
+  pickupAddress,
+  type CheckoutShippingOptions,
+} from "@/features/cart/shipping"
 
 function shippingPrice(option: ShippingOptionDTO, currency: string) {
   if (
@@ -33,7 +37,7 @@ export function ShippingStep({
   options,
 }: {
   cart: HttpTypes.StoreCart
-  options: MercurHttpTypes.StoreSellerShippingOptionsResponse["shipping_options"]
+  options: CheckoutShippingOptions
 }) {
   const router = useRouter()
   const groups = shippingGroups(options, cart)
@@ -64,16 +68,19 @@ export function ShippingStep({
     {},
   )
   const hasCoverage = hasShippingCoverage(cart, options)
+  const hasSelection = groups.every((group) =>
+    group.choices.some((option) => option.id === selected[group.key]),
+  )
 
   return (
     <form action={action} className="space-y-6" aria-busy={pending}>
-      <h2 className="text-2xl font-medium tracking-tight">Método de envío</h2>
+      <h2 className="text-2xl font-medium tracking-tight">Método de entrega</h2>
       {hasCoverage ? (
         groups.map((group, index) => (
           <fieldset key={group.key} disabled={pending} className="space-y-3">
             <legend className="mb-3 text-sm font-semibold">
               {groups.length > 1
-                ? `Envío ${index + 1}`
+                ? `Entrega ${index + 1}`
                 : "Opciones disponibles"}
             </legend>
             {group.choices.map((option) => (
@@ -97,9 +104,18 @@ export function ShippingStep({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold">
-                    {option.name}
+                    {isStorePickup(option) ? "Recogida en tienda" : option.name}
                   </span>
-                  {option.type?.description ? (
+                  {!isStorePickup(option) ? (
+                    <span className="mt-1 block text-sm text-muted-foreground">
+                      Envío a tu dirección
+                    </span>
+                  ) : null}
+                  {pickupAddress(option) ? (
+                    <span className="mt-1 block text-sm text-muted-foreground">
+                      {pickupAddress(option)}
+                    </span>
+                  ) : option.type?.description ? (
                     <span className="mt-1 block text-sm text-muted-foreground">
                       {option.type.description}
                     </span>
@@ -117,7 +133,7 @@ export function ShippingStep({
           role="status"
           className="border border-border bg-muted/30 p-5 text-sm"
         >
-          No hay opciones de envío para todos los productos a esta dirección.
+          No hay opciones de entrega para todos los productos a esta dirección.
           Cambia la dirección o revisa tu carrito.
         </p>
       )}
@@ -130,7 +146,7 @@ export function ShippingStep({
         <Button asChild variant="outline">
           <Link href="/checkout?step=address">Editar dirección</Link>
         </Button>
-        <Button type="submit" disabled={pending || !hasCoverage}>
+        <Button type="submit" disabled={pending || !hasCoverage || !hasSelection}>
           {pending ? "Guardando…" : "Continuar al pago"}
         </Button>
       </div>

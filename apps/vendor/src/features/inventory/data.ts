@@ -1,14 +1,29 @@
 import { FetchError } from "@medusajs/js-sdk";
-import type { HttpTypes } from "@mercurjs/types";
+import type { HttpTypes, OfferDTO, ProductVariantDTO } from "@mercurjs/types";
 import type { scopedClient } from "../workspace/operations";
 import type { listInput } from "../workspace/presentation";
 
 type Client = ReturnType<typeof scopedClient>;
+type VariantOption = NonNullable<ProductVariantDTO["options"]>[number];
+type InventoryOffer = Pick<OfferDTO, "id"> & {
+  product?: Pick<
+    NonNullable<OfferDTO["product"]>,
+    "id" | "title" | "thumbnail"
+  > | null;
+  product_variant?:
+    | (Pick<ProductVariantDTO, "id" | "title"> & {
+        options?: (Pick<VariantOption, "value"> & {
+          option?: Pick<NonNullable<VariantOption["option"]>, "title"> | null;
+        })[];
+      })
+    | null;
+};
 // Mercur's native list expands this relation, omitted by its base InventoryItemDTO alias.
 export type InventoryItemWithLevels = Pick<
   HttpTypes.VendorInventoryItem,
-  "id" | "title" | "sku"
+  "id" | "title"
 > & {
+  offers?: InventoryOffer[];
   location_levels?: Pick<
     HttpTypes.VendorInventoryLevel,
     "id" | "location_id" | "stocked_quantity" | "reserved_quantity"
@@ -59,7 +74,7 @@ export function inventoryPage(
     limit: input.limit,
     offset: input.offset,
     fields:
-      "id,title,sku,location_levels.id,location_levels.location_id,location_levels.stocked_quantity,location_levels.reserved_quantity",
+      "id,title,offers.id,offers.product.id,offers.product.title,offers.product.thumbnail,offers.product_variant.id,offers.product_variant.title,offers.product_variant.options.value,offers.product_variant.options.option.title,location_levels.id,location_levels.location_id,location_levels.stocked_quantity,location_levels.reserved_quantity",
   });
 }
 

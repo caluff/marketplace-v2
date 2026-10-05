@@ -1,4 +1,5 @@
 import type Medusa from "@medusajs/js-sdk";
+import { normalizeUsState } from "@marketplace-v2/ui/us-states";
 import type { InventoryLevelDTO, HttpTypes as MedusaHttpTypes } from "@medusajs/types";
 import type {
   CreateProductDTO,
@@ -125,13 +126,18 @@ export function vendorOperations(authorize: AuthorizeVendor) {
         throw new Error(
           "Las direcciones de la tienda deben estar en Estados Unidos.",
         );
+      const province = normalizeUsState(textField(form, "province", true));
+      if (!province) throw new Error("Selecciona un estado de Estados Unidos.");
+      const postalCode = textField(form, "postal_code", true, 10);
+      if (!/^\d{5}(-\d{4})?$/.test(postalCode))
+        throw new Error("Usa un código postal de 5 dígitos o ZIP+4.");
       const body = {
         company: textField(form, "company") || null,
         address_1: textField(form, "address_1", true),
         address_2: textField(form, "address_2") || null,
         city: textField(form, "city", true),
-        province: textField(form, "province") || null,
-        postal_code: textField(form, "postal_code", true, 30),
+        province,
+        postal_code: postalCode,
         country_code: country,
       } satisfies UpdateSellerAddressDTO;
       return client.post<HttpTypes.VendorSellerResponse>(

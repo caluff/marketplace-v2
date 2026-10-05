@@ -2,6 +2,7 @@ import type {
   CatalogPermissionDTO,
   CatalogPermissionMode,
 } from "@marketplace-v2/api/catalog-permission-contracts";
+import { DEFAULT_TABLE_PAGE_SIZE, parseTableOffset } from "@/lib/pagination";
 
 export const CATALOG_PERMISSION_LABELS = {
   supervised: "Supervisado",
@@ -35,7 +36,6 @@ export const STORE_STATUS_LABELS = {
 export function parseStoreFilters(
   params: Record<string, string | string[] | undefined>,
 ) {
-  const offset = typeof params.offset === "string" ? Number(params.offset) : 0;
   return {
     q: typeof params.q === "string" ? params.q.trim().slice(0, 100) : "",
     status:
@@ -43,11 +43,8 @@ export function parseStoreFilters(
       Object.hasOwn(STORE_STATUS_LABELS, params.status)
         ? (params.status as keyof typeof STORE_STATUS_LABELS)
         : ("all" as const),
-    offset:
-      Number.isSafeInteger(offset) && offset >= 0
-        ? Math.min(offset, 1_000_000)
-        : 0,
-    limit: 20,
+    offset: parseTableOffset(params.offset),
+    limit: DEFAULT_TABLE_PAGE_SIZE,
   };
 }
 

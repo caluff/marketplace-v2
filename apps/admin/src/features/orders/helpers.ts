@@ -2,6 +2,7 @@ import type { HttpTypes } from "@medusajs/types";
 import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
+import { DEFAULT_TABLE_PAGE_SIZE, parseTableOffset } from "@/lib/pagination";
 
 export const ORDER_STATUSES = {
   pending: "Abierto",
@@ -16,15 +17,11 @@ export function parseOrderFilters(
     Object.hasOwn(ORDER_STATUSES, params.status)
       ? (params.status as keyof typeof ORDER_STATUSES)
       : ("all" as const);
-  const offset =
-    typeof params.offset === "string" && /^\d+$/.test(params.offset)
-      ? Math.min(Number(params.offset), 1_000_000)
-      : 0;
   return {
     q: typeof params.q === "string" ? params.q.trim().slice(0, 100) : "",
     status,
-    offset,
-    limit: 20,
+    offset: parseTableOffset(params.offset),
+    limit: DEFAULT_TABLE_PAGE_SIZE,
   };
 }
 export function orderListHref(

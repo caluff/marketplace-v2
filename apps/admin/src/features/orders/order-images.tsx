@@ -16,7 +16,11 @@ export function OrderItemImage({
   return src ? (
     <ProductThumbnail src={src} alt={item.title} />
   ) : (
-    <Suspense fallback={<Skeleton className="size-12 shrink-0 rounded-md" />}>
+    <Suspense
+      fallback={
+        <Skeleton data-slot="thumbnail" className="size-12 shrink-0 rounded-md" />
+      }
+    >
       <ResolvedItemImage item={item} images={images} />
     </Suspense>
   );

@@ -1,5 +1,6 @@
 import type Medusa from "@medusajs/js-sdk"
 import type { HttpTypes } from "@medusajs/types"
+import { normalizeUsState } from "@marketplace-v2/ui/us-states"
 
 import { normalizeUsPhone, validateAddress } from "../account/validation"
 
@@ -34,7 +35,7 @@ export function checkoutAddressValues(
     address_1: address.address_1 ?? "",
     address_2: address.address_2 ?? "",
     city: address.city ?? "",
-    province: address.province?.toLowerCase() ?? "",
+    province: normalizeUsState(address.province ?? ""),
     postal_code: address.postal_code ?? "",
     country_code: address.country_code?.toLowerCase() ?? "",
     phone: normalizeUsPhone(address.phone ?? "") ?? address.phone ?? "",

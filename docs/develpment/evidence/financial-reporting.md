@@ -1,5 +1,9 @@
 # Financial reporting (F09)
 
+The current Admin read uses a private prepared registry. Its implementation,
+freshness guarantees and measured performance are documented in
+[the 2026-10-05 performance evidence](admin-reporting-performance-20261005.md).
+
 ## Scope and filters
 
 The admin and vendor dashboard reports support `today`, `last_7_days`,

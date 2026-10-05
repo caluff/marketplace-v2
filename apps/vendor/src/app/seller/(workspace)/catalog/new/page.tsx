@@ -16,7 +16,7 @@ export default async function NewProductPage() {
       <PageHeading eyebrow="Catálogo" title="Crear producto" />
       <Card>
         <CardHeader>
-          <CardTitle>Información y variantes</CardTitle>
+          <CardTitle>Datos del producto</CardTitle>
         </CardHeader>
         <CardContent>
           <ProductForm

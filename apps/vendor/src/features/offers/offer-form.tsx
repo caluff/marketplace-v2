@@ -1,23 +1,43 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useId, useRef, useState } from "react";
 import type { ShippingProfileDTO } from "@medusajs/types";
+import type { ProductDTO, ProductVariantDTO } from "@mercurjs/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { notifyFeedback } from "@/lib/feedback";
-import type { MutationState } from "../workspace/presentation";
-import { saveOfferAction } from "./actions";
-import { shippingProfileName } from "../shipping/presentation";
+import { savePresentationAction } from "./actions";
+import type { PresentationSaveState } from "./save-presentation";
+import {
+  hasPresentationOptions,
+  hasVariantCombination,
+  variantOptionValues,
+} from "../catalog/variant-options";
+import { usePresentationEditor } from "../catalog/presentation-editor";
+import { useUnsavedChanges } from "../workspace/unsaved-changes";
+import {
+  isShippingProfileArchived,
+  shippingProfileName,
+} from "../shipping/presentation";
 
 export function OfferForm({
   variantId,
+  product,
+  variant,
+  hasPending,
+  masterSku,
   warehouseId,
   profiles,
   offer,
   defaultSku,
 }: {
   variantId: string;
+  product: ProductDTO;
+  variant: ProductVariantDTO;
+  hasPending: boolean;
+  masterSku: string;
   warehouseId: string;
   profiles: ShippingProfileDTO[];
   offer?: {
@@ -29,35 +49,123 @@ export function OfferForm({
   defaultSku: string;
 }) {
   const prefix = useId();
+  const editor = usePresentationEditor();
+  const hasOptions = hasPresentationOptions(product);
+  const [title, setTitle] = useState(variant.title);
+  const [selectedOptions, setSelectedOptions] = useState(() =>
+    variantOptionValues(product, variant),
+  );
+  const [savedVariant, setSavedVariant] = useState({
+    title: variant.title,
+    options: variantOptionValues(product, variant),
+  });
+  const hasDuplicate = hasVariantCombination(
+    product,
+    selectedOptions,
+    variant.id,
+  );
+  const changeVariant =
+    hasOptions &&
+    !hasPending &&
+    (title.trim() !== savedVariant.title ||
+      JSON.stringify(selectedOptions) !== JSON.stringify(savedVariant.options));
   const [amount, setAmount] = useState(offer?.amount ?? "");
-  const [sku, setSku] = useState(offer?.sku || defaultSku);
+  const [sku] = useState(offer?.sku || defaultSku);
   const [stock, setStock] = useState("0");
+  const activeProfiles = profiles.filter(
+    (profile) => !isShippingProfileArchived(profile),
+  );
   const [shippingProfileId, setShippingProfileId] = useState(
-    offer?.shippingProfileId ?? (profiles.length === 1 ? profiles[0].id : ""),
+    offer?.shippingProfileId ??
+      (activeProfiles.length === 1 ? activeProfiles[0].id : ""),
   );
   const [savedValues, setSavedValues] = useState({
     amount: offer?.amount ?? "",
     sku: offer?.sku ?? defaultSku,
     shippingProfileId: offer?.shippingProfileId ?? "",
   });
+  const formRef = useRef<HTMLFormElement>(null);
+  const draft = {
+    title: title.trim(),
+    options: selectedOptions,
+    amount: amount === "" ? "" : String(Number(amount)),
+    stock: String(Number(stock)),
+    shippingProfileId,
+  };
+  const [savedDraft, setSavedDraft] = useState(draft);
+  const unsaved = useUnsavedChanges(
+    JSON.stringify(draft) !== JSON.stringify(savedDraft),
+    formRef,
+  );
   const [state, action, isPending] = useActionState(
-    async (previous: MutationState, form: FormData) => {
-      const result = await saveOfferAction(previous, form);
-      if (result.status === "success") {
-        setSavedValues({
-          amount: String(Number(form.get("amount"))),
-          sku: String(form.get("offer_sku") ?? "").trim(),
-          shippingProfileId: String(form.get("shipping_profile_id") ?? ""),
-        });
+    async (previous: PresentationSaveState, form: FormData) => {
+      try {
+        const result = await savePresentationAction(previous, form);
+        if (result.savedVariant) {
+          setSavedVariant({
+            title: title.trim(),
+            options: [...selectedOptions],
+          });
+          setSavedDraft((previousDraft) => ({
+            ...previousDraft,
+            title: draft.title,
+            options: [...draft.options],
+          }));
+        }
+        if (result.savedOffer) {
+          setSavedValues({
+            amount: String(Number(form.get("amount"))),
+            sku: String(form.get("offer_sku") ?? "").trim(),
+            shippingProfileId: String(form.get("shipping_profile_id") ?? ""),
+          });
+          setSavedDraft((previousDraft) => ({
+            ...previousDraft,
+            amount: draft.amount,
+            stock: draft.stock,
+            shippingProfileId: draft.shippingProfileId,
+          }));
+        }
+        notifyFeedback(result);
+        if (result.status === "success") {
+          unsaved.markSaved();
+          editor?.close();
+        }
+        return result;
+      } finally {
+        editor?.setBusy(false);
       }
-      notifyFeedback(result);
-      return result;
     },
     { status: "idle" },
   );
+  const changeOffer =
+    !offer ||
+    Number(amount) !== Number(savedValues.amount) ||
+    shippingProfileId !== savedValues.shippingProfileId;
   return (
-    <form action={action} className="space-y-4">
+    <form
+      ref={formRef}
+      action={action}
+      onSubmit={() => editor?.setBusy(true)}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && !isPending && editor) {
+          event.preventDefault();
+          event.stopPropagation();
+          unsaved.confirmDiscard(editor.close);
+        }
+      }}
+      className="space-y-3"
+      aria-busy={isPending}
+    >
       <input type="hidden" name="variant_id" value={variantId} />
+      <input type="hidden" name="id" value={product.id} />
+      <input type="hidden" name="master_sku" value={masterSku} />
+      <input
+        type="hidden"
+        name="change_variant"
+        value={String(changeVariant)}
+      />
+      <input type="hidden" name="change_offer" value={String(changeOffer)} />
+      <input type="hidden" name="offer_sku" value={sku} />
       <input type="hidden" name="location_id" value={warehouseId} />
       {offer ? (
         <>
@@ -75,7 +183,82 @@ export function OfferForm({
           />
         </>
       ) : null}
-      <fieldset disabled={isPending} className="grid gap-4 sm:grid-cols-2">
+      <fieldset
+        disabled={isPending}
+        className={`grid items-start gap-4 ${offer ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}
+      >
+        {hasOptions ? (
+          <fieldset
+            disabled={hasPending}
+            className="grid gap-4 sm:col-span-2 sm:grid-cols-2 lg:col-span-full"
+          >
+            <Field className="sm:col-span-2">
+              <FieldLabel htmlFor={`${prefix}-title`}>
+                Nombre de la presentación
+              </FieldLabel>
+              <Input
+                id={`${prefix}-title`}
+                name="title"
+                required
+                maxLength={200}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+              />
+            </Field>
+            {(product.options ?? []).map((option, index) =>
+              option.title === "__default__" ? (
+                <input
+                  key={option.id}
+                  type="hidden"
+                  name={`option_${index}`}
+                  value={selectedOptions[index] ?? ""}
+                />
+              ) : (
+                <Field key={option.id}>
+                  <FieldLabel htmlFor={`${prefix}-option-${index}`}>
+                    {option.title}
+                  </FieldLabel>
+                  <NativeSelect
+                    id={`${prefix}-option-${index}`}
+                    name={`option_${index}`}
+                    required
+                    value={selectedOptions[index] ?? ""}
+                    aria-describedby={
+                      hasDuplicate ? `${prefix}-duplicate` : undefined
+                    }
+                    onChange={(event) =>
+                      setSelectedOptions((current) =>
+                        current.map((value, at) =>
+                          at === index ? event.target.value : value,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="" disabled>
+                      Seleccionar valor
+                    </option>
+                    {option.values?.map((value) => (
+                      <option key={value.id} value={value.value}>
+                        {value.value}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </Field>
+              ),
+            )}
+          </fieldset>
+        ) : (
+          <input type="hidden" name="title" value={title} />
+        )}
+        {hasDuplicate ? (
+          <p
+            id={`${prefix}-duplicate`}
+            role="status"
+            className="text-sm text-muted-foreground col-span-full"
+          >
+            Esta combinación ya tiene una presentación. Elige otros valores.
+          </p>
+        ) : null}
         <Field>
           <FieldLabel htmlFor={`${prefix}-amount`}>
             Precio de venta (USD) *
@@ -89,9 +272,12 @@ export function OfferForm({
             max={999999999.99}
             step="0.01"
             value={amount}
+            aria-describedby={`${prefix}-amount-help`}
             onChange={(event) => setAmount(event.target.value)}
           />
-          <FieldDescription>Antes de impuestos.</FieldDescription>
+          <FieldDescription id={`${prefix}-amount-help`}>
+            Antes de impuestos.
+          </FieldDescription>
         </Field>
         {!offer ? (
           <>
@@ -109,9 +295,6 @@ export function OfferForm({
                 value={stock}
                 onChange={(event) => setStock(event.target.value)}
               />
-              <FieldDescription>
-                Se registran en el único almacén de tu tienda.
-              </FieldDescription>
             </Field>
           </>
         ) : null}
@@ -119,55 +302,50 @@ export function OfferForm({
           <FieldLabel htmlFor={`${prefix}-profile`}>
             Perfil de envío *
           </FieldLabel>
-          <select
+          <NativeSelect
             id={`${prefix}-profile`}
             name="shipping_profile_id"
             required
             value={shippingProfileId}
             onChange={(event) => setShippingProfileId(event.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="" disabled>
               Seleccionar perfil
             </option>
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {shippingProfileName(profile)}
-              </option>
-            ))}
-          </select>
+            {profiles
+              .filter(
+                (profile) =>
+                  !isShippingProfileArchived(profile) ||
+                  profile.id === offer?.shippingProfileId,
+              )
+              .map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {shippingProfileName(profile)}
+                  {isShippingProfileArchived(profile) ? " (archivado)" : ""}
+                </option>
+              ))}
+          </NativeSelect>
         </Field>
-        <details className="sm:col-span-2">
-          <summary className="w-fit cursor-pointer text-sm text-primary underline underline-offset-4">
-            Opciones avanzadas
-          </summary>
-          <Field className="mt-4 max-w-lg">
-            <FieldLabel htmlFor={`${prefix}-sku`}>
-              Código interno (SKU)
-            </FieldLabel>
-            <Input
-              id={`${prefix}-sku`}
-              name="offer_sku"
-              required
-              maxLength={100}
-              value={sku}
-              onChange={(event) => setSku(event.target.value)}
-            />
-            <FieldDescription>
-              Ya está completado. Cámbialo solo si usas tus propios códigos de
-              inventario.
-            </FieldDescription>
-          </Field>
-        </details>
-        <Button type="submit" className="w-fit sm:col-span-2">
-          {isPending
-            ? "Guardando…"
-            : offer
-              ? "Guardar cambios"
-              : "Guardar precio y existencias"}
-        </Button>
+        <div
+          className={`flex flex-wrap gap-2 ${offer ? "sm:col-span-2" : "sm:col-span-2 lg:col-span-3"}`}
+        >
+          <Button
+            type="submit"
+            disabled={hasDuplicate || (!changeVariant && !changeOffer)}
+          >
+            {isPending ? "Guardando…" : "Guardar"}
+          </Button>
+          {editor ? (
+            <Button
+              variant="ghost"
+              onClick={() => unsaved.confirmDiscard(editor.close)}
+            >
+              Cancelar
+            </Button>
+          ) : null}
+        </div>
       </fieldset>
-      {state.message ? (
+      {state.status === "error" && state.message ? (
         <p
           role={state.status === "error" ? "alert" : "status"}
           className="rounded-lg border p-3 text-sm"

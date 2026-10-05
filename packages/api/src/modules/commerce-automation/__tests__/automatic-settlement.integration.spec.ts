@@ -13,6 +13,8 @@ import { FinanceRecoveryAttempt } from "../models/finance-recovery-attempt";
 import { FinanceProviderFact } from "../models/finance-provider-fact";
 import { FinanceProviderCost } from "../models/finance-provider-cost";
 import { OrderCompletion } from "../models/order-completion";
+import { VendorSettlementProjection } from "../models/vendor-settlement-projection";
+import { VendorFinanceReportingProjection } from "../models/vendor-finance-reporting-projection";
 import { Migration20261003061545 } from "../migrations/Migration20261003061545";
 import { originalSales } from "../../../lib/order-finance/__tests__/fixtures";
 import type { OriginalSale } from "../../../lib/order-finance/snapshot";
@@ -75,6 +77,8 @@ if (!enabled) {
         FinanceProviderFact,
         FinanceProviderCost,
         OrderCompletion,
+        VendorSettlementProjection,
+        VendorFinanceReportingProjection,
       ],
       hooks: {
         beforeModuleInit: async () => {

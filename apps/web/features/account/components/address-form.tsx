@@ -1,6 +1,8 @@
 "use client"
 
 import type { HttpTypes } from "@medusajs/types"
+import { UsAddressFields } from "@marketplace-v2/ui/us-address-fields"
+import { normalizeUsState } from "@marketplace-v2/ui/us-states"
 import { useActionState, useId, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -16,7 +18,6 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import {
   createAddressAction,
   updateAddressAction,
@@ -30,7 +31,6 @@ import {
   INITIAL_ACCOUNT_STATE,
   type AccountActionState,
 } from "@/features/account/types"
-import { US_STATES } from "@/features/account/us-states"
 
 export function AddressForm({
   customer,
@@ -57,7 +57,7 @@ export function AddressForm({
     address_1: address?.address_1 ?? "",
     address_2: address?.address_2 ?? "",
     city: address?.city ?? "",
-    province: address?.province?.toLowerCase() ?? "",
+    province: normalizeUsState(address?.province ?? ""),
     postal_code: address?.postal_code ?? "",
     phone: address ? (address.phone ?? "") : (customer.phone ?? ""),
   })
@@ -154,45 +154,16 @@ export function AddressForm({
             autoComplete="shipping address-line2"
             required={false}
           />
-          <AddressTextField
-            formId={formId}
-            name="city"
-            label="Ciudad"
-            value={values.city}
-            onChange={updateValue}
-            error={state.fieldErrors?.city}
-            autoComplete="shipping address-level2"
-            maxLength={100}
+          <UsAddressFields
+            idPrefix={formId}
+            province={values.province}
+            city={values.city}
+            onChange={(address) =>
+              setValues((current) => ({ ...current, ...address }))
+            }
+            disabled={pending}
+            errors={state.fieldErrors}
           />
-          <Field data-invalid={Boolean(state.fieldErrors?.province)}>
-            <FieldLabel htmlFor={`${formId}-province`}>Estado</FieldLabel>
-            <NativeSelect
-              id={`${formId}-province`}
-              name="province"
-              value={values.province}
-              onChange={(event) => updateValue("province", event.target.value)}
-              required
-              autoComplete="shipping address-level1"
-              aria-invalid={Boolean(state.fieldErrors?.province)}
-              aria-describedby={
-                state.fieldErrors?.province
-                  ? `${formId}-province-error`
-                  : undefined
-              }
-            >
-              <NativeSelectOption value="" disabled>
-                Selecciona un estado
-              </NativeSelectOption>
-              {US_STATES.map((state) => (
-                <NativeSelectOption key={state.value} value={state.value}>
-                  {state.label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-            <FieldError id={`${formId}-province-error`}>
-              {state.fieldErrors?.province}
-            </FieldError>
-          </Field>
           <Field data-invalid={Boolean(state.fieldErrors?.postal_code)}>
             <FieldLabel htmlFor={`${formId}-postal-code`}>
               Código postal

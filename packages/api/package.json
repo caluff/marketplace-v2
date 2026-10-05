@@ -5,6 +5,15 @@
   "description": "Mercur and Medusa backend for marketplace-v2.",
   "license": "MIT",
   "exports": {
+    "./customer-contracts": {
+      "types": "./.mercur/customer-contracts.d.ts"
+    },
+    "./order-notification-contracts": {
+      "types": "./.mercur/order-notification-contracts.d.ts"
+    },
+    "./shipping-contracts": {
+      "types": "./.mercur/shipping-contracts.d.ts"
+    },
     "./auth-contracts": {
       "types": "./.mercur/auth-contracts.d.ts"
     },
@@ -14,6 +23,9 @@
     "./catalog-permission-contracts": {
       "types": "./.mercur/catalog-permission-contracts.d.ts"
     },
+    "./catalog-management-contracts": {
+      "types": "./.mercur/catalog-management-contracts.d.ts"
+    },
     "./search-contracts": {
       "types": "./.mercur/search-contracts.d.ts"
     },
@@ -22,8 +34,16 @@
     }
   },
   "scripts": {
+    "customers:contracts:generate": "node scripts/generate-customer-contracts.cjs",
+    "customers:contracts:check": "node scripts/generate-customer-contracts.cjs --check",
+    "orders:contracts:generate": "node scripts/generate-order-notification-contracts.cjs",
+    "orders:contracts:check": "node scripts/generate-order-notification-contracts.cjs --check",
+    "shipping:contracts:generate": "node scripts/generate-shipping-contracts.cjs",
+    "shipping:contracts:check": "node scripts/generate-shipping-contracts.cjs --check",
     "catalog:contracts:generate": "node scripts/generate-catalog-permission-contracts.cjs",
     "catalog:contracts:check": "node scripts/generate-catalog-permission-contracts.cjs --check",
+    "catalog-management:contracts:generate": "node scripts/generate-catalog-management-contracts.cjs",
+    "catalog-management:contracts:check": "node scripts/generate-catalog-management-contracts.cjs --check",
     "auth:contracts:generate": "node scripts/generate-auth-contracts.cjs",
     "auth:contracts:check": "node scripts/generate-auth-contracts.cjs --check",
     "finance:contracts:generate": "node scripts/generate-finance-contracts.cjs",
@@ -63,6 +83,7 @@
     "cross-env": "10.1.0",
     "date-fns": "4.4.0",
     "http-proxy-middleware": "3.0.7",
+    "ioredis": "5.11.1",
     "libphonenumber-js": "^1.13.12",
     "resend": "6.26.0",
     "stripe": "15.12.0"

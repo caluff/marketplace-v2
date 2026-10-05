@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { FeedbackToast } from "@/components/feedback-toast";
-import { PageHeading } from "@/features/workspace/components";
 import { StripeAccountRefresh } from "@/features/stripe-connect/account-refresh";
 import {
   StripeAccountCard,
@@ -41,15 +38,6 @@ export default function PaymentsPage({
 }) {
   return (
     <div className="max-w-4xl space-y-6">
-      <PageHeading
-        eyebrow="Ajustes · Cobros"
-        title="Stripe Connect"
-        description="Configura y revisa la cuenta de cobros de tu tienda mediante el flujo seguro de Mercur y Stripe."
-      >
-        <Button asChild variant="outline">
-          <Link href="/seller/settings">Volver a ajustes</Link>
-        </Button>
-      </PageHeading>
       <p className="text-sm text-muted-foreground">
         Entorno de pruebas · Estados Unidos · USD. Esta configuración no
         habilita ventas reales.

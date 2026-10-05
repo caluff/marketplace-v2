@@ -2,13 +2,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeading } from "@/features/workspace/components";
 import { resultOf, workspace } from "@/features/workspace/data";
 import { sellerWarehouse } from "@/features/inventory/data";
-import {
-  WarehouseCard,
-  InventorySkeleton,
-} from "@/features/inventory/warehouse-card";
+import { WarehouseCard } from "@/features/inventory/warehouse-card";
 import { InventoryResults } from "@/features/inventory/inventory-results";
 
 export const metadata: Metadata = { title: "Inventario" };
@@ -21,19 +19,15 @@ export default async function InventoryPage({
   const warehouse = resultOf(sellerWarehouse(client));
   return (
     <div className="space-y-6">
-      <PageHeading
-        eyebrow="Inventario"
-        title="Existencias de tu almacén"
-        description="Consulta las unidades físicas, reservadas y disponibles en el almacén de tu solicitud aprobada."
-      >
+      <PageHeading title="Inventario">
         <Button asChild variant="outline">
           <Link href="/seller/inventory/locations">Ver almacén</Link>
         </Button>
       </PageHeading>
-      <Suspense fallback={<InventorySkeleton warehouse />}>
-        <WarehouseCard result={warehouse} />
+      <Suspense fallback={<Skeleton className="h-5 w-64" />}>
+        <WarehouseCard result={warehouse} compact />
       </Suspense>
-      <Suspense fallback={<InventorySkeleton />}>
+      <Suspense fallback={null}>
         <InventoryResults
           client={client}
           searchParams={searchParams}

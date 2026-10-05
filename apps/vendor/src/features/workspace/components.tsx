@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { statusLabel, PAGE_SIZE } from "./presentation";
 import { FeedbackToast } from "@/components/feedback-toast";
+import { RetryRead } from "./retry-read";
 
 export function PageHeading({
   eyebrow,
@@ -44,7 +45,15 @@ export function PageHeading({
   );
 }
 
-export function DataError({ message }: { message: string }) {
+export function DataError({
+  message,
+  onRetry,
+  isRetrying,
+}: {
+  message: string;
+  onRetry?: () => void;
+  isRetrying?: boolean;
+}) {
   return (
     <Card>
       <FeedbackToast feedback={{ status: "error", message }} />
@@ -54,10 +63,11 @@ export function DataError({ message }: { message: string }) {
           No pudimos cargar esta información
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <p role="alert" className="text-sm leading-6 text-muted-foreground">
           {message}
         </p>
+        <RetryRead onRetry={onRetry} isRetrying={isRetrying} />
       </CardContent>
     </Card>
   );

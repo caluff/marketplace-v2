@@ -5,6 +5,7 @@ import type {
 import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
+import { DEFAULT_TABLE_PAGE_SIZE, parseTableOffset } from "@/lib/pagination";
 
 export const APPLICATION_STATUS_LABELS = {
   draft: "Borrador",
@@ -14,7 +15,7 @@ export const APPLICATION_STATUS_LABELS = {
   rejected: "Rechazada",
 } satisfies Record<ApplicationStatus, string>;
 
-export const APPLICATION_PAGE_SIZE = 20;
+export const APPLICATION_PAGE_SIZE = DEFAULT_TABLE_PAGE_SIZE;
 
 export function parseApplicationFilters(
   params: Record<string, string | string[] | undefined>,
@@ -24,15 +25,10 @@ export function parseApplicationFilters(
     Object.hasOwn(APPLICATION_STATUS_LABELS, params.status)
       ? (params.status as ApplicationStatus)
       : "submitted";
-  const rawOffset =
-    typeof params.offset === "string" ? Number(params.offset) : 0;
   return {
     status,
     q: typeof params.q === "string" ? params.q.trim().slice(0, 100) : "",
-    offset:
-      Number.isSafeInteger(rawOffset) && rawOffset >= 0
-        ? Math.min(rawOffset, 1_000_000)
-        : 0,
+    offset: parseTableOffset(params.offset),
     limit: APPLICATION_PAGE_SIZE,
   };
 }

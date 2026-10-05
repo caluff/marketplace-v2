@@ -25,6 +25,21 @@ import {
   settlementPlanSchema,
 } from "./settlement-plan";
 import { assertOriginalGroup, originalSaleSchema } from "./snapshot";
+import {
+  financeCaptureAllocationSchema,
+  financeRefundAdjustmentSchema,
+  type FinanceCaptureAllocation,
+  type FinanceRefundAdjustment,
+  type FinanceReportingSources,
+} from "./reporting-sources";
+export {
+  financeCaptureAllocationSchema,
+  financeRefundAdjustmentSchema,
+  sellerReportingSourcesSchema,
+  type FinanceCaptureAllocation,
+  type FinanceRefundAdjustment,
+  type FinanceReportingSources,
+} from "./reporting-sources";
 
 type CurrentFinance = Awaited<ReturnType<typeof readOrderFinance>>;
 type FinanceReader = StripeFinanceReader & {
@@ -38,62 +53,6 @@ const payoutEvidenceSchema = z.object({
   payout_id: z.string().optional(),
   transfer_id: z.string().optional(),
 });
-const money = z
-  .number()
-  .nonnegative()
-  .refine((value) => {
-    try {
-      return financeAmount(value) === value;
-    } catch {
-      return false;
-    }
-  });
-
-export const financeCaptureAllocationSchema = z.object({
-  group_id: z.string(),
-  order_id: z.string(),
-  seller_id: z.string(),
-  capture_fact_key: z.string().nullable(),
-  status: z.enum(["confirmed", "not_captured", "unverified"]),
-  effective_at: providerFinanceFactSchema.shape.effective_at,
-  effective_source: z.enum(["stripe_event_created", "unknown"]),
-  effective_time_status: z.enum(["verified", "unknown", "not_applicable"]),
-  recorded_at: providerFinanceFactSchema.shape.recorded_at.nullable(),
-  reconciled_at: providerFinanceFactSchema.shape.reconciled_at,
-  currency_code: z.literal("usd"),
-  data_kind: dataKindSchema,
-  original: originalSaleSchema.nullable(),
-  captured_amount: money.nullable(),
-  merchandise_collected: money.nullable(),
-  commission_recognized: money.nullable(),
-  seller_entitlement_recognized: money.nullable(),
-  // Components belong to the immutable sale, never to free-amount refunds.
-  component_attribution: z.enum(["original_snapshot", "unknown"]),
-});
-export type FinanceCaptureAllocation = z.infer<
-  typeof financeCaptureAllocationSchema
->;
-
-export const financeRefundAdjustmentSchema = z.object({
-  fact_key: z.string(),
-  operation_id: z.string(),
-  operation_state: z.string(),
-  order_id: z.string(),
-  seller_id: z.string(),
-  amount: money,
-  seller_entitlement_reduced: money,
-  commission_returned: money,
-  currency_code: z.literal("usd"),
-  component_attribution: z.literal("unallocated"),
-});
-export type FinanceRefundAdjustment = z.infer<
-  typeof financeRefundAdjustmentSchema
->;
-export type FinanceReportingSources = ProviderFactsObservation & {
-  capture_allocations: FinanceCaptureAllocation[];
-  refund_adjustments: FinanceRefundAdjustment[];
-};
-
 const minorAmount = (amount: Parameters<typeof financeAmount>[0]) =>
   MathBN.mult(financeAmount(amount), 100).toNumber();
 const objectId = (value: string | { id: string } | null) =>
@@ -315,6 +274,28 @@ export async function recordOrderFinanceProviderFacts(
 export async function readOrderFinanceReportingSources(
   container: MedusaContainer,
   input: { order_id: string; actor_id: string; seller_id?: string },
+): Promise<FinanceReportingSources> {
+  return readFinanceReportingGroupSources(container, input, true);
+}
+
+/** Internal projection worker read: authorize one native order before reading its shared group.
+ * Shared evidence stays in the worker and must be redacted separately before persistence. */
+export async function readSellerGroupFinanceReportingSources(
+  container: MedusaContainer,
+  input: { order_id: string; actor_id: string; seller_id: string },
+): Promise<FinanceReportingSources> {
+  if (!input.seller_id)
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      "Select a seller for this reporting group.",
+    );
+  return readFinanceReportingGroupSources(container, input, false);
+}
+
+async function readFinanceReportingGroupSources(
+  container: MedusaContainer,
+  input: { order_id: string; actor_id: string; seller_id?: string },
+  redact: boolean,
 ): Promise<FinanceReportingSources> {
   if (input.seller_id === undefined)
     await requireFinanceOperator(container, input.actor_id);
@@ -552,33 +533,46 @@ export async function readOrderFinanceReportingSources(
       reason: "reporting_read_changed",
     });
   }
-  if (input.seller_id !== undefined) {
-    // Shared capture amounts, platform costs, and other sellers' evidence are private.
-    return {
-      facts: sources.facts.filter((fact) => fact.order_id === input.order_id),
-      costs: [],
-      capture_allocations: sources.capture_allocations.filter(
-        (part) => part.order_id === input.order_id,
-      ),
-      refund_adjustments: sources.refund_adjustments.filter(
-        (part) => part.order_id === input.order_id,
-      ),
-      coverage: {
-        complete: sources.coverage.complete,
-        issues: sources.coverage.complete
-          ? []
-          : [
-              {
-                resource: input.order_id,
-                reason: "group_reporting_incomplete",
-              },
-            ],
-        lists: [],
-        capture_events_scope: "stripe_retained_events_30_days",
-      },
-    };
+  if (redact && input.seller_id !== undefined) {
+    return sellerFinanceReportingSources(sources, input.order_id);
   }
   return sources;
+}
+
+/** Redact shared evidence while retaining the distinction between costs and seller principal. */
+export function sellerFinanceReportingSources(
+  sources: FinanceReportingSources,
+  orderId: string,
+): FinanceReportingSources {
+  const costOnlyIncomplete =
+    sources.coverage.issues.length > 0 &&
+    sources.coverage.issues.every((entry) => /cost|fee/i.test(entry.reason));
+  // Shared capture amounts, platform costs, and other sellers' evidence are private.
+  return {
+    facts: sources.facts.filter((fact) => fact.order_id === orderId),
+    costs: [],
+    capture_allocations: sources.capture_allocations.filter(
+      (part) => part.order_id === orderId,
+    ),
+    refund_adjustments: sources.refund_adjustments.filter(
+      (part) => part.order_id === orderId,
+    ),
+    coverage: {
+      complete: sources.coverage.complete,
+      issues: sources.coverage.complete
+        ? []
+        : [
+            {
+              resource: orderId,
+              reason: costOnlyIncomplete
+                ? "platform_cost_incomplete"
+                : "group_reporting_incomplete",
+            },
+          ],
+      lists: [],
+      capture_events_scope: "stripe_retained_events_30_days",
+    },
+  };
 }
 
 function reportingReadRevision(current: CurrentFinance) {

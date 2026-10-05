@@ -33,7 +33,12 @@ async function HeaderCustomerMenu() {
     customer = await getCurrentCustomer()
   } catch {
     return (
-      <Button asChild variant="ghost" size="icon" className="size-11">
+      <Button
+        asChild
+        variant="ghost"
+        size="icon"
+        className="h-(--app-header-height) w-11"
+      >
         <Link href="/account" aria-label="Abrir mi cuenta">
           <UserRound className="size-5" aria-hidden="true" />
         </Link>
@@ -43,7 +48,12 @@ async function HeaderCustomerMenu() {
 
   if (!customer) {
     return (
-      <Button asChild variant="ghost" size="icon" className="size-11">
+      <Button
+        asChild
+        variant="ghost"
+        size="icon"
+        className="h-(--app-header-height) w-11"
+      >
         <Link href="/login" aria-label="Iniciar sesión" title="Iniciar sesión">
           <UserRound className="size-5" aria-hidden="true" />
         </Link>
@@ -65,7 +75,7 @@ async function HeaderCustomerMenu() {
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-background">
+    <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-background [--app-header-height:calc(3.75rem_+_1px)] lg:[--app-header-height:calc(4.25rem_+_1px)]">
       <div className="mx-auto grid w-full max-w-[90rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 px-4 py-2 sm:gap-x-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-6 lg:px-10 lg:py-3">
         <Link
           href="/"
@@ -114,17 +124,21 @@ export function SiteHeader() {
           >
             <CartLink />
           </Suspense>
-          <Suspense
-            fallback={
-              <Skeleton
-                role="status"
-                aria-label="Cargando cuenta"
-                className="mx-1 size-9 rounded-full"
-              />
-            }
-          >
-            <HeaderCustomerMenu />
-          </Suspense>
+          <div className="flex h-11 w-11 items-center justify-center">
+            <Suspense
+              fallback={
+                <div className="flex h-(--app-header-height) w-11 items-center justify-center">
+                  <Skeleton
+                    role="status"
+                    aria-label="Cargando cuenta"
+                    className="size-9 rounded-full"
+                  />
+                </div>
+              }
+            >
+              <HeaderCustomerMenu />
+            </Suspense>
+          </div>
         </div>
       </div>
     </header>

@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ import { PaymentStep } from "@/features/checkout/components/payment-step"
 import { PaymentReturn } from "@/features/checkout/components/payment-return"
 import { RetryCheckout } from "@/features/checkout/components/retry-checkout"
 import { ShippingStep } from "@/features/checkout/components/shipping-step"
+import { hasEligibleShippingSelection } from "@/features/cart/presentation"
 
 type CheckoutPageProps = {
   searchParams: Promise<{ step?: string | string[] }>
@@ -91,7 +93,7 @@ async function CheckoutContent({ searchParams }: CheckoutPageProps) {
         : "payment"
   const steps = [
     { key: "address", title: "Dirección", enabled: true },
-    { key: "shipping", title: "Envío", enabled: hasAddress },
+    { key: "shipping", title: "Entrega", enabled: hasAddress },
     { key: "payment", title: "Pago", enabled: hasShipping },
   ]
 
@@ -206,16 +208,28 @@ async function PaymentContent({
   cart: NonNullable<Awaited<ReturnType<typeof getCheckoutCart>>>
 }) {
   let providers: Awaited<ReturnType<typeof getPaymentProviders>>
+  let options: Awaited<ReturnType<typeof getShippingOptions>>
   try {
-    providers = cart.region_id ? await getPaymentProviders(cart.region_id) : []
+    const result = await Promise.all([
+      cart.region_id ? getPaymentProviders(cart.region_id) : Promise.resolve([]),
+      getShippingOptions(cart.id),
+    ])
+    providers = result[0]
+    options = result[1]
   } catch {
-    return <LoadError message="No pudimos cargar los métodos de pago." />
+    return (
+      <LoadError message="No pudimos comprobar la entrega y los métodos de pago." />
+    )
+  }
+  if (!hasEligibleShippingSelection(cart, options)) {
+    redirect("/checkout?step=shipping")
   }
   return (
     <PaymentStep
       key={`${cart.id}_${cart.total}_${cart.shipping_methods?.map((method) => method.id).join("_")}`}
       cart={cart}
       providers={providers}
+      shippingOptions={options}
     />
   )
 }

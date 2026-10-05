@@ -159,8 +159,9 @@ export type Routes = {
             $code: typeof import("@medusajs/medusa/api/admin/locales/[code]/route");
         };
         members: typeof import("@mercurjs/core/api/admin/members/route");
-        notifications: typeof import("@medusajs/medusa/api/admin/notifications/route") & {
+        notifications: typeof import("../src/api/admin/notifications/route") & {
             $id: typeof import("@medusajs/medusa/api/admin/notifications/[id]/route");
+            stream: typeof import("../src/api/admin/notifications/stream/route");
         };
         offers: typeof import("@mercurjs/core/api/admin/offers/route") & {
             $id: typeof import("@mercurjs/core/api/admin/offers/[id]/route");
@@ -259,8 +260,8 @@ export type Routes = {
         };
         productChanges: {
             $id: {
-                cancel: typeof import("@mercurjs/core/api/admin/product-changes/[id]/cancel/route");
-                confirm: typeof import("@mercurjs/core/api/admin/product-changes/[id]/confirm/route");
+                cancel: typeof import("../src/api/admin/product-changes/[id]/cancel/route");
+                confirm: typeof import("../src/api/admin/product-changes/[id]/confirm/route");
             };
         };
         productOptions: typeof import("@medusajs/medusa/api/admin/product-options/route") & {
@@ -512,8 +513,19 @@ export type Routes = {
             };
         };
         catalogPermissions: typeof import("../src/api/admin/catalog-permissions/route");
+        catalogProducts: {
+            $id: {
+                manage: typeof import("../src/api/admin/catalog-products/[id]/manage/route");
+            };
+        };
+        customerPurchases: typeof import("../src/api/admin/customer-purchases/route") & {
+            $id: typeof import("../src/api/admin/customer-purchases/[id]/route");
+        };
         finance: {
             reporting: typeof import("../src/api/admin/finance/reporting/route");
+        };
+        overview: {
+            orders: typeof import("../src/api/admin/overview/orders/route");
         };
         vendorApplications: typeof import("../src/api/admin/vendor-applications/route") & {
             $id: typeof import("../src/api/admin/vendor-applications/[id]/route") & {
@@ -623,7 +635,7 @@ export type Routes = {
         productAttributes: typeof import("@mercurjs/core/api/store/product-attributes/route") & {
             $id: typeof import("@mercurjs/core/api/store/product-attributes/[id]/route");
         };
-        productCategories: typeof import("@mercurjs/core/api/store/product-categories/route") & {
+        productCategories: typeof import("../src/api/store/product-categories/route") & {
             $id: typeof import("@mercurjs/core/api/store/product-categories/[id]/route");
         };
         productOptions: typeof import("@medusajs/medusa/api/store/product-options/route") & {
@@ -746,7 +758,7 @@ export type Routes = {
                 };
             };
         };
-        inventoryItems: typeof import("@mercurjs/core/api/vendor/inventory-items/route") & {
+        inventoryItems: typeof import("../src/api/vendor/inventory-items/route") & {
             $id: typeof import("@mercurjs/core/api/vendor/inventory-items/[id]/route") & {
                 locationLevels: typeof import("@mercurjs/core/api/vendor/inventory-items/[id]/location-levels/route") & {
                     $locationId: typeof import("@mercurjs/core/api/vendor/inventory-items/[id]/location-levels/[location_id]/route");
@@ -955,12 +967,26 @@ export type Routes = {
         stores: typeof import("@mercurjs/core/api/vendor/stores/route");
         uploads: typeof import("@mercurjs/core/api/vendor/uploads/route");
         catalogImages: typeof import("../src/api/vendor/catalog-images/route");
+        catalogNotifications: {
+            stream: typeof import("../src/api/vendor/catalog-notifications/stream/route");
+        };
         catalogPermission: typeof import("../src/api/vendor/catalog-permission/route");
         finance: {
-            reporting: typeof import("../src/api/vendor/finance/reporting/route");
+            reporting: typeof import("../src/api/vendor/finance/reporting/route") & {
+                stream: typeof import("../src/api/vendor/finance/reporting/stream/route");
+            };
+            settlements: typeof import("../src/api/vendor/finance/settlements/route") & {
+                stream: typeof import("../src/api/vendor/finance/settlements/stream/route");
+            };
         };
         inventoryAdjustments: typeof import("../src/api/vendor/inventory-adjustments/route");
+        notifications: {
+            stream: typeof import("../src/api/vendor/notifications/stream/route");
+        };
         onboarding: typeof import("../src/api/vendor/onboarding/route");
+        orderNotifications: typeof import("../src/api/vendor/order-notifications/route") & {
+            stream: typeof import("../src/api/vendor/order-notifications/stream/route");
+        };
         productSaleStatus: typeof import("../src/api/vendor/product-sale-status/route");
         shippingConfiguration: typeof import("../src/api/vendor/shipping-configuration/route");
         stripeAccountRefresh: typeof import("../src/api/vendor/stripe-account-refresh/route");

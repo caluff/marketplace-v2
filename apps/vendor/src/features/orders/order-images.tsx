@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, use } from "react";
 import { ProductThumbnail } from "@/components/ui/product-thumbnail";
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
@@ -28,6 +28,7 @@ export function OrderItemThumbnail({
     <Suspense
       fallback={
         <Skeleton
+          data-slot="thumbnail"
           className={`size-12 shrink-0 rounded-md ${className ?? ""}`}
           aria-label={`Cargando imagen de ${item.title}`}
         />
@@ -42,7 +43,7 @@ export function OrderItemThumbnail({
   );
 }
 
-async function ResolvedItemThumbnail({
+function ResolvedItemThumbnail({
   item,
   products,
   className,
@@ -51,7 +52,7 @@ async function ResolvedItemThumbnail({
   products: Promise<ProductThumbnails>;
   className?: string;
 }) {
-  const thumbnails = await products;
+  const thumbnails = use(products);
   return (
     <ProductThumbnail
       src={item.product_id ? thumbnails.get(item.product_id) : undefined}
@@ -71,9 +72,11 @@ export function OrderImages({
   return (
     <div className="flex w-fit items-center gap-1.5">
       {items.length ? (
-        items.slice(0, 3).map((item) => (
-          <OrderItemThumbnail key={item.id} item={item} products={products} />
-        ))
+        items
+          .slice(0, 3)
+          .map((item) => (
+            <OrderItemThumbnail key={item.id} item={item} products={products} />
+          ))
       ) : (
         <ProductThumbnail />
       )}

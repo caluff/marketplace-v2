@@ -1,6 +1,8 @@
 "use client"
 
 import type { HttpTypes } from "@medusajs/types"
+import { UsAddressFields } from "@marketplace-v2/ui/us-address-fields"
+import { normalizeUsState } from "@marketplace-v2/ui/us-states"
 import { MapPin, Phone } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useActionState, useId, useState } from "react"
@@ -8,9 +10,7 @@ import { useActionState, useId, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { UsPhoneInput } from "@/features/account/components/us-phone-input"
-import { US_STATES } from "@/features/account/us-states"
 import {
   checkoutAddressValues,
   matchesCheckoutAddress,
@@ -54,7 +54,7 @@ export function AddressStep({
     address_1: customer ? "" : (address?.address_1 ?? ""),
     address_2: customer ? "" : (address?.address_2 ?? ""),
     city: customer ? "" : (address?.city ?? ""),
-    province: customer ? "" : (address?.province?.toLowerCase() ?? ""),
+    province: customer ? "" : normalizeUsState(address?.province ?? ""),
     postal_code: customer ? "" : (address?.postal_code ?? ""),
     phone: customer?.phone ?? address?.phone ?? "",
   })
@@ -104,12 +104,6 @@ export function AddressStep({
       autoComplete: "shipping address-line2",
       wide: true,
     },
-    { name: "city", label: "Ciudad", autoComplete: "shipping address-level2" },
-    {
-      name: "postal_code",
-      label: "Código postal",
-      autoComplete: "shipping postal-code",
-    },
   ]
 
   return (
@@ -129,9 +123,7 @@ export function AddressStep({
           type="email"
           autoComplete="email"
           value={values.email}
-          onChange={(event) =>
-            updateValue("email", event.currentTarget.value)
-          }
+          onChange={(event) => updateValue("email", event.currentTarget.value)}
           required
           maxLength={254}
           disabled={pending}
@@ -243,42 +235,36 @@ export function AddressStep({
                 }
                 autoComplete={field.autoComplete}
                 required={field.name !== "address_2"}
-                maxLength={field.name === "postal_code" ? 10 : 200}
-                pattern={
-                  field.name === "postal_code"
-                    ? "[0-9]{5}(-[0-9]{4})?"
-                    : undefined
-                }
-                title={
-                  field.name === "postal_code"
-                    ? "Usa 5 dígitos o ZIP+4: 12345-6789."
-                    : undefined
-                }
+                maxLength={200}
                 className="min-h-12"
               />
             </Field>
           ))}
+          <UsAddressFields
+            idPrefix={id}
+            province={values.province}
+            city={values.city}
+            onChange={(address) =>
+              setValues((current) => ({ ...current, ...address }))
+            }
+            disabled={pending}
+          />
           <Field>
-            <FieldLabel htmlFor={`${id}-province`}>Estado</FieldLabel>
-            <NativeSelect
-              id={`${id}-province`}
-              name="province"
-              value={values.province}
+            <FieldLabel htmlFor={`${id}-postal_code`}>Código postal</FieldLabel>
+            <Input
+              id={`${id}-postal_code`}
+              name="postal_code"
+              value={values.postal_code}
               onChange={(event) =>
-                updateValue("province", event.currentTarget.value)
+                updateValue("postal_code", event.currentTarget.value)
               }
               required
-              autoComplete="shipping address-level1"
-            >
-              <NativeSelectOption value="" disabled>
-                Selecciona un estado
-              </NativeSelectOption>
-              {US_STATES.map((state) => (
-                <NativeSelectOption key={state.value} value={state.value}>
-                  {state.label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              autoComplete="shipping postal-code"
+              maxLength={10}
+              pattern="[0-9]{5}(-[0-9]{4})?"
+              title="Usa 5 dígitos o ZIP+4: 12345-6789."
+              className="min-h-12"
+            />
           </Field>
           <Field>
             <FieldLabel htmlFor={`${id}-country`}>País</FieldLabel>

@@ -32,7 +32,7 @@ export async function createProductAction(
 ): Promise<MutationState> {
   try {
     const { product } = await operations.createProduct(form);
-    revalidatePath("/seller");
+    revalidatePath("/seller", "layout");
     revalidatePath("/seller/catalog");
     return {
       status: "success",
@@ -76,7 +76,7 @@ export async function updateStockAction(
   try {
     await operations.updateStock(form);
     revalidatePath("/seller/inventory");
-    revalidatePath("/seller");
+    revalidatePath("/seller", "layout");
     return { status: "success", message: "Existencias actualizadas." };
   } catch (error) {
     return { status: "error", message: errorMessage(error) };

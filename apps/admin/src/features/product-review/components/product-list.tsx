@@ -1,8 +1,8 @@
+import { TablePagination } from "@/components/table-pagination";
 import type { HttpTypes } from "@mercurjs/types";
 import { Suspense } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { ProductThumbnail } from "@/components/ui/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -18,6 +18,8 @@ import {
   productReviewHref,
 } from "@/features/product-review/helpers";
 import { listProductReviewCommerce } from "../data";
+import { productUpdatedAt } from "../management";
+import { ProductActionsMenu } from "./product-actions-menu";
 import {
   ProductReviewCommerceCells,
   ProductReviewCommerceSkeleton,
@@ -42,6 +44,7 @@ export function ProductReviewList({
               <TableHead>Precio</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Cambios</TableHead>
+              <TableHead className="w-14 text-right"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -55,20 +58,13 @@ export function ProductReviewList({
                     href={`/dashboard/product-review/${encodeURIComponent(product.id)}`}
                     className="flex items-center gap-3 rounded-md outline-none after:absolute after:inset-0 focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {product.thumbnail?.startsWith("https://") ? (
-                      <Image
-                        src={product.thumbnail}
-                        alt=""
-                        width={48}
-                        height={48}
-                        unoptimized
-                        className="size-12 shrink-0 rounded-md border object-contain"
-                      />
-                    ) : (
-                      <span className="flex size-12 shrink-0 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
-                        Sin foto
-                      </span>
-                    )}
+                    <ProductThumbnail
+                      src={
+                        product.thumbnail?.startsWith("https://")
+                          ? product.thumbnail
+                          : undefined
+                      }
+                    />
                     <span className="font-semibold">{product.title}</span>
                   </Link>
                 </TableCell>
@@ -96,6 +92,15 @@ export function ProductReviewList({
                     <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
+                <TableCell className="relative z-10 w-14 text-right">
+                  <ProductActionsMenu
+                    productId={product.id}
+                    title={product.title}
+                    status={product.status}
+                    updatedAt={productUpdatedAt(product.updated_at)}
+                    hasPendingChange={product.changes?.some((change) => change.status === "pending") ?? false}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -105,36 +110,14 @@ export function ProductReviewList({
           No hay productos con estos filtros.
         </p>
       )}
-      <nav
-        aria-label="Páginas del catálogo"
-        className="mt-5 flex flex-wrap justify-between gap-3"
-      >
-        <p className="text-xs text-muted-foreground">
-          {result.products.length
-            ? `${result.offset + 1}–${result.offset + result.products.length} de ${result.count}`
-            : `0 de ${result.count}`}
-        </p>
-        <div className="flex gap-2">
-          {result.offset > 0 && (
-            <Button asChild variant="outline" size="sm">
-              <Link
-                href={productReviewHref(filters, result.offset - result.limit)}
-              >
-                Anterior
-              </Link>
-            </Button>
-          )}
-          {result.offset + result.limit < result.count && (
-            <Button asChild variant="outline" size="sm">
-              <Link
-                href={productReviewHref(filters, result.offset + result.limit)}
-              >
-                Siguiente
-              </Link>
-            </Button>
-          )}
-        </div>
-      </nav>
+      <TablePagination
+        label="Páginas del catálogo"
+        count={result.count}
+        offset={result.offset}
+        limit={result.limit}
+        itemCount={result.products.length}
+        hrefForOffset={(offset) => productReviewHref(filters, offset)}
+      />
     </div>
   );
 }

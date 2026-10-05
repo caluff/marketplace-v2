@@ -7,6 +7,8 @@
 | `algolia-catalog-changed.ts`     | Search projections after catalog, offer, seller and related changes. |
 | `order-shipped.ts`               | Shipment notification workflow for native shipment-created events.   |
 | `order-completed-settlement.ts`  | Observes completed orders through a workflow and records the immutable 72-hour settlement clock when separately enabled. |
+| `vendor-settlement-order-changed.ts` | Invalidates the seller settlement read model after native order changes; reconciliation stays in the background worker. |
+| `vendor-finance-reporting-changed.ts` | Registers native order references and invalidates the seller financial-report read model after group creation and native order changes; financial source verification stays in the background worker. |
 
 Installed Mercur/Medusa packages also register subscribers; these files are not
 the entire event graph. Inspect native consumers before extending events that

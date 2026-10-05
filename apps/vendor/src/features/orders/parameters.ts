@@ -1,4 +1,5 @@
 import { listInput } from "../workspace/presentation";
+import { DEFAULT_TABLE_PAGE_SIZE } from "@marketplace-v2/ui/pagination-utils";
 
 export const ORDER_TABS = [
   { value: "all", label: "Todos", filters: {} },
@@ -32,6 +33,11 @@ export const ORDER_TABS = [
     filters: { status: "completed" },
   },
   { value: "canceled", label: "Cancelados", filters: { status: "canceled" } },
+  {
+    value: "refunded",
+    label: "Reembolsados",
+    filters: { refund_status: "refunded" },
+  },
 ] as const;
 
 const LEGACY_ORDER_TABS: Record<string, string> = {
@@ -43,15 +49,27 @@ const LEGACY_ORDER_TABS: Record<string, string> = {
 };
 
 export function orderListInput(params: {
-  q?: string;
-  page?: string;
-  tab?: string;
+  q?: string | string[];
+  page?: string | string[];
+  tab?: string | string[];
 }) {
-  const tabValue = params.tab
-    ? (LEGACY_ORDER_TABS[params.tab] ?? params.tab)
-    : "all";
+  const tabValue =
+    typeof params.tab === "string"
+      ? (LEGACY_ORDER_TABS[params.tab] ?? params.tab)
+      : "all";
   return {
-    ...listInput(params),
+    ...listInput(params, DEFAULT_TABLE_PAGE_SIZE),
     tab: ORDER_TABS.find((tab) => tab.value === tabValue) ?? ORDER_TABS[0],
   };
+}
+
+export function orderListHref(
+  input: ReturnType<typeof orderListInput>,
+  page = input.page,
+) {
+  return `/seller/orders?${new URLSearchParams({
+    tab: input.tab.value,
+    page: String(page),
+    ...(input.q ? { q: input.q } : {}),
+  })}`;
 }

@@ -1,15 +1,14 @@
 import type {
   FinanceReportingPeriod,
-  FinanceReportingResponse,
+  AdminFinanceReportingResponse,
 } from "@marketplace-v2/api/finance-contracts";
 import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
-import { Fragment, Suspense } from "react";
+import { Fragment, type ReactNode } from "react";
 import { formatOrderNumber } from "@marketplace-v2/order-reference";
 import Link from "next/link";
-import { unstable_rethrow } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { TablePagination } from "@/components/table-pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -20,26 +19,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { workspace } from "@/features/workspace/data";
-import { Skeleton } from "@/components/ui/skeleton";
-import { orderImageItems } from "@/features/orders/image-data";
-import { LoadedOrderImages } from "@/features/orders/order-images";
+import { REPORT_PAGE_SIZE } from "./parameters";
 
-const primaryMetrics = {
-  net_captured_volume: "Ventas netas",
-  vendor_earnings: "Tus ganancias",
-  transfers_net: "Transferido en el período",
-  pending_settlement: "Pendiente de recibir",
+export const primaryMetrics = {
+  merchandise_gmv: "Ventas de mercancía",
+  net_marketplace_commission: "Ingresos por comisiones",
+  result_after_fees: "Resultado después de tarifas",
+  pending_settlement: "Pendiente de liquidar",
 } as const;
 const activityMetrics = {
   paid_vendor_orders: "Pedidos pagados",
   refunds_effective: "Reembolsos",
 } as const;
-const collectionMetrics = {
-  captured_volume: "Capturado antes de reembolsos",
-  merchandise_gmv: "Ventas de mercancía sin envío",
+const reconciliationMetrics = {
+  captured_volume: "Capturado en el período",
+  net_captured_volume: "Capturado neto",
+  gross_marketplace_commission: "Comisión bruta reconocida",
+  commission_reversed: "Comisión revertida",
+  transfers_gross: "Transferencias brutas del período",
+  transfer_reversals: "Reversiones de transferencias",
+  transfers_net: "Transferencias netas del período",
+  confirmed_stripe_fees: "Tarifas Stripe confirmadas",
 } as const;
 const reasonLabels: Record<string, string> = {
+  reporting_projection_pending:
+    "Se están verificando los datos actualizados del informe.",
+  reporting_discovery_incomplete:
+    "Se están preparando los registros financieros.",
+  provider_fee_pending_or_unavailable: "Faltan tarifas de Stripe confirmadas.",
+  provider_fee_time_unknown:
+    "No se conoce la fecha efectiva de algunas tarifas.",
   provider_fact_unconfirmed:
     "Hay movimientos del proveedor pendientes de conciliación.",
   effective_time_unknown: "Hay movimientos sin fecha efectiva verificable.",
@@ -52,12 +61,12 @@ const reasonLabels: Record<string, string> = {
     "La observación financiera necesita actualizarse.",
   provider_context_revision_stale:
     "Los datos cambiaron después de su conciliación.",
+  stored_cost_missing: "Faltan tarifas almacenadas de Stripe.",
 };
 const money = new Intl.NumberFormat("es-UY", {
   style: "currency",
   currency: "USD",
 });
-const PAGE_SIZE = 25;
 
 function displayMoney(value: number | null) {
   return value === null ? "—" : money.format(value);
@@ -79,52 +88,26 @@ function displayDate(value: string | null) {
     : "—";
 }
 
-export async function FinanceReport({
+export function FinanceReportContent({
+  report,
   period,
-  dataKind,
   page,
+  images,
 }: {
+  report: AdminFinanceReportingResponse["report"];
   period: FinanceReportingPeriod;
-  dataKind: "ordinary" | "qa_fixture";
   page: number;
+  images: Record<string, ReactNode>;
 }) {
-  let report: FinanceReportingResponse["report"];
-  try {
-    const { client } = await workspace();
-    ({ report } = await client.get<FinanceReportingResponse>(
-      "/vendor/finance/reporting",
-      {
-        period,
-        mode: "test",
-        currency_code: "usd",
-        data_kind: dataKind,
-      },
-    ));
-  } catch (error) {
-    unstable_rethrow(error);
-    return (
-      <div className="flex flex-wrap items-center gap-3" role="alert">
-        <p className="text-sm text-destructive">
-          No se pudo cargar el informe financiero.
-        </p>
-        <Button asChild variant="outline" size="sm">
-          <Link
-            href={`/seller?period=${period}&data_kind=${dataKind}&page=${page}`}
-          >
-            Reintentar
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
-  const lastPage = Math.max(1, Math.ceil(report.sales.length / PAGE_SIZE));
+  const lastPage = Math.max(
+    1,
+    Math.ceil(report.sales.length / REPORT_PAGE_SIZE),
+  );
   const currentPage = Math.min(page, lastPage);
   const sales = report.sales.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    (currentPage - 1) * REPORT_PAGE_SIZE,
+    currentPage * REPORT_PAGE_SIZE,
   );
-  const images = orderImageItems(sales.map((sale) => sale.order_id));
   return (
     <div className="space-y-4">
       {!report.coverage.complete ? (
@@ -133,8 +116,8 @@ export async function FinanceReport({
           className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
         >
           <p>
-            Informe parcial. Los movimientos sin fecha efectiva o clasificación
-            verificada se excluyen.
+            Informe parcial. El resultado después de tarifas requiere cobertura
+            completa.
           </p>
           {report.coverage.partial_reasons.length ? (
             <ul className="mt-2 list-inside list-disc">
@@ -169,13 +152,17 @@ export async function FinanceReport({
               <p className="text-2xl font-semibold tabular-nums">
                 {displayMoney(report.totals[key])}
               </p>
-              {key === "net_captured_volume" || key === "pending_settlement" ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {key === "net_captured_volume"
-                    ? "Cobros menos reembolsos; incluye envío."
-                    : "Saldo acumulado al corte."}
-                </p>
-              ) : null}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {key === "merchandise_gmv"
+                  ? "No incluye envío."
+                  : key === "net_marketplace_commission"
+                    ? "Después de reembolsos."
+                    : key === "result_after_fees"
+                      ? report.totals[key] === null
+                        ? "Pendiente de confirmar datos."
+                        : "Después de tarifas de Stripe."
+                      : "Saldo acumulado al corte."}
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -190,7 +177,7 @@ export async function FinanceReport({
             <dt className="text-muted-foreground">{label}</dt>
             <dd className="font-medium tabular-nums">
               {key === "paid_vendor_orders"
-                ? report.totals[key].toLocaleString("es-UY")
+                ? (report.totals[key]?.toLocaleString("es-UY") ?? "—")
                 : displayMoney(report.totals[key])}
             </dd>
           </div>
@@ -198,12 +185,12 @@ export async function FinanceReport({
       </dl>
       <details className="border-b pb-3">
         <summary className="w-fit cursor-pointer rounded-sm text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
-          Desglose de cobros
+          Desglose para conciliación
         </summary>
-        <dl className="mt-4 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+        <dl className="mt-4 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
           {(
-            Object.entries(collectionMetrics) as Array<
-              [keyof typeof collectionMetrics, string]
+            Object.entries(reconciliationMetrics) as Array<
+              [keyof typeof reconciliationMetrics, string]
             >
           ).map(([key, label]) => (
             <div key={key}>
@@ -221,23 +208,18 @@ export async function FinanceReport({
       </p>
       <Table>
         <TableCaption>
-          Movimientos con fecha efectiva dentro del período; transferencias
-          netas y saldos al corte.
+          Movimientos con fecha efectiva dentro del período; saldos acumulados
+          al corte.
         </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Imágenes</TableHead>
             <TableHead>Pedido</TableHead>
-            <TableHead>Venta original</TableHead>
-            <TableHead>Capturado período</TableHead>
-            <TableHead>GMV período</TableHead>
-            <TableHead>Reembolso período</TableHead>
-            <TableHead>Tus ganancias período</TableHead>
-            <TableHead>Transferido período</TableHead>
-            <TableHead>Transferido al corte</TableHead>
-            <TableHead>Saldo al corte</TableHead>
-            <TableHead>Cobertura</TableHead>
-            <TableHead>Capturado el</TableHead>
+            <TableHead>Ventas de mercancía</TableHead>
+            <TableHead>Reembolsos</TableHead>
+            <TableHead>Comisiones netas</TableHead>
+            <TableHead>Pendiente de liquidar</TableHead>
+            <TableHead>Estado de datos</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -245,25 +227,11 @@ export async function FinanceReport({
             sales.map((sale) => (
               <Fragment key={sale.order_id}>
                 <TableRow>
-                  <TableCell>
-                    <Suspense
-                      fallback={
-                        <Skeleton
-                          className="size-12 rounded-md"
-                          aria-label="Cargando imágenes del pedido"
-                        />
-                      }
-                    >
-                      <LoadedOrderImages
-                        orderId={sale.order_id}
-                        result={images}
-                      />
-                    </Suspense>
-                  </TableCell>
+                  <TableCell>{images[sale.order_id]}</TableCell>
                   <TableCell>
                     <Link
                       className="font-medium text-primary hover:underline"
-                      href={`/seller/orders/${sale.order_id}`}
+                      href={`/dashboard/orders/${sale.order_id}`}
                     >
                       {formatOrderNumber({
                         display_id: sale.order_display_id ?? undefined,
@@ -271,11 +239,55 @@ export async function FinanceReport({
                           sale.order_custom_display_id ?? undefined,
                       })}
                     </Link>
-                    <details className="mt-1">
-                      <summary className="cursor-pointer text-xs text-primary">
-                        Ver desglose
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {money.format(sale.merchandise_collected_in_period)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {money.format(sale.refunds_effective)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {displayMoney(sale.net_commission)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {sale.pending_settlement === null
+                      ? "—"
+                      : money.format(sale.pending_settlement)}
+                  </TableCell>
+                  <TableCell>
+                    {sale.coverage === "complete" ? "Completa" : "Parcial"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell colSpan={7}>
+                    <details>
+                      <summary className="cursor-pointer text-sm font-medium text-primary">
+                        Ver desglose de{" "}
+                        {formatOrderNumber({
+                          display_id: sale.order_display_id ?? undefined,
+                          custom_display_id:
+                            sale.order_custom_display_id ?? undefined,
+                        })}
                       </summary>
-                      <dl className="mt-2 space-y-1 text-xs">
+                      <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 xl:grid-cols-4">
+                        <div>
+                          <dt className="text-muted-foreground">
+                            Venta original capturada
+                          </dt>
+                          <dd>{displayMoney(sale.captured_amount)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">
+                            Capturado en el período
+                          </dt>
+                          <dd>{money.format(sale.captured_in_period)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">
+                            Transferencias netas del período
+                          </dt>
+                          <dd>{money.format(sale.transferred_net)}</dd>
+                        </div>
                         <div>
                           <dt className="text-muted-foreground">
                             Comisión bruta acumulada
@@ -299,16 +311,6 @@ export async function FinanceReport({
                             Comisión revertida período
                           </dt>
                           <dd>{money.format(sale.commission_reversed)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground">
-                            Comisión neta período
-                          </dt>
-                          <dd>
-                            {sale.net_commission === null
-                              ? "—"
-                              : money.format(sale.net_commission)}
-                          </dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">
@@ -338,87 +340,52 @@ export async function FinanceReport({
                             {money.format(sale.transfer_reversals_to_cutoff)}
                           </dd>
                         </div>
+                        <div>
+                          <dt className="text-muted-foreground">
+                            Transferencias netas al corte
+                          </dt>
+                          <dd>
+                            {money.format(sale.transferred_net_to_cutoff)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">
+                            Capturado el
+                          </dt>
+                          <dd>{displayDate(sale.captured_at)}</dd>
+                        </div>
                       </dl>
                     </details>
                   </TableCell>
-                  <TableCell className="tabular-nums">
-                    {sale.captured_amount === null
-                      ? "—"
-                      : money.format(sale.captured_amount)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {money.format(sale.captured_in_period)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {money.format(sale.merchandise_collected_in_period)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {money.format(sale.refunds_effective)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {sale.seller_earnings === null
-                      ? "—"
-                      : money.format(sale.seller_earnings)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {money.format(sale.transferred_net)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {money.format(sale.transferred_net_to_cutoff)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {sale.pending_settlement === null
-                      ? "—"
-                      : money.format(sale.pending_settlement)}
-                  </TableCell>
-                  <TableCell>
-                    {sale.coverage === "complete" ? "Completa" : "Parcial"}
-                  </TableCell>
-                  <TableCell>{displayDate(sale.captured_at)}</TableCell>
                 </TableRow>
               </Fragment>
             ))
           ) : (
             <TableRow>
               <TableCell
-                colSpan={12}
+                colSpan={7}
                 className="py-8 text-center text-muted-foreground"
               >
-                No hay ventas o reembolsos con movimientos en este período.
+                {report.freshness.pending_groups ||
+                !report.freshness.discovery_complete
+                  ? "Se están preparando los datos del informe."
+                  : "No hay ventas o reembolsos con movimientos en este período."}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
-      {report.sales.length > PAGE_SIZE ? (
-        <nav
-          className="flex items-center justify-between"
-          aria-label="Paginación de pedidos"
-        >
-          <p className="text-sm text-muted-foreground">
-            Página {currentPage} de {lastPage} · {report.sales.length} pedidos
-          </p>
-          <div className="flex gap-2">
-            {currentPage > 1 ? (
-              <Button asChild variant="outline" size="sm">
-                <Link
-                  href={`/seller?period=${period}&data_kind=${dataKind}&page=${currentPage - 1}`}
-                >
-                  Anterior
-                </Link>
-              </Button>
-            ) : null}
-            {currentPage < lastPage ? (
-              <Button asChild variant="outline" size="sm">
-                <Link
-                  href={`/seller?period=${period}&data_kind=${dataKind}&page=${currentPage + 1}`}
-                >
-                  Siguiente
-                </Link>
-              </Button>
-            ) : null}
-          </div>
-        </nav>
+      {report.sales.length > REPORT_PAGE_SIZE ? (
+        <TablePagination
+          label="Paginación de pedidos del informe"
+          count={report.sales.length}
+          offset={(currentPage - 1) * REPORT_PAGE_SIZE}
+          limit={REPORT_PAGE_SIZE}
+          itemCount={sales.length}
+          hrefForOffset={(offset) =>
+            `/dashboard?period=${period}&page=${offset / REPORT_PAGE_SIZE + 1}`
+          }
+        />
       ) : null}
     </div>
   );

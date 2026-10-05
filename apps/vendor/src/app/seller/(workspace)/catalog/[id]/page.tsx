@@ -21,14 +21,15 @@ import { VariantForm } from "@/features/catalog/variant-form";
 import { extendAxisAction } from "@/features/catalog/actions";
 import { ProductOffers } from "@/features/offers/product-offers";
 import { offerConfiguration } from "@/features/offers/data";
-import { createMasterSku } from "@/features/catalog/master-sku";
 import { PresentationControls } from "@/features/catalog/presentation-controls";
+import { hasPresentationOptions } from "@/features/catalog/variant-options";
+import { CatalogAutoRefresh } from "@/features/catalog/auto-refresh";
 
 export const metadata: Metadata = { title: "Detalle de producto" };
 const loading = (
   <div
     role="status"
-    className="h-64 animate-pulse rounded-lg bg-muted p-5 text-sm text-muted-foreground"
+    className="h-64 motion-safe:animate-pulse rounded-lg bg-muted p-5 text-sm text-muted-foreground"
   >
     Cargando datos…
   </div>
@@ -67,14 +68,22 @@ async function ProductContent({ id }: { id: string }) {
   const categories = resultOf(catalogCategories(client));
   const configuration = resultOf(offerConfiguration(client));
   const result = await resultOf(productDetail(id));
-  if (!result.data) return <DataError message={result.error} />;
+  if (!result.data)
+    return (
+      <>
+        <CatalogAutoRefresh sellerId={membership.seller.id} />
+        <DataError message={result.error} />
+      </>
+    );
   const { product } = result.data;
   const changes = (product.changes ?? []).filter(
     (change) => change.created_by === membership.seller.id,
   );
   const hasPending = changes.some((change) => change.status === "pending");
+  const hasOptions = hasPresentationOptions(product);
   return (
     <>
+      <CatalogAutoRefresh sellerId={membership.seller.id} />
       {changes.length ? (
         <details id="solicitudes" className="rounded-xl border bg-card px-5">
           <summary className="cursor-pointer py-4 text-sm font-semibold focus-visible:outline-2">
@@ -104,7 +113,7 @@ async function ProductContent({ id }: { id: string }) {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <CardTitle>Contenido y categorías</CardTitle>
+            <CardTitle>Datos del producto</CardTitle>
             <StatusBadge status={product.status} />
           </div>
         </CardHeader>
@@ -120,92 +129,68 @@ async function ProductContent({ id }: { id: string }) {
         </CardContent>
       </Card>
       <section className="space-y-4">
-        <PresentationControls hasPending={hasPending}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Presentaciones del producto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {!hasPending ? (
-                <section className="space-y-3">
-                  <h3 className="font-semibold">Nueva presentación</h3>
-                  <VariantForm product={product} />
-                </section>
-              ) : null}
-              <details className="border-t pt-4">
-                <summary className="cursor-pointer text-sm text-primary underline underline-offset-4">
-                  Editar presentaciones existentes
-                </summary>
-                <div className="mt-4 space-y-4">
-                  {(product.variants ?? []).map((variant) => (
-                    <div key={variant.id} className="space-y-3 border-b pb-5">
-                      <p className="font-medium">{variant.title} </p>
+        {hasOptions ? (
+          <PresentationControls hasPending={hasPending}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Nueva presentación</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {!hasPending ? (
+                  <section className="space-y-3">
+                    <VariantForm product={product} />
+                  </section>
+                ) : null}
+                {(product.attributes ?? [])
+                  .filter((attribute) => attribute.is_variant_axis)
+                  .map((attribute) => (
+                    <div key={attribute.id} className="space-y-3 border-t pt-4">
+                      <p className="font-medium">{attribute.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {attribute.values
+                          ?.map((value) => value.name)
+                          .join(", ")}
+                      </p>
                       {!hasPending ? (
                         <details>
                           <summary className="cursor-pointer text-sm text-primary">
-                            Editar presentación
+                            Añadir valores de {attribute.name.toLowerCase()}
                           </summary>
                           <div className="pt-4">
-                            <VariantForm
-                              product={product}
-                              variant={variant}
-                              defaultSku={
-                                variant.sku || createMasterSku(variant.title)
-                              }
+                            <MutationForm
+                              action={extendAxisAction}
+                              hidden={{
+                                id: product.id,
+                                attribute_id: attribute.id,
+                              }}
+                              submit="Guardar valores"
+                              disableAfterSuccess
+                              fields={[
+                                {
+                                  name: "values",
+                                  label: "Valores separados por comas",
+                                  required: true,
+                                  maxLength: 3000,
+                                },
+                              ]}
                             />
                           </div>
                         </details>
                       ) : null}
                     </div>
                   ))}
-                  {!product.variants?.length ? (
-                    <p className="text-sm text-muted-foreground">
-                      Sin presentaciones.
-                    </p>
-                  ) : null}
-                </div>
-              </details>
-              {(product.attributes ?? [])
-                .filter((attribute) => attribute.is_variant_axis)
-                .map((attribute) => (
-                  <div key={attribute.id} className="space-y-3 border-t pt-4">
-                    <p className="font-medium">{attribute.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {attribute.values?.map((value) => value.name).join(", ")}
-                    </p>
-                    {!hasPending ? (
-                      <details>
-                        <summary className="cursor-pointer text-sm text-primary">
-                          Añadir valores de {attribute.name.toLowerCase()}
-                        </summary>
-                        <div className="pt-4">
-                          <MutationForm
-                            action={extendAxisAction}
-                            hidden={{
-                              id: product.id,
-                              attribute_id: attribute.id,
-                            }}
-                            submit="Guardar valores"
-                            disableAfterSuccess
-                            fields={[
-                              {
-                                name: "values",
-                                label: "Valores separados por comas",
-                                required: true,
-                                maxLength: 3000,
-                              },
-                            ]}
-                          />
-                        </div>
-                      </details>
-                    ) : null}
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
-        </PresentationControls>
+              </CardContent>
+            </Card>
+          </PresentationControls>
+        ) : (
+          <h2 className="text-xl font-semibold">Presentaciones y precios</h2>
+        )}
         <Suspense fallback={loading}>
-          <ProductOffers product={product} configuration={configuration} />
+          <ProductOffers
+            product={product}
+            configuration={configuration}
+            hasPending={hasPending}
+          />
         </Suspense>
       </section>
     </>

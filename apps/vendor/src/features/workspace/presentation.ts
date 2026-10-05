@@ -4,15 +4,18 @@ import { parseISO } from "date-fns/parseISO";
 
 export const PAGE_SIZE = 20;
 
-export function listInput(params: { q?: string; page?: string }) {
-  const parsed = Number(params.page ?? 1);
+export function listInput(
+  params: { q?: string | string[]; page?: string | string[] },
+  pageSize = PAGE_SIZE,
+) {
+  const parsed = typeof params.page === "string" ? Number(params.page) : 1;
   const page =
     Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 50000 ? parsed : 1;
   return {
-    q: (params.q ?? "").trim().slice(0, 200),
+    q: typeof params.q === "string" ? params.q.trim().slice(0, 200) : "",
     page,
-    offset: (page - 1) * PAGE_SIZE,
-    limit: PAGE_SIZE,
+    offset: (page - 1) * pageSize,
+    limit: pageSize,
   };
 }
 

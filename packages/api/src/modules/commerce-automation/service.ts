@@ -19,6 +19,39 @@ import { FinanceRecoveryAttempt } from "./models/finance-recovery-attempt";
 import { FinanceProviderFact } from "./models/finance-provider-fact";
 import { FinanceProviderCost } from "./models/finance-provider-cost";
 import { OrderCompletion } from "./models/order-completion";
+import { VendorSettlementProjection } from "./models/vendor-settlement-projection";
+import { VendorFinanceReportingProjection } from "./models/vendor-finance-reporting-projection";
+import { AdminFinanceReportingProjection } from "./models/admin-finance-reporting-projection";
+import {
+  readAdminReportingRegistry,
+  readAdminReportingGroupSource,
+  listDirtyAdminReportingGroups,
+  saveAdminReportingProjection,
+  type AdminReportingSource,
+} from "./admin-finance-reporting";
+import {
+  readVendorReportingRegistry,
+  readReportingDiscovery,
+  saveReportingDiscovery,
+  readReportingGroupSource,
+  listDirtyReportingGroups,
+  registerReportingReferences,
+  invalidateReportingRegistry,
+  saveReportingGroupProjection,
+  type ReportingReference,
+  type ReportingSource,
+  type ReportingDiscovery,
+} from "./vendor-finance-reporting";
+import {
+  readSettlementRegistry,
+  listDirtySettlementGroups,
+  readSettlementGroupSource,
+  invalidateSettlementRegistry,
+  saveSettlementGroupProjection,
+  type RegistryReadInput,
+  type SettlementSourceRow,
+  type SettlementProjection,
+} from "./vendor-settlements";
 import {
   mergeProviderFinanceFact,
   providerFinanceFactSchema,
@@ -326,6 +359,9 @@ class CommerceAutomationService extends MedusaService({
   FinanceProviderFact,
   FinanceProviderCost,
   OrderCompletion,
+  VendorSettlementProjection,
+  VendorFinanceReportingProjection,
+  AdminFinanceReportingProjection,
 }) {
   protected baseRepository_: DAL.RepositoryService;
   constructor(container: { baseRepository: DAL.RepositoryService }) {
@@ -344,6 +380,193 @@ class CommerceAutomationService extends MedusaService({
         "Commerce fencing requires its own committed transaction.",
       );
     return this.baseRepository_.transaction(work);
+  }
+
+  @InjectManager()
+  async readVendorFinanceReportingRegistry(
+    input: { seller_id: string; now: Date },
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return readVendorReportingRegistry(
+      context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(),
+      input,
+    );
+  }
+
+  @InjectManager()
+  async readVendorReportingDiscovery(
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return readReportingDiscovery(
+      context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(),
+    );
+  }
+
+  @InjectManager()
+  async saveVendorReportingDiscovery(
+    input: {
+      references: ReportingReference[];
+      expected: ReportingDiscovery;
+      next: ReportingDiscovery;
+    },
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return this.committed(
+      (manager) => saveReportingDiscovery(manager, input),
+      Boolean(context?.transactionManager),
+    );
+  }
+
+  @InjectManager()
+  async registerVendorReportingReferences(
+    references: ReportingReference[],
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return this.committed(
+      (manager) => registerReportingReferences(manager, references),
+      Boolean(context?.transactionManager),
+    );
+  }
+
+  @InjectManager()
+  async invalidateVendorFinanceReporting(
+    orderIds: string[],
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return this.committed(
+      (manager) => invalidateReportingRegistry(manager, orderIds),
+      Boolean(context?.transactionManager),
+    );
+  }
+
+  @InjectManager()
+  async listDirtyVendorReportingGroups(
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return listDirtyReportingGroups(
+      context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(),
+      new Date(),
+    );
+  }
+
+  @InjectManager()
+  async readVendorReportingGroupSource(
+    groupId: string,
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return readReportingGroupSource(
+      context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(),
+      z.string().min(1).parse(groupId),
+    );
+  }
+
+  @InjectManager()
+  async saveVendorReportingProjection(
+    input: {
+      source: ReportingSource[];
+      projections: Array<{ id: string; sources: unknown }>;
+      refreshed_at: Date;
+      admin?: { source: AdminReportingSource; sources: unknown };
+    },
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return this.committed(
+      async (manager) => {
+        if (input.admin && (input.source.length !== input.admin.source.references.length ||
+          new Set(input.source.map((row) => row.id)).size !== input.source.length ||
+          input.source.some((row) => row.group_id !== input.admin!.source.id || row.cart_id !== input.admin!.source.cart_id ||
+            !input.admin!.source.references.some((reference) => reference.id === row.id && reference.seller_id === row.seller_id &&
+              reference.native_revision === row.native_revision && reference.order_display_id === row.order_display_id &&
+              reference.order_custom_display_id === row.order_custom_display_id))))
+          throw new MedusaError(MedusaError.Types.CONFLICT, "Admin and seller reporting sources must describe the same native group.");
+        if (input.admin && !await saveAdminReportingProjection(manager, {
+          ...input.admin, refreshed_at: input.refreshed_at,
+        })) return false;
+        const saved = await saveReportingGroupProjection(manager, input);
+        if (!saved && input.admin)
+          throw new MedusaError(MedusaError.Types.CONFLICT, "Reporting sources changed; both projections were rolled back.");
+        return saved;
+      },
+      Boolean(context?.transactionManager),
+    );
+  }
+
+  @InjectManager()
+  async readAdminFinanceReportingRegistry(@MedusaContext() context?: Context<EntityManager>) {
+    return readAdminReportingRegistry(context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>());
+  }
+
+  @InjectManager()
+  async readAdminReportingGroupSource(groupId: string, @MedusaContext() context?: Context<EntityManager>) {
+    return readAdminReportingGroupSource(context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(), groupId);
+  }
+
+  @InjectManager()
+  async listDirtyAdminReportingGroups(@MedusaContext() context?: Context<EntityManager>) {
+    return listDirtyAdminReportingGroups(context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(), new Date());
+  }
+
+  @InjectManager()
+  async readVendorSettlements(
+    input: RegistryReadInput,
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return readSettlementRegistry(
+      context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(),
+      input,
+    );
+  }
+
+  @InjectManager()
+  async listDirtyVendorSettlementGroups(
+    input: { take: number; now: Date },
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    const parsed = z
+      .object({ take: z.number().int().min(1).max(10), now: z.date() })
+      .parse(input);
+    return listDirtySettlementGroups(
+      context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(),
+      parsed.take,
+      parsed.now,
+    );
+  }
+
+  @InjectManager()
+  async readVendorSettlementGroupSource(
+    groupId: string,
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return readSettlementGroupSource(
+      context?.manager ?? this.baseRepository_.getFreshManager<EntityManager>(),
+      z.string().min(1).parse(groupId),
+    );
+  }
+
+  @InjectManager()
+  async invalidateVendorSettlements(
+    orderIds: string[],
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return this.committed(
+      (manager) => invalidateSettlementRegistry(manager, orderIds),
+      Boolean(context?.transactionManager),
+    );
+  }
+
+  @InjectManager()
+  async saveVendorSettlementProjection(
+    input: {
+      source: SettlementSourceRow[];
+      projections: SettlementProjection[];
+      refreshed_at: Date;
+    },
+    @MedusaContext() context?: Context<EntityManager>,
+  ) {
+    return this.committed(
+      (manager) => saveSettlementGroupProjection(manager, input),
+      Boolean(context?.transactionManager),
+    );
   }
 
   // Commit the process identity before acquiring a non-expiring execution lock.

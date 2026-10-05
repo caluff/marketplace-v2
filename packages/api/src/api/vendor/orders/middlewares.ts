@@ -4,14 +4,90 @@ import type {
   MedusaResponse,
   MiddlewareRoute,
 } from "@medusajs/framework/http";
-import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils";
+import { ContainerRegistrationKeys, MathBN, MedusaError } from "@medusajs/framework/utils";
 import { z } from "@medusajs/framework/zod";
 
 export const FulfillmentStage = z.enum(["pending", "prepared", "shipped"]);
 type FulfillmentStage = z.infer<typeof FulfillmentStage>;
 
 const requestedStages = new WeakMap<MedusaRequest, FulfillmentStage>();
+export const RefundStatus = z.literal("refunded");
+const requestedRefundStatuses = new WeakSet<MedusaRequest>();
 const ID_BATCH_SIZE = 500;
+
+function prepareRefundStatus(
+  req: MedusaRequest,
+  _res: MedusaResponse,
+  next: MedusaNextFunction,
+) {
+  if (!("refund_status" in req.query)) return next();
+  if (!RefundStatus.safeParse(req.query.refund_status).success) {
+    return next(new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "refund_status must be refunded.",
+    ));
+  }
+  requestedRefundStatuses.add(req);
+  delete req.query.refund_status;
+  next();
+}
+
+async function applyRefundStatus(
+  req: MedusaRequest,
+  _res: MedusaResponse,
+  next: MedusaNextFunction,
+) {
+  if (!requestedRefundStatuses.delete(req)) return next();
+  try {
+    const orderIds: unknown = req.filterableFields?.id;
+    if (!req.seller_context?.seller_id || !Array.isArray(orderIds) ||
+      !orderIds.every((id): id is string => typeof id === "string")) {
+      throw new MedusaError(MedusaError.Types.NOT_ALLOWED, "Order seller scope is required.");
+    }
+    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
+    const refundedOrders = new Set<string>();
+    for (let offset = 0; offset < orderIds.length; offset += ID_BATCH_SIZE) {
+      const scopedIds = orderIds.slice(offset, offset + ID_BATCH_SIZE);
+      const { data: transactions } = await query.graph({
+        entity: "order_transaction",
+        fields: ["order_id", "reference_id", "amount"],
+        filters: {
+          order_id: scopedIds,
+          reference: "refund",
+          amount: { $lt: 0 },
+          reference_id: { $ne: null },
+        },
+      }, { cache: { enable: false } });
+      const refundIds = [...new Set(transactions.flatMap((transaction) =>
+        typeof transaction.reference_id === "string" ? [transaction.reference_id] : [],
+      ))];
+      const ownedIds = new Set(scopedIds);
+      for (let start = 0; start < refundIds.length; start += ID_BATCH_SIZE) {
+        const { data: refunds } = await query.graph({
+          entity: "refund",
+          fields: ["id", "amount"],
+          filters: { id: refundIds.slice(start, start + ID_BATCH_SIZE), amount: { $gt: 0 } },
+        }, { cache: { enable: false } });
+        const refundAmounts = new Map(refunds.map((refund) => [refund.id, refund.amount]));
+        for (const transaction of transactions) {
+          const amount = refundAmounts.get(transaction.reference_id);
+          if (ownedIds.has(transaction.order_id) && amount !== undefined &&
+            MathBN.lt(transaction.amount, 0) && MathBN.gt(amount, 0) &&
+            MathBN.eq(MathBN.mult(transaction.amount, -1), amount)) {
+            refundedOrders.add(transaction.order_id);
+          }
+        }
+      }
+    }
+    // Refund bookkeeping is assigned to an order only after provider confirmation.
+    // Shared cart payment status would include refunds belonging to other sellers.
+    // Filter identifiers before the native workflow applies pagination and count.
+    req.filterableFields.id = orderIds.filter((id) => refundedOrders.has(id));
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
 
 function prepareFulfillmentStage(
   req: MedusaRequest,
@@ -111,11 +187,11 @@ export const vendorOrderStageMiddlewares: MiddlewareRoute[] = [
     // static middleware below runs after Mercur's seller-link filter.
     matcher: /^\/vendor\/orders\/?$/,
     method: "GET",
-    middlewares: [prepareFulfillmentStage],
+    middlewares: [prepareFulfillmentStage, prepareRefundStatus],
   },
   {
     matcher: "/vendor/orders",
     method: "GET",
-    middlewares: [applyFulfillmentStage],
+    middlewares: [applyFulfillmentStage, applyRefundStatus],
   },
 ];

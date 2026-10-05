@@ -13,6 +13,7 @@ import {
   productReviewHref,
 } from "../helpers";
 import { ProductReviewList } from "./product-list";
+import { AdminAutoRefresh } from "@/features/realtime/auto-refresh";
 
 export function ProductReviewSkeleton() {
   return <Skeleton className="h-80 w-full" aria-label="Cargando productos" />;
@@ -29,18 +30,24 @@ async function ProductReviewResults({
   } catch (error) {
     unstable_rethrow(error);
     return (
-      <div role="alert" className="space-y-3 rounded-lg border p-6">
-        <p>
-          No pudimos cargar los productos. Comprueba la conexión y los permisos
-          de tu cuenta.
-        </p>
-        <Button asChild variant="outline">
-          <a href={productReviewHref(filters, filters.offset)}>Reintentar</a>
-        </Button>
-      </div>
+      <AdminAutoRefresh eventName="catalog-changed">
+        <div role="alert" className="space-y-3 rounded-lg border p-6">
+          <p>
+            No pudimos cargar los productos. Comprueba la conexión y los permisos
+            de tu cuenta.
+          </p>
+          <Button asChild variant="outline">
+            <a href={productReviewHref(filters, filters.offset)}>Reintentar</a>
+          </Button>
+        </div>
+      </AdminAutoRefresh>
     );
   }
-  return <ProductReviewList filters={filters} result={result} />;
+  return (
+    <AdminAutoRefresh eventName="catalog-changed">
+      <ProductReviewList filters={filters} result={result} />
+    </AdminAutoRefresh>
+  );
 }
 
 export async function ProductReviewBrowser({

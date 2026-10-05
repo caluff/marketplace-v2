@@ -9,16 +9,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
 import { CircleHelp } from "lucide-react";
-import { getPendingApplicationStatus } from "../pending-action";
+import { PendingIndicator } from "@marketplace-v2/ui/pending-indicator";
+import type { AdminNotificationsResponse } from "@marketplace-v2/api/order-notification-contracts";
+import { useAdminNotifications } from "@/features/realtime/admin-notifications";
+import { createLiveReadQueue } from "@/features/realtime/live-read-queue";
 import {
-  shouldRefreshPendingStatus,
-  type PendingApplicationStatus,
-} from "../pending-status";
+  NotificationReadError,
+  readNotificationStatus,
+} from "@/features/realtime/notification-status";
 
-const PendingContext = createContext<PendingApplicationStatus>("unknown");
-const SeedContext = createContext<(status: PendingApplicationStatus) => void>(
+const PendingContext = createContext<AdminNotificationsResponse | null>(null);
+const SeedContext = createContext<(status: AdminNotificationsResponse) => void>(
   () => {},
 );
 export const PENDING_APPLICATIONS_CHANGED =
@@ -29,111 +31,122 @@ export function PendingApplicationsProvider({
 }: {
   children: ReactNode;
 }) {
-  const pathname = usePathname();
-  const [status, setStatus] = useState<PendingApplicationStatus>("unknown");
-  const lastAttempt = useRef<number | null>(null);
-  const inFlight = useRef(false);
-  const needsRefresh = useRef(false);
-  const seeded = useRef(false);
-  const seed = useCallback((value: PendingApplicationStatus) => {
-    seeded.current = true;
-    lastAttempt.current = Date.now();
-    setStatus(value);
-  }, []);
-  const refresh = useCallback((force = false) => {
-    if (force && inFlight.current) {
-      needsRefresh.current = true;
-      return;
-    }
-    if (
-      !seeded.current ||
-      document.visibilityState !== "visible" ||
-      !shouldRefreshPendingStatus(
-        Date.now(),
-        lastAttempt.current,
-        inFlight.current,
-        force,
-      )
-    )
-      return;
-    lastAttempt.current = Date.now();
-    inFlight.current = true;
-    void getPendingApplicationStatus()
-      .then(setStatus, () => setStatus("unknown"))
-      .finally(() => {
-        inFlight.current = false;
-        if (needsRefresh.current) {
-          needsRefresh.current = false;
-          window.dispatchEvent(new Event(PENDING_APPLICATIONS_CHANGED));
-        }
-      });
+  const notifications = useAdminNotifications();
+  const [status, setStatus] = useState<AdminNotificationsResponse | null>(null);
+  const hasLiveResult = useRef(false);
+  const seed = useCallback((value: AdminNotificationsResponse) => {
+    if (!hasLiveResult.current) setStatus(value);
   }, []);
 
   useEffect(() => {
-    const onFocus = () => {
-      void refresh();
-    };
-    const onDecision = () => {
-      void refresh(true);
-    };
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onFocus);
-    window.addEventListener(PENDING_APPLICATIONS_CHANGED, onDecision);
+    let freshRequested = false;
+    const queue = createLiveReadQueue({
+      read: (signal) => {
+        const fresh = freshRequested;
+        freshRequested = false;
+        return readNotificationStatus(signal, fresh);
+      },
+      onData: (value) => {
+        hasLiveResult.current = true;
+        setStatus(value);
+      },
+      onError: (error) => {
+        if (error instanceof NotificationReadError && error.isDenied) {
+          hasLiveResult.current = true;
+          setStatus({
+            applications: { status: "denied" },
+            catalog: { status: "denied" },
+          });
+        } else
+          setStatus(
+            (previous) =>
+              previous ?? {
+                applications: { status: "unavailable" },
+                catalog: { status: "unavailable" },
+              },
+          );
+      },
+      shouldRetry: (error) =>
+        !(error instanceof NotificationReadError && error.isDenied),
+    });
+    const subscriptions = ["applications-changed", "catalog-changed"] as const;
+    const unsubscribers = subscriptions.map((eventName) =>
+      notifications?.subscribe({
+        eventName,
+        onReady: queue.request,
+        onChanged: queue.request,
+        onUnavailable: () => {},
+      }),
+    );
+    function visibilityChanged() {
+      if (document.visibilityState !== "visible") queue.pause();
+      else queue.request();
+    }
+    function reviewed() {
+      freshRequested = true;
+      if (document.visibilityState === "visible") queue.request();
+    }
+    window.addEventListener(PENDING_APPLICATIONS_CHANGED, reviewed);
+    document.addEventListener("visibilitychange", visibilityChanged);
+    visibilityChanged();
     return () => {
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onFocus);
-      window.removeEventListener(PENDING_APPLICATIONS_CHANGED, onDecision);
+      for (const unsubscribe of unsubscribers) unsubscribe?.();
+      document.removeEventListener("visibilitychange", visibilityChanged);
+      window.removeEventListener(PENDING_APPLICATIONS_CHANGED, reviewed);
+      queue.dispose();
     };
-  }, [refresh]);
-  useEffect(() => {
-    void refresh();
-  }, [pathname, refresh]);
+  }, [notifications]);
+
   return (
-    <SeedContext value={seed}>
-      <PendingContext value={status}>{children}</PendingContext>
-    </SeedContext>
+    <SeedContext.Provider value={seed}>
+      <PendingContext.Provider value={status}>
+        {children}
+      </PendingContext.Provider>
+    </SeedContext.Provider>
   );
 }
 
 export function PendingApplicationsSeed({
   status,
 }: {
-  status: PendingApplicationStatus;
+  status: AdminNotificationsResponse;
 }) {
   const seed = useContext(SeedContext);
   useEffect(() => seed(status), [seed, status]);
   return null;
 }
 
-export function PendingApplicationsIndicator() {
-  const status = useContext(PendingContext);
-  if (status === "clear") return null;
-  if (status === "unknown")
+export function PendingApplicationsIndicator({
+  topic = "applications",
+}: {
+  topic?: keyof AdminNotificationsResponse;
+}) {
+  const status = useContext(PendingContext)?.[topic];
+  if (
+    !status ||
+    status.status === "denied" ||
+    (status.status === "ready" && !status.has_pending)
+  )
+    return null;
+  const label =
+    topic === "applications"
+      ? "Hay solicitudes pendientes de revisión"
+      : "Hay productos o cambios pendientes de revisión";
+  if (status.status === "unavailable")
     return (
       <span
-        className="ml-auto text-sidebar-muted"
-        title="No se pudo confirmar si hay solicitudes pendientes"
-        data-testid="pending-applications-unknown"
+        title="No se pudo confirmar si hay revisiones pendientes"
+        data-testid={`pending-${topic}-unknown`}
+        className="text-sidebar-muted"
       >
         <CircleHelp className="size-3.5" aria-hidden="true" />
-        <span className="sr-only">Estado de solicitudes sin confirmar</span>
+        <span className="sr-only">Estado de revisiones sin confirmar</span>
       </span>
     );
   return (
-    <span
-      className="relative ml-auto flex size-2.5 shrink-0"
-      title="Hay vendedores pendientes de revisión"
-      data-testid="pending-applications-indicator"
-    >
-      <span
-        className="absolute inline-flex size-full rounded-full bg-warning opacity-60 motion-safe:animate-ping"
-        aria-hidden="true"
-      />
-      <span
-        className="relative inline-flex size-2.5 rounded-full bg-warning"
-        aria-hidden="true"
-      />
-      <span className="sr-only">Hay vendedores pendientes de revisión</span>
-    </span>
+    <PendingIndicator
+      label={label}
+      data-testid={`pending-${topic}-indicator`}
+    />
   );
 }

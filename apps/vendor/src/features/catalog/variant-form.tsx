@@ -1,45 +1,21 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 import type { ProductDTO, ProductVariantDTO } from "@mercurjs/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { notifyFeedback } from "@/lib/feedback";
 import type { MutationState } from "../workspace/presentation";
 import { editVariantAction } from "./actions";
-
-function nextVariantOptions(product: ProductDTO) {
-  const options = product.options ?? [];
-  const used = new Set(
-    (product.variants ?? []).map((current) =>
-      JSON.stringify(
-        options.map(
-          (option) =>
-            current.options?.find(
-              (value) => value.option?.title === option.title,
-            )?.value ?? "",
-        ),
-      ),
-    ),
-  );
-  const selected: string[] = [];
-
-  function find(index: number): string[] | null {
-    if (index === options.length) {
-      return used.has(JSON.stringify(selected)) ? null : [...selected];
-    }
-    for (const value of options[index].values ?? []) {
-      selected.push(value.value);
-      const match = find(index + 1);
-      selected.pop();
-      if (match) return match;
-    }
-    return null;
-  }
-
-  return find(0);
-}
+import { usePresentationEditor } from "./presentation-editor";
+import {
+  hasPresentationOptions,
+  hasVariantCombination,
+  nextVariantOptions,
+  variantOptionValues,
+} from "./variant-options";
 
 export function VariantForm({
   product,
@@ -51,20 +27,34 @@ export function VariantForm({
   defaultSku?: string;
 }) {
   const prefix = useId();
-  const automaticOptions = variant ? null : nextVariantOptions(product);
+  const editor = usePresentationEditor();
+  const hasOptions = hasPresentationOptions(product);
+  const [selectedOptions, setSelectedOptions] = useState(() =>
+    variant
+      ? variantOptionValues(product, variant)
+      : nextVariantOptions(product),
+  );
   const automaticTitle = (
-    automaticOptions?.filter((value) => value !== "__default__").join(" / ") ||
+    selectedOptions?.filter((value) => value !== "__default__").join(" / ") ||
     "Única"
   ).slice(0, 200);
+  const hasDuplicate =
+    selectedOptions !== null &&
+    hasVariantCombination(product, selectedOptions, variant?.id);
   const [state, action, isPending] = useActionState(
     async (previous: MutationState, form: FormData) => {
-      const result = await editVariantAction(previous, form);
-      notifyFeedback(result);
-      return result;
+      try {
+        const result = await editVariantAction(previous, form);
+        notifyFeedback(result);
+        if (result.status === "success") editor?.close();
+        return result;
+      } finally {
+        editor?.setBusy(false);
+      }
     },
     { status: "idle" },
   );
-  if (!variant && !automaticOptions)
+  if (!variant && !selectedOptions)
     return (
       <p className="text-sm text-muted-foreground">
         Ya están creadas todas las combinaciones disponibles. Para añadir otras,
@@ -72,103 +62,113 @@ export function VariantForm({
       </p>
     );
   return (
-    <form action={action} className="space-y-4">
+    <form
+      action={action}
+      onSubmit={() => editor?.setBusy(true)}
+      className="space-y-4"
+    >
       <input type="hidden" name="id" value={product.id} />
       <input type="hidden" name="variant_id" value={variant?.id ?? ""} />
+      {variant ? (
+        <input
+          type="hidden"
+          name="master_sku"
+          value={variant.sku || defaultSku || ""}
+        />
+      ) : null}
       <fieldset
         disabled={isPending || state.status === "success"}
         className="grid gap-4 sm:grid-cols-2"
       >
-        {variant ? (
-          <>
-            <Field>
-              <FieldLabel htmlFor={`${prefix}-title`}>
-                Nombre de la presentación
-              </FieldLabel>
-              <Input
-                id={`${prefix}-title`}
-                name="title"
-                required
-                maxLength={200}
-                defaultValue={variant.title}
-              />
-            </Field>
-            <details className="sm:col-span-2">
-              <summary className="w-fit cursor-pointer text-sm text-primary underline underline-offset-4">
-                Código de catálogo
-              </summary>
-              <Field className="mt-4 max-w-lg">
-                <FieldLabel htmlFor={`${prefix}-sku`}>
-                  Código interno (SKU)
-                </FieldLabel>
-                <Input
-                  id={`${prefix}-sku`}
-                  name="master_sku"
-                  required
-                  maxLength={100}
-                  defaultValue={variant.sku || defaultSku}
-                />
-              </Field>
-            </details>
-          </>
-        ) : (
-          <>
-            <input type="hidden" name="title" value={automaticTitle} />
-            <Field>
-              <FieldLabel>Nombre de la presentación</FieldLabel>
-              <p className="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm">
-                {automaticTitle}
-              </p>
-            </Field>
-          </>
-        )}
-        {(product.options ?? []).map((option, index) => (
-          <Field key={option.id}>
-            <FieldLabel
-              htmlFor={variant ? `${prefix}-option-${index}` : undefined}
-            >
-              {option.title === "__default__" ? "Presentación" : option.title}
+        {variant && hasOptions ? (
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor={`${prefix}-title`}>
+              Nombre de la presentación
             </FieldLabel>
-            {variant ? (
-              <select
+            <Input
+              id={`${prefix}-title`}
+              name="title"
+              required
+              maxLength={200}
+              defaultValue={variant.title}
+            />
+          </Field>
+        ) : (
+          <input
+            type="hidden"
+            name="title"
+            value={variant?.title || automaticTitle}
+          />
+        )}
+        {(product.options ?? []).map((option, index) => {
+          const value = selectedOptions?.[index] ?? "";
+          if (option.title === "__default__") {
+            return (
+              <input
+                key={option.id}
+                type="hidden"
+                name={`option_${index}`}
+                value={value}
+              />
+            );
+          }
+          return (
+            <Field key={option.id}>
+              <FieldLabel htmlFor={`${prefix}-option-${index}`}>
+                {option.title}
+              </FieldLabel>
+              <NativeSelect
                 id={`${prefix}-option-${index}`}
                 name={`option_${index}`}
                 required
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                defaultValue={
-                  variant.options?.find(
-                    (value) => value.option?.title === option.title,
-                  )?.value ?? ""
+                value={value}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSelectedOptions((current) =>
+                    (current ?? []).map((entry, optionIndex) =>
+                      optionIndex === index ? value : entry,
+                    ),
+                  );
+                }}
+                aria-describedby={
+                  hasDuplicate ? `${prefix}-duplicate` : undefined
                 }
               >
                 <option value="" disabled>
                   Seleccionar valor
                 </option>
-                {option.values?.map((value) => (
-                  <option key={value.id} value={value.value}>
-                    {value.value === "__default__" ? "Única" : value.value}
+                {option.values?.map((entry) => (
+                  <option key={entry.id} value={entry.value}>
+                    {entry.value === "__default__" ? "Única" : entry.value}
                   </option>
                 ))}
-              </select>
-            ) : (
-              <>
-                <input
-                  type="hidden"
-                  name={`option_${index}`}
-                  value={automaticOptions?.[index] ?? ""}
-                />
-                <p className="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm">
-                  {automaticOptions?.[index] === "__default__"
-                    ? "Única"
-                    : automaticOptions?.[index]}
-                </p>
-              </>
-            )}
-          </Field>
-        ))}
-        <Button className="w-fit sm:col-span-2" type="submit">
-          {isPending ? "Guardando…" : "Guardar presentación"}
-        </Button>
+              </NativeSelect>
+            </Field>
+          );
+        })}
+        {hasDuplicate ? (
+          <p
+            id={`${prefix}-duplicate`}
+            role="status"
+            className="text-sm text-muted-foreground sm:col-span-2"
+          >
+            Esta combinación ya tiene una presentación. Elige otros valores.
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
+          <Button type="submit" disabled={hasDuplicate}>
+            {isPending
+              ? "Guardando…"
+              : variant
+                ? "Guardar"
+                : "Crear presentación"}
+          </Button>
+          {editor ? (
+            <Button variant="ghost" onClick={editor.close}>
+              Cancelar
+            </Button>
+          ) : null}
+        </div>
       </fieldset>
       {state.message ? (
         <p

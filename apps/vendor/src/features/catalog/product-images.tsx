@@ -36,11 +36,13 @@ export function ProductImages({
   initialImages = [],
   disabled = false,
   onBusyChange,
+  onImagesChange,
   ref,
 }: {
   initialImages?: Pick<ProductImageDTO, "id" | "url">[];
   disabled?: boolean;
   onBusyChange: (busy: boolean) => void;
+  onImagesChange?: (imageIds: string[]) => void;
   ref: Ref<ProductImagesHandle>;
 }) {
   const id = useId();
@@ -59,6 +61,7 @@ export function ProductImages({
   function update(next: CatalogAttachment[]) {
     latestImages.current = next;
     setImages(next);
+    onImagesChange?.(next.map((image) => image.id));
   }
   useEffect(() => {
     const urls = objectUrls.current;

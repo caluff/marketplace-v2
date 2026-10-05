@@ -1,8 +1,12 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { VendorShell } from "@/components/vendor/vendor-shell";
+import {
+  StoreSetup,
+  StoreSetupSkeleton,
+} from "@/features/workspace/store-setup";
 import { getVendorContext } from "@/lib/auth-sdk";
 
 export default async function VendorWorkspaceLayout({
@@ -56,12 +60,18 @@ export default async function VendorWorkspaceLayout({
     <VendorShell
       defaultOpen={cookieStore.get("vendor_sidebar_state")?.value !== "false"}
       identity={{
+        sellerId: membership.seller.id,
         memberName,
         memberEmail: membership.member.email,
         sellerName: membership.seller.name,
         roleId: membership.role_id,
       }}
       canSwitchSeller={context.membershipCount > 1}
+      storeSetup={
+        <Suspense fallback={<StoreSetupSkeleton />}>
+          <StoreSetup />
+        </Suspense>
+      }
     >
       {children}
     </VendorShell>

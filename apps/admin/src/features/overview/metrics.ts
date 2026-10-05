@@ -1,6 +1,8 @@
 import type Medusa from "@medusajs/js-sdk";
+import type { HttpTypes as MedusaHttpTypes } from "@medusajs/types";
 import type { HttpTypes } from "@mercurjs/types";
 import type { AdminApplicationListResponse } from "@marketplace-v2/vendor-onboarding-contracts";
+import type { AdminOrderCountResponse } from "@marketplace-v2/api/order-notification-contracts";
 
 export const OVERVIEW_METRICS = [
   {
@@ -31,9 +33,14 @@ export const OVERVIEW_METRICS = [
 
 export type OverviewMetricDefinition = (typeof OVERVIEW_METRICS)[number];
 
+export function parseOverviewMetricId(value: unknown): OverviewMetricDefinition["id"] | null {
+  return OVERVIEW_METRICS.find((metric) => metric.id === value)?.id ?? null;
+}
+
 export async function readOverviewCount(
   sdk: Medusa,
   id: OverviewMetricDefinition["id"],
+  signal?: AbortSignal,
 ) {
   const query = { limit: 1, offset: 0, fields: "id" };
   switch (id) {
@@ -44,10 +51,19 @@ export async function readOverviewCount(
           {
             query: { limit: 1, offset: 0, status: "submitted" },
             cache: "no-store",
+            signal,
           },
         )
       ).count;
     case "products":
+      // The installed native list method accepts headers only, so bounded reads
+      // use the same SDK endpoint with its supported FetchArgs signal.
+      if (signal) {
+        return (await sdk.client.fetch<MedusaHttpTypes.AdminProductListResponse>(
+          "/admin/products",
+          { query: { ...query, status: ["proposed"] }, cache: "no-store", signal },
+        )).count;
+      }
       return (await sdk.admin.product.list({ ...query, status: ["proposed"] }))
         .count;
     case "stores":
@@ -57,10 +73,14 @@ export async function readOverviewCount(
           {
             query,
             cache: "no-store",
+            signal,
           },
         )
       ).count;
     case "orders":
-      return (await sdk.admin.order.list(query)).count;
+      return (await sdk.client.fetch<AdminOrderCountResponse>(
+        "/admin/overview/orders",
+        { cache: "no-store", signal },
+      )).count;
   }
 }

@@ -51,8 +51,12 @@ export function createAdminSdk(token?: string) {
   });
 }
 
+export async function getAdminToken() {
+  return (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+}
+
 const getAdminAccount = cache(async () => {
-  const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+  const token = await getAdminToken();
   if (!token) return null;
   const sdk = createAdminSdk(token);
   if (!sdk) throw new Error("Admin backend is not configured");

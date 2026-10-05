@@ -7,6 +7,7 @@ import type {
   WizardStep,
 } from "@marketplace-v2/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
+import { normalizeUsState } from "@marketplace-v2/ui/us-states"
 import { ArrowLeft, ArrowRight, Check, LoaderCircle, Save } from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
@@ -73,9 +74,19 @@ export function ApplicationWizard({
     formResources?.status === "ready" ? formResources.categories : []
   const addresses =
     formResources?.status === "ready" ? formResources.addresses : []
-  const [draft, setDraft] = useState(
-    () => response.application?.data ?? initialDraft(customer, options),
-  )
+  const [draft, setDraft] = useState(() => {
+    const data = response.application?.data ?? initialDraft(customer, options)
+    return {
+      ...data,
+      activity: {
+        ...data.activity,
+        business_address: {
+          ...data.activity.business_address,
+          province: normalizeUsState(data.activity.business_address.province),
+        },
+      },
+    }
+  })
   const [step, setStep] = useState<WizardStep>(
     response.application?.current_step ?? "responsible",
   )
@@ -291,6 +302,7 @@ export function ApplicationWizard({
                 })
                 return
               }
+              if (!event.currentTarget.reportValidity()) return
               save(STEPS[index + 1])
             }}
             aria-busy={pending}

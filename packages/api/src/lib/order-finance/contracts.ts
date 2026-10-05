@@ -86,6 +86,76 @@ export type FinanceReportingResponse = {
   };
 };
 
+export type AdminFinanceReportingResponse = {
+  report: Omit<FinanceReportingResponse["report"], "totals"> & {
+    totals: {
+      [Key in keyof FinanceReportingResponse["report"]["totals"]]:
+        FinanceReportingResponse["report"]["totals"][Key] | null;
+    };
+    freshness: {
+      refreshed_at: string | null;
+      pending_groups: number;
+      discovery_complete: boolean;
+    };
+  };
+};
+
+export type VendorFinanceReportingResponse = {
+  report: Omit<FinanceReportingResponse["report"], "totals"> & {
+    totals: {
+      [Key in keyof FinanceReportingResponse["report"]["totals"]]:
+        FinanceReportingResponse["report"]["totals"][Key] | null;
+    };
+    freshness: {
+      refreshed_at: string | null;
+      pending_orders: number;
+      discovery_complete: boolean;
+    };
+  };
+};
+
+export const vendorSettlementsQuerySchema = z.strictObject({
+  mode: z.literal("test"),
+  currency_code: z.literal("usd"),
+  data_kind: z.enum(["ordinary", "qa_fixture"]),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().nonnegative().safe().default(0),
+});
+
+export type VendorSettlementsQuery = z.infer<
+  typeof vendorSettlementsQuerySchema
+>;
+
+export type VendorSettlementItem = {
+  order_id: string;
+  order_display_id: number | null;
+  order_custom_display_id: string | null;
+  pending_amount: number | null;
+  completed_at: string;
+  eligible_at: string;
+  status: "waiting" | "due" | "processing" | "needs_review";
+  reason: string | null;
+  updated_at: string | null;
+};
+
+export type VendorSettlementsResponse = {
+  settlements: {
+    mode: "test";
+    currency_code: "usd";
+    data_kind: "ordinary" | "qa_fixture";
+    automatic_enabled: boolean;
+    generated_at: string;
+    time_zone: string;
+    total_pending: number | null;
+    next_release_at: string | null;
+    unknown_amount_count: number;
+    count: number;
+    limit: number;
+    offset: number;
+    items: VendorSettlementItem[];
+  };
+};
+
 export const orderFinanceInputSchema = z
   .object({
     action: z.enum(["cancel", "refund", "capture"]),

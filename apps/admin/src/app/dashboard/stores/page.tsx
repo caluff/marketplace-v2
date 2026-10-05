@@ -17,9 +17,7 @@ export default async function StoresPage({
   const filters = parseStoreFilters(await searchParams);
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        Tiendas
-      </h1>
+      <h1 className="sr-only">Tiendas</h1>
       <StoreFilters filters={filters} />
       <Suspense
         key={JSON.stringify(filters)}

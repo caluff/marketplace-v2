@@ -2,7 +2,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function AdminHeader() {
   return (
-    <header className="sticky top-0 z-20 flex h-[65px] items-center border-b border-border/80 bg-background/92 px-4 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-20 flex h-(--app-header-height) items-center border-b border-border/80 bg-background/92 px-4 backdrop-blur-md sm:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <SidebarTrigger
           className="size-11"

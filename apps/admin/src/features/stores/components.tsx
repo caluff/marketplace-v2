@@ -1,18 +1,15 @@
+import { TablePagination } from "@/components/table-pagination";
 import type { SellerDTO } from "@mercurjs/types";
 import type { CatalogPermissionListResponse } from "@marketplace-v2/api/catalog-permission-contracts";
 import { Suspense } from "react";
 import { FetchError } from "@medusajs/js-sdk";
+import { Search } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -23,6 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireAdminSdk } from "@/lib/auth-sdk";
+import { AdminAutoRefresh } from "@/features/realtime/auto-refresh";
+import { cn } from "@/lib/utils";
 import { CatalogPermissionForm } from "./catalog-permission-form";
 import { listCatalogPermissions, listStores, retrieveStore } from "./data";
 import {
@@ -46,11 +45,12 @@ async function CatalogPermissionRegion({
   href: string;
 }) {
   const result = await permissions;
-  const matches = result && Array.isArray(result.catalog_permissions)
-    ? result.catalog_permissions.filter(
-        (permission) => permission?.seller_id === seller.id,
-      )
-    : null;
+  const matches =
+    result && Array.isArray(result.catalog_permissions)
+      ? result.catalog_permissions.filter(
+          (permission) => permission?.seller_id === seller.id,
+        )
+      : null;
   const mode =
     matches && matches.length <= 1 ? catalogReviewMode(matches[0]) : null;
   if (!mode)
@@ -65,7 +65,7 @@ async function CatalogPermissionRegion({
 
   return (
     <CatalogPermissionForm
-      key={`${seller.id}:${mode}`}
+      key={seller.id}
       sellerId={seller.id}
       sellerName={seller.name}
       mode={mode}
@@ -75,7 +75,10 @@ async function CatalogPermissionRegion({
 
 function CatalogPermissionSkeleton() {
   return (
-    <Skeleton aria-label="Cargando permiso de catálogo" className="h-9 w-64" />
+    <Skeleton
+      aria-label="Cargando permiso de catálogo"
+      className="h-9 w-full min-w-48"
+    />
   );
 }
 
@@ -107,39 +110,62 @@ export function StoreFilters({
   filters: ReturnType<typeof parseStoreFilters>;
 }) {
   return (
-    <form
-      action="/dashboard/stores"
-      className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_240px_auto]"
-    >
-      <Field>
-        <FieldLabel htmlFor="store-search">Buscar tienda</FieldLabel>
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <nav
+        aria-label="Estados de tiendas"
+        className="flex min-w-0 max-w-full self-start gap-1 overflow-x-auto border-b md:self-auto"
+      >
+        {Object.entries({ all: "Todas", ...STORE_STATUS_LABELS }).map(
+          ([value, label]) => (
+            <Link
+              key={value}
+              href={storeListHref(
+                { ...filters, status: value as typeof filters.status },
+                0,
+              )}
+              aria-current={filters.status === value ? "page" : undefined}
+              className={cn(
+                "shrink-0 border-b-2 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                filters.status === value
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+              )}
+            >
+              {label}
+            </Link>
+          ),
+        )}
+      </nav>
+      <form
+        action="/dashboard/stores"
+        method="get"
+        role="search"
+        className="relative mb-3 w-full shrink-0 md:mb-0 md:w-52 lg:w-64"
+      >
+        <label className="sr-only" htmlFor="store-search">
+          Buscar tienda
+        </label>
         <Input
+          key={filters.q}
           id="store-search"
           name="q"
           maxLength={100}
           defaultValue={filters.q}
           placeholder="Nombre, email o identificador"
+          className="pr-12"
         />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="store-status">Estado</FieldLabel>
-        <NativeSelect
-          id="store-status"
-          name="status"
-          defaultValue={filters.status}
+        <input type="hidden" name="status" value={filters.status} />
+        <Button
+          type="submit"
+          variant="ghost"
+          size="icon"
+          aria-label="Buscar tiendas"
+          className="absolute right-1 top-1 size-8"
         >
-          <NativeSelectOption value="all">Todos los estados</NativeSelectOption>
-          {Object.entries(STORE_STATUS_LABELS).map(([value, label]) => (
-            <NativeSelectOption key={value} value={value}>
-              {label}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </Field>
-      <Button variant="outline" type="submit">
-        Filtrar
-      </Button>
-    </form>
+          <Search aria-hidden="true" strokeWidth={1.5} />
+        </Button>
+      </form>
+    </div>
   );
 }
 
@@ -153,19 +179,21 @@ export async function StoreResults({
   try {
     result = await listStores(sdk, filters);
   } catch {
-    return <StoreReadError href={storeListHref(filters, filters.offset)} />;
+    return (
+      <AdminAutoRefresh eventName="stores-changed">
+        <StoreReadError href={storeListHref(filters, filters.offset)} />
+      </AdminAutoRefresh>
+    );
   }
   const permissions = result.sellers.length
-    ? listCatalogPermissions(sdk, result.sellers.map((seller) => seller.id)).catch(
-        () => null,
-      )
+    ? listCatalogPermissions(
+        sdk,
+        result.sellers.map((seller) => seller.id),
+      ).catch(() => null)
     : Promise.resolve({ catalog_permissions: [] });
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Directorio de tiendas</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <AdminAutoRefresh eventName="stores-changed">
+      <div>
         {result.sellers.length ? (
           <Table>
             <TableHeader>
@@ -175,19 +203,19 @@ export async function StoreResults({
                 <TableHead>Estado</TableHead>
                 <TableHead>Moneda</TableHead>
                 <TableHead>Permiso de catálogo</TableHead>
-                <TableHead>
-                  <span className="sr-only">Abrir</span>
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {result.sellers.map((seller) => (
-                <TableRow key={seller.id}>
+                <TableRow key={seller.id} className="relative">
                   <TableCell>
-                    <p className="font-semibold">{seller.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {seller.handle}
-                    </p>
+                    <Link
+                      href={`/dashboard/stores/${encodeURIComponent(seller.id)}`}
+                      aria-label={`Ver ${seller.name}`}
+                      className="font-semibold outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
+                    >
+                      {seller.name}
+                    </Link>
                   </TableCell>
                   <TableCell>{seller.email || "Sin email"}</TableCell>
                   <TableCell>
@@ -201,23 +229,15 @@ export async function StoreResults({
                     {seller.currency_code}
                   </TableCell>
                   <TableCell>
-                    <Suspense fallback={<CatalogPermissionSkeleton />}>
-                      <CatalogPermissionRegion
-                        seller={seller}
-                        permissions={permissions}
-                        href={storeListHref(filters, filters.offset)}
-                      />
-                    </Suspense>
-                  </TableCell>
-                  <TableCell>
-                    <Button asChild variant="ghost" size="sm">
-                      <Link
-                        href={`/dashboard/stores/${encodeURIComponent(seller.id)}`}
-                        aria-label={`Ver ${seller.name}`}
-                      >
-                        Ver tienda
-                      </Link>
-                    </Button>
+                    <div className="relative z-10">
+                      <Suspense fallback={<CatalogPermissionSkeleton />}>
+                        <CatalogPermissionRegion
+                          seller={seller}
+                          permissions={permissions}
+                          href={storeListHref(filters, filters.offset)}
+                        />
+                      </Suspense>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -228,38 +248,16 @@ export async function StoreResults({
             No hay tiendas con estos filtros.
           </p>
         )}
-        <nav
-          aria-label="Páginas de tiendas"
-          className="mt-5 flex flex-wrap items-center justify-between gap-3"
-        >
-          <p className="text-xs text-muted-foreground">
-            {result.sellers.length
-              ? `${result.offset + 1}–${result.offset + result.sellers.length} de ${result.count}`
-              : `0 de ${result.count}`}
-          </p>
-          <div className="flex gap-2">
-            {result.offset > 0 && (
-              <Button asChild variant="outline" size="sm">
-                <Link
-                  href={storeListHref(filters, result.offset - result.limit)}
-                >
-                  Anterior
-                </Link>
-              </Button>
-            )}
-            {result.offset + result.limit < result.count && (
-              <Button asChild variant="outline" size="sm">
-                <Link
-                  href={storeListHref(filters, result.offset + result.limit)}
-                >
-                  Siguiente
-                </Link>
-              </Button>
-            )}
-          </div>
-        </nav>
-      </CardContent>
-    </Card>
+        <TablePagination
+          label="Páginas de tiendas"
+          count={result.count}
+          offset={result.offset}
+          limit={result.limit}
+          itemCount={result.sellers.length}
+          hrefForOffset={(offset) => storeListHref(filters, offset)}
+        />
+      </div>
+    </AdminAutoRefresh>
   );
 }
 
@@ -326,8 +324,8 @@ function StoreDetails({
               />
             </Suspense>
             <p className="text-xs text-muted-foreground">
-              Supervisado requiere revisión del administrador. Autorizado permite
-              añadir y editar productos sin aprobación.
+              Supervisado requiere revisión del administrador. Autorizado
+              permite añadir y editar productos sin aprobación.
             </p>
           </div>
         </CardContent>
@@ -381,7 +379,7 @@ function StoreDetails({
                     .join(", ")}
                 />
                 <DetailField label="Ciudad" value={address.city} />
-                <DetailField label="Provincia" value={address.province} />
+                <DetailField label="Estado" value={address.province} />
                 <DetailField
                   label="Código postal"
                   value={address.postal_code}

@@ -54,7 +54,7 @@ export function VendorUserMenu({
             <SidebarMenuButton
               size="lg"
               tooltip={memberName}
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="h-11 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               aria-label={`Menú del usuario: ${memberName}`}
             >
               <Avatar className="size-8 shrink-0">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import {
   Boxes,
@@ -9,6 +10,7 @@ import {
   Settings2,
   ShoppingBag,
   Store,
+  Wallet,
 } from "lucide-react";
 
 import {
@@ -27,8 +29,10 @@ import {
 } from "@/components/ui/sidebar";
 import { vendorRoutes, type VendorRouteId } from "@/lib/vendor-routes";
 import { VendorUserMenu } from "./vendor-user-menu";
+import { PendingOrderIndicator } from "@/features/orders/pending-order-indicator";
 
 export type VendorIdentity = {
+  sellerId: string;
   memberName: string;
   memberEmail: string;
   sellerName: string;
@@ -47,16 +51,28 @@ const ROUTE_ICONS = {
   dashboard: LayoutDashboard,
   catalog: PackageSearch,
   orders: ShoppingBag,
+  settlements: Wallet,
   inventory: Boxes,
   settings: Settings2,
 } satisfies Record<VendorRouteId, typeof LayoutDashboard>;
 
+const NAVIGATION_GROUPS: {
+  label?: string;
+  routes: VendorRouteId[];
+}[] = [
+  { routes: ["dashboard"] },
+  { label: "Operación", routes: ["catalog", "orders", "inventory"] },
+  { label: "Gestión", routes: ["settlements", "settings"] },
+];
+
 export function VendorSidebar({
   identity,
   canSwitchSeller,
+  storeSetup,
 }: {
   identity: VendorIdentity;
   canSwitchSeller: boolean;
+  storeSetup: ReactNode;
 }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
@@ -64,12 +80,17 @@ export function VendorSidebar({
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader
-        className="h-16 justify-center border-b border-sidebar-border"
+        className="h-(--app-header-height) justify-center border-b border-sidebar-border py-0"
         data-testid="vendor-sidebar-brand"
       >
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild tooltip={identity.sellerName}>
+            <SidebarMenuButton
+              size="lg"
+              asChild
+              tooltip={identity.sellerName}
+              className="h-11"
+            >
               <Link href="/seller" onNavigate={() => setOpenMobile(false)}>
                 <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <Store className="size-4" aria-hidden="true" />
@@ -78,9 +99,6 @@ export function VendorSidebar({
                   <span className="block truncate font-display text-base font-semibold">
                     {identity.sellerName}
                   </span>
-                  <span className="block text-xs text-sidebar-foreground/70">
-                    Portal vendedor
-                  </span>
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -88,44 +106,59 @@ export function VendorSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <nav aria-label="Navegación del vendedor">
-          <SidebarGroup>
-            <SidebarGroupLabel>Operación</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {vendorRoutes.map((route) => {
-                  const Icon = ROUTE_ICONS[route.id];
-                  const isCurrent =
-                    pathname === route.href ||
-                    (route.href !== "/seller" &&
-                      pathname.startsWith(`${route.href}/`));
+        <nav aria-label="Navegación del vendedor" className="space-y-2 py-2">
+          {NAVIGATION_GROUPS.map((group) => (
+            <SidebarGroup key={group.label ?? "Inicio"}>
+              {group.label ? (
+                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              ) : null}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {vendorRoutes
+                    .filter((route) => group.routes.includes(route.id))
+                    .map((route) => {
+                      const Icon = ROUTE_ICONS[route.id];
+                      const isCurrent =
+                        pathname === route.href ||
+                        (route.href !== "/seller" &&
+                          pathname.startsWith(`${route.href}/`));
 
-                  return (
-                    <SidebarMenuItem key={route.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isCurrent}
-                        tooltip={route.label}
-                        className="h-11 md:h-9"
-                      >
-                        <Link
-                          href={route.href}
-                          aria-current={isCurrent ? "page" : undefined}
-                          onNavigate={() => setOpenMobile(false)}
-                        >
-                          <Icon aria-hidden="true" />
-                          <span>{route.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                      return (
+                        <SidebarMenuItem key={route.href}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isCurrent}
+                            tooltip={route.label}
+                            className="relative h-11 md:h-9"
+                          >
+                            <Link
+                              href={route.href}
+                              aria-current={isCurrent ? "page" : undefined}
+                              onNavigate={() => setOpenMobile(false)}
+                            >
+                              <Icon aria-hidden="true" />
+                              <span>{route.label}</span>
+                              {route.id === "orders" ? (
+                                <PendingOrderIndicator
+                                  key={identity.sellerId}
+                                  sellerId={identity.sellerId}
+                                />
+                              ) : null}
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
         </nav>
+        <div className="mt-auto shrink-0 group-data-[collapsible=icon]:hidden">
+          {storeSetup}
+        </div>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="h-(--app-header-height) shrink-0 justify-center border-t border-sidebar-border py-0">
         <VendorUserMenu
           {...identity}
           roleLabel={ROLE_LABELS[identity.roleId] ?? identity.roleId}

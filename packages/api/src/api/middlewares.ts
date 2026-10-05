@@ -22,6 +22,11 @@ import { nativeStripePayoutWebhookGuard } from "../lib/stripe-connect/native-gua
 import { vendorOfferPriceMiddlewares } from "./vendor/offers/[id]/price/middlewares";
 import { algoliaMiddlewares } from "./store/products/search/middlewares";
 import { vendorOrderStageMiddlewares } from "./vendor/orders/middlewares";
+import { vendorOrderNotificationsMiddlewares } from "./vendor/order-notifications/middlewares";
+import { vendorCatalogNotificationsMiddlewares } from "./vendor/catalog-notifications/middlewares";
+import { vendorNotificationsMiddlewares } from "./vendor/notifications/middlewares";
+import { adminNotificationsMiddlewares } from "./admin/notifications/middlewares";
+import { adminOverviewMiddlewares } from "./admin/overview/middlewares";
 import { orderFinanceMiddlewares } from "./order-finance-middlewares";
 import { googleAuthMiddlewares } from "./auth/google/complete/middlewares";
 import { vendorSessionMiddlewares } from "./auth/vendor-session/middlewares";
@@ -30,6 +35,8 @@ import { storeCartOwnershipMiddlewares } from "./store/cart-ownership/middleware
 import { storeCartPricingMiddlewares } from "./store/cart-pricing/middlewares";
 import { financeReportingMiddlewares } from "./finance-reporting/middlewares";
 import { catalogPermissionMiddlewares } from "./catalog-permission-middlewares";
+import { adminCatalogManagementMiddlewares } from "./admin/catalog-products/middlewares";
+import { adminCustomerPurchasesMiddlewares } from "./admin/customer-purchases/middlewares";
 
 const requireSellerRegistrationFlag = (
   _req: MedusaRequest,
@@ -48,6 +55,8 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
+    ...adminCustomerPurchasesMiddlewares,
+    ...adminCatalogManagementMiddlewares,
     ...catalogPermissionMiddlewares,
     ...commissionFinanceMiddlewares,
     ...storeCartOwnershipMiddlewares,
@@ -70,6 +79,11 @@ export default defineMiddlewares({
     ...vendorShippingConfigurationMiddlewares,
     ...vendorWarehouseMiddlewares,
     ...vendorOrderStageMiddlewares,
+    ...vendorOrderNotificationsMiddlewares,
+    ...vendorCatalogNotificationsMiddlewares,
+    ...vendorNotificationsMiddlewares,
+    ...adminNotificationsMiddlewares,
+    ...adminOverviewMiddlewares,
     ...productSaleStatusMiddlewares,
     ...storeProductSaleStatusMiddlewares,
     ...customerAccountMiddlewares,

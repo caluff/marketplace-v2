@@ -32,7 +32,6 @@ export default function Home({ searchParams }: HomeProps) {
       <main>
         <Hero />
         <CatalogSection
-          categories={categories}
           result={catalog}
           activeCategoryId={activeCategoryId}
           page={page}

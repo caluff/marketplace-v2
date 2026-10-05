@@ -1,3 +1,5 @@
+import { DEFAULT_TABLE_PAGE_SIZE, parseTableOffset } from "@/lib/pagination";
+
 export const PRODUCT_STATUS_LABELS = {
   proposed: "Propuesto",
   draft: "Borrador",
@@ -14,15 +16,11 @@ export function parseProductReviewFilters(
       Object.hasOwn(PRODUCT_STATUS_LABELS, params.status))
       ? (params.status as keyof typeof PRODUCT_STATUS_LABELS | "all")
       : "proposed";
-  const offset = typeof params.offset === "string" ? Number(params.offset) : 0;
   return {
     status,
     q: typeof params.q === "string" ? params.q.trim().slice(0, 100) : "",
-    limit: 20,
-    offset:
-      Number.isSafeInteger(offset) && offset >= 0
-        ? Math.min(offset, 1_000_000)
-        : 0,
+    limit: DEFAULT_TABLE_PAGE_SIZE,
+    offset: parseTableOffset(params.offset),
   };
 }
 

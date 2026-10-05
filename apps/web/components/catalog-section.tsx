@@ -18,7 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { FavoriteButton } from "@/features/account/components/favorite-button"
 import { getFavoriteProductIds } from "@/features/account/favorites"
 import {
-  CATALOG_PAGE_SIZE,
   catalogHref,
   getCatalogPagination,
 } from "@/features/catalog/catalog-navigation"
@@ -32,7 +31,6 @@ import {
 import type { StorefrontCatalogResult } from "@/lib/medusa"
 
 type CatalogSectionProps = {
-  categories: Promise<HttpTypes.StoreProductCategory[]>
   result: Promise<StorefrontCatalogResult>
   activeCategoryId: Promise<string | undefined>
   page: Promise<number>
@@ -130,57 +128,16 @@ export function CatalogSection(props: CatalogSectionProps) {
       aria-labelledby="catalog-title"
       className="scroll-mt-24 border-b border-border"
     >
-      <div className="mx-auto w-full max-w-[90rem] px-4 py-14 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
-        <div className="mb-10 grid gap-5 border-b border-foreground pb-6 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div>
-            <p className="font-sans text-xs font-bold tracking-[0.16em] text-brand-accent uppercase">
-              Edición actual
-            </p>
-            <h2
-              id="catalog-title"
-              className="mt-2 text-4xl tracking-[-0.035em] sm:text-6xl"
-            >
-              <Suspense fallback="El catálogo">
-                <CatalogTitle
-                  categories={props.categories}
-                  activeCategoryId={props.activeCategoryId}
-                />
-              </Suspense>
-            </h2>
-          </div>
-          <Suspense fallback={null}>
-            <CatalogCount result={props.result} />
-          </Suspense>
-        </div>
+      <div className="mx-auto w-full max-w-[90rem] px-4 pt-6 pb-14 sm:px-6 sm:pt-8 sm:pb-20 lg:px-10 lg:pb-24">
+        <h2 id="catalog-title" className="sr-only">
+          Catálogo de productos
+        </h2>
         <Suspense fallback={<ProductGridSkeleton />}>
           <CatalogResults {...props} />
         </Suspense>
       </div>
     </section>
   )
-}
-
-async function CatalogTitle({
-  categories,
-  activeCategoryId,
-}: Pick<CatalogSectionProps, "categories" | "activeCategoryId">) {
-  const categoryId = await activeCategoryId
-  if (!categoryId) return "El catálogo"
-  return (
-    (await categories).find((category) => category.id === categoryId)?.name ??
-    "El catálogo"
-  )
-}
-
-async function CatalogCount({ result }: Pick<CatalogSectionProps, "result">) {
-  const catalog = await result
-  return catalog.status === "products" ? (
-    <p className="font-sans text-sm text-muted-foreground">
-      Mostrando {(catalog.page - 1) * CATALOG_PAGE_SIZE + 1}–
-      {(catalog.page - 1) * CATALOG_PAGE_SIZE + catalog.products.length} de{" "}
-      {catalog.count}
-    </p>
-  ) : null
 }
 
 async function CatalogResults(props: CatalogSectionProps) {

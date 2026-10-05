@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import type { CommissionRateDTO } from "@mercurjs/types";
@@ -9,12 +9,13 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { withFeedbackToast } from "@/lib/feedback";
 import { updateCommissionAction } from "../actions";
+import { parseCommissionPercentage } from "../helpers";
 
 export function CommissionRefresh() {
   const router = useRouter();
   return (
-    <Button variant="outline" onClick={() => router.refresh()}>
-      Actualizar estado
+    <Button type="button" variant="outline" onClick={() => router.refresh()}>
+      Reintentar
     </Button>
   );
 }
@@ -24,18 +25,18 @@ export function CommissionForm({
 }: {
   rate: Pick<CommissionRateDTO, "id" | "value">;
 }) {
+  const [percentage, setPercentage] = useState(String(rate.value));
   const [state, action, isPending] = useActionState(
     withFeedbackToast(updateCommissionAction),
     { status: "idle" },
   );
+  const hasChanges = parseCommissionPercentage(percentage) !== rate.value;
   return (
     <form action={action} className="space-y-4" aria-busy={isPending}>
       <input type="hidden" name="rate_id" value={rate.id} />
       <input type="hidden" name="expected_value" value={rate.value} />
       <Field>
-        <FieldLabel htmlFor="commission-percentage">
-          Porcentaje global (%)
-        </FieldLabel>
+        <FieldLabel htmlFor="commission-percentage">Porcentaje (%)</FieldLabel>
         <Input
           id="commission-percentage"
           name="percentage"
@@ -44,20 +45,21 @@ export function CommissionForm({
           max="100"
           step="any"
           required
-          defaultValue={rate.value}
-          disabled={isPending || state.status === "success"}
+          value={percentage}
+          onChange={(event) => setPercentage(event.target.value)}
+          disabled={isPending}
           aria-describedby="commission-percentage-help"
           className="max-w-48 tabular-nums"
         />
         <FieldDescription id="commission-percentage-help">
-          De 0 a 100. Se aplica cuando no coincide una tasa más específica.
+          Entre 0 y 100 %.
         </FieldDescription>
       </Field>
-      <Button type="submit" disabled={isPending || state.status === "success"}>
+      <Button type="submit" disabled={isPending || !hasChanges}>
         {isPending ? (
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
         ) : null}
-        {isPending ? "Guardando…" : "Guardar porcentaje"}
+        {isPending ? "Guardando…" : "Guardar cambios"}
       </Button>
       {state.message ? (
         <p
@@ -71,6 +73,7 @@ export function CommissionForm({
           {state.message}
         </p>
       ) : null}
+      {state.status === "error" && !isPending ? <CommissionRefresh /> : null}
     </form>
   );
 }

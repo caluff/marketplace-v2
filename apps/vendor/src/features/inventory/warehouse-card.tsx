@@ -7,7 +7,13 @@ import { RecheckWarehouse } from "./recheck-warehouse";
 
 export type WarehouseResult = ReturnType<typeof resultOf<WarehouseState>>;
 
-export async function WarehouseCard({ result }: { result: WarehouseResult }) {
+export async function WarehouseCard({
+  result,
+  compact = false,
+}: {
+  result: WarehouseResult;
+  compact?: boolean;
+}) {
   const response = await result;
   if (!response.data) return <DataError message={response.error} />;
   const warehouse = response.data;
@@ -34,6 +40,15 @@ export async function WarehouseCard({ result }: { result: WarehouseResult }) {
   }
   const { location } = warehouse;
   const address = location.address!;
+  if (compact)
+    return (
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <span className="font-medium">{location.name}</span>
+        <span className="text-muted-foreground">
+          {[address.city, address.province].filter(Boolean).join(", ")}
+        </span>
+      </div>
+    );
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-4">

@@ -1,11 +1,11 @@
 import { FetchError } from "@medusajs/js-sdk"
 import type { HttpTypes } from "@medusajs/types"
-import type { HttpTypes as MercurHttpTypes } from "@mercurjs/types"
 import { cookies } from "next/headers"
 import { cache } from "react"
 import { createCustomerSdk, getCustomerSessionToken } from "@/lib/auth-sdk"
 import { readReceipt, retrieveReceiptOrders } from "./receipt"
 import { CART_COOKIE, RECEIPT_COOKIE } from "./session"
+import type { CheckoutShippingOptions } from "./shipping"
 
 export { CART_COOKIE, RECEIPT_COOKIE } from "./session"
 export const CART_FIELDS =
@@ -76,7 +76,7 @@ export const getCart = cache(async (): Promise<HttpTypes.StoreCart | null> => {
 export async function getShippingOptions(cartId: string) {
   const { shipping_options } = await (
     await cartSdk()
-  ).client.fetch<MercurHttpTypes.StoreSellerShippingOptionsResponse>(
+  ).client.fetch<{ shipping_options: CheckoutShippingOptions }>(
     "/store/shipping-options",
     { query: { cart_id: cartId } },
   )

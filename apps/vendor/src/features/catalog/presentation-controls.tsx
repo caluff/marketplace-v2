@@ -16,9 +16,7 @@ export function PresentationControls({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">
-          Presentaciones, precios y existencias
-        </h2>
+        <h2 className="text-xl font-semibold">Presentaciones y precios</h2>
         <Button
           type="button"
           variant="outline"
@@ -29,7 +27,7 @@ export function PresentationControls({
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
-          {isOpen ? "Cerrar presentaciones" : "Añadir presentación"}
+          {isOpen ? "Cerrar" : "Añadir presentación"}
         </Button>
       </div>
       {hasPending ? (

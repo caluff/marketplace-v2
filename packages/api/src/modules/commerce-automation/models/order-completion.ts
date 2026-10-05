@@ -11,4 +11,8 @@ export const OrderCompletion = model
     eligible_at: model.dateTime(),
     registration_token: model.text(),
   })
-  .indexes([{ on: ["eligible_at", "id"] }, { on: ["group_id"] }]);
+  .indexes([
+    { on: ["eligible_at", "id"] },
+    { on: ["group_id"] },
+    { on: ["seller_id", "eligible_at", "id"] },
+  ]);

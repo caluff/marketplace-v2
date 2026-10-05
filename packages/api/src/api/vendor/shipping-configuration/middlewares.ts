@@ -31,9 +31,11 @@ export const vendorShippingConfigurationMiddlewares: MiddlewareRoute[] = [
 
 export function shippingPolicy(configuration: VendorShippingConfiguration) {
   return {
-    resource: configuration.action.endsWith("profile")
-      ? "shipping_profile"
-      : "shipping_option",
+    resource:
+      configuration.action.endsWith("profile") ||
+      configuration.action === "set_profile_archived"
+        ? "shipping_profile"
+        : "shipping_option",
     operation: configuration.action.startsWith("create")
       ? PolicyOperation.create
       : PolicyOperation.update,

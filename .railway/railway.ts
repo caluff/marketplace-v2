@@ -111,6 +111,7 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:web",
       watchPatterns: [
         "/apps/web/**",
+        "/packages/ui/**",
         "/packages/theme-sync/**",
         "/packages/order-reference/**",
         "/packages/vendor-onboarding-contracts/**",
@@ -155,6 +156,7 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:admin",
       watchPatterns: [
         "/apps/admin/**",
+        "/packages/ui/**",
         "/packages/theme-sync/**",
         "/packages/order-reference/**",
         "/packages/vendor-onboarding-contracts/**",
@@ -193,6 +195,7 @@ export default defineRailway((ctx) => {
       buildCommand: "pnpm build:vendor",
       watchPatterns: [
         "/apps/vendor/**",
+        "/packages/ui/**",
         "/packages/theme-sync/**",
         "/packages/order-reference/**",
         "/packages/vendor-onboarding-contracts/**",

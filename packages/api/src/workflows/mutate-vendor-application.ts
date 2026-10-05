@@ -1,8 +1,9 @@
-import { acquireLockStep, releaseLockStep } from "@medusajs/core-flows";
+import { acquireLockStep, releaseLockStep, emitEventStep } from "@medusajs/core-flows";
 import { createWorkflow, WorkflowResponse, when, transform } from "@medusajs/framework/workflows-sdk";
 import { createSellerAccountWorkflow, approveSellerWorkflow } from "@mercurjs/core/workflows";
 import { applicationLockStep, mutateVendorApplicationStep, type ApplicationMutationInput } from "./steps/mutate-vendor-application";
 import { prepareVendorMemberStep, journalVendorSellerStep, bindVendorIdentityStep, finalizeVendorApprovalStep } from "./steps/provision-vendor-application";
+import { APPLICATION_NOTIFICATION_EVENT } from "../lib/admin-notifications/events";
 
 export const mutateVendorApplicationWorkflow = createWorkflow(
   { name: "mutate-vendor-application", store: true, retentionTime: 60 * 60 * 24 * 30 },
@@ -21,6 +22,10 @@ export const mutateVendorApplicationWorkflow = createWorkflow(
     });
     when("release-unprovisioned-application", mutation, mutation => !mutation.provision).then(() => {
       releaseLockStep({ key: lock.key, ownerId: lock.ownerId }).config({ name: "release-unprovisioned-application-lock" });
+    });
+    emitEventStep({
+      eventName: APPLICATION_NOTIFICATION_EVENT,
+      data: transform({ mutation, provisioned }, ({ mutation }) => ({ id: mutation.application.id })),
     });
     return new WorkflowResponse({ application_id: mutation.application.id, processing: transform({ mutation, provisioned }, ({ mutation, provisioned }) => (mutation.replay && mutation.mutation.state === "processing") || provisioned?.completed === false), created: transform({ input, mutation }, ({ input, mutation }) => input.operation === "save" && input.body.expected_version === 0 && !mutation.replay) });
   },

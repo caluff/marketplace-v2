@@ -63,7 +63,6 @@ export async function saveDefaultCommission(
   );
   return {
     status: "success",
-    message:
-      "Porcentaje guardado en Mercur. Actualiza para consultar la tasa vigente.",
+    message: "Comisión guardada.",
   };
 }

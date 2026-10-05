@@ -17,7 +17,7 @@ import {
   getReceiptOrders,
 } from "./data"
 import {
-  hasShippingCoverage,
+  hasEligibleShippingSelection,
   isUsCart,
   parseQuantity,
   selectedShippingOptions,
@@ -153,16 +153,7 @@ export async function initializePaymentAction(
     )
       throw new Error("Completa la dirección y los envíos antes de pagar.")
     const eligibleShipping = await getShippingOptions(cart.id)
-    const selectedIds = new Set(
-      cart.shipping_methods.map((method) => method.shipping_option_id),
-    )
-    const selectedShipping = Object.fromEntries(
-      Object.entries(eligibleShipping).map(([seller, options]) => [
-        seller,
-        options.filter((option) => selectedIds.has(option.id)),
-      ]),
-    )
-    if (!hasShippingCoverage(cart, selectedShipping))
+    if (!hasEligibleShippingSelection(cart, eligibleShipping))
       throw new Error(
         "Selecciona un envío disponible para todos los productos antes de pagar.",
       )

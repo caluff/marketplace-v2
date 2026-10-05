@@ -12,12 +12,18 @@ import {
 } from "@medusajs/framework/utils";
 import { VendorShippingConfiguration } from "../../api/vendor/shipping-configuration/validators";
 import { requireSellerWarehouse } from "../vendor-warehouse/access";
+import {
+  coverageGeoZones,
+  zoneCoverage,
+  type ShippingCoverage,
+} from "./coverage";
 
 export type ShippingInput = {
   seller_id: string;
   configuration: VendorShippingConfiguration;
 };
 export const SHIPPING_PROVIDER_ID = "manual_manual";
+export const SHIPPING_PROFILE_ARCHIVED_KEY = "marketplace_v2_archived";
 export const SHIPPING_SET_NAME = "Marketplace V2 · Estados Unidos";
 export const shippingSetName = (sellerId: string) =>
   `${SHIPPING_SET_NAME} · ${sellerId}`;
@@ -57,19 +63,33 @@ export async function validateShippingConfiguration(
       MedusaError.Types.NOT_ALLOWED,
       "Selecciona una tienda.",
     );
-  if (configuration.action === "update_profile")
+  const service = container.resolve<IFulfillmentModuleService>(
+    Modules.FULFILLMENT,
+  );
+  const profileId =
+    configuration.action === "update_profile" ||
+    configuration.action === "set_profile_archived"
+      ? configuration.profile_id
+      : configuration.action === "create_option"
+        ? configuration.shipping_profile_id
+        : undefined;
+  let profile;
+  if (profileId) {
     await assertShippingOwnership(
       container,
       input.seller_id,
       "shipping_profile",
-      configuration.profile_id,
+      profileId,
     );
-  if (configuration.action === "create_option")
-    await assertShippingOwnership(
-      container,
-      input.seller_id,
-      "shipping_profile",
-      configuration.shipping_profile_id,
+    profile = await service.retrieveShippingProfile(profileId);
+  }
+  if (
+    configuration.action === "create_option" &&
+    profile?.metadata?.[SHIPPING_PROFILE_ARCHIVED_KEY] === true
+  )
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Restaura el perfil de envío antes de añadir o editar tarifas.",
     );
   if (configuration.action === "update_option") {
     await assertShippingOwnership(
@@ -77,9 +97,6 @@ export async function validateShippingConfiguration(
       input.seller_id,
       "shipping_option",
       configuration.option_id,
-    );
-    const service = container.resolve<IFulfillmentModuleService>(
-      Modules.FULFILLMENT,
     );
     const current = await service.retrieveShippingOption(
       configuration.option_id,
@@ -91,6 +108,14 @@ export async function validateShippingConfiguration(
       "shipping_profile",
       current.shipping_profile_id,
     );
+    profile = await service.retrieveShippingProfile(
+      current.shipping_profile_id,
+    );
+    if (profile.metadata?.[SHIPPING_PROFILE_ARCHIVED_KEY] === true)
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "Restaura el perfil de envío antes de añadir o editar tarifas.",
+      );
     const warehouse = await requireSellerWarehouse(container, input.seller_id);
     const query = container.resolve(ContainerRegistrationKeys.QUERY);
     const [{ data: links }, { data: options }, { data: typedOptions }] =
@@ -144,6 +169,7 @@ export async function validateShippingConfiguration(
       !prices[0]?.price_rules?.length;
     if (
       current.metadata?.marketplace_v2_shipping !== true ||
+      current.metadata?.marketplace_v2_pickup === true ||
       current.price_type !== "flat" ||
       !simplePrice ||
       typedOptions.length !== 1 ||
@@ -158,16 +184,16 @@ export async function validateShippingConfiguration(
       links.length !== 1 ||
       links[0].stock_location_id !== warehouse ||
       current.provider_id !== SHIPPING_PROVIDER_ID ||
-      !isUnitedStatesZone(current.service_zone.geo_zones)
+      !zoneCoverage(current.service_zone.geo_zones)
     ) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
         "Esta opción no corresponde a los envíos de Estados Unidos de tu almacén.",
       );
     }
-    return { configuration, current, price_id: prices[0]!.id };
+    return { configuration, profile, current, price_id: prices[0]!.id };
   }
-  return { configuration, current: undefined, price_id: undefined };
+  return { configuration, profile, current: undefined, price_id: undefined };
 }
 
 export function isUnitedStatesZone(
@@ -183,6 +209,8 @@ export function isUnitedStatesZone(
 export async function shippingInfrastructurePlan(
   container: MedusaContainer,
   sellerId: string,
+  coverage: ShippingCoverage = { mode: "all" },
+  type: "shipping" | "pickup" = "shipping",
 ) {
   const locationId = await requireSellerWarehouse(container, sellerId);
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
@@ -198,6 +226,7 @@ export async function shippingInfrastructurePlan(
         "fulfillment_sets.service_zones.id",
         "fulfillment_sets.service_zones.geo_zones.type",
         "fulfillment_sets.service_zones.geo_zones.country_code",
+        "fulfillment_sets.service_zones.geo_zones.province_code",
         "fulfillment_providers.id",
         "sales_channels.id",
       ],
@@ -238,11 +267,13 @@ export async function shippingInfrastructurePlan(
       "El marketplace no tiene un canal de ventas configurado.",
     );
   const sets = location.fulfillment_sets ?? [];
+  const name =
+    type === "pickup"
+      ? `Marketplace V2 · Recogida · ${sellerId}`
+      : shippingSetName(sellerId);
   const set =
-    sets.find(
-      (value) =>
-        value?.type === "shipping" && value.name === shippingSetName(sellerId),
-    ) ?? sets.find((value) => value?.type === "shipping");
+    sets.find((value) => value?.type === type && value.name === name) ??
+    sets.find((value) => value?.type === type);
   if (set) {
     const { data: owners } = await query.graph(
       {
@@ -258,12 +289,18 @@ export async function shippingInfrastructurePlan(
         "El conjunto de envíos debe pertenecer solamente al almacén de esta tienda.",
       );
   }
-  const zone = set?.service_zones?.find(
-    (value) => value && isUnitedStatesZone(value.geo_zones ?? []),
-  );
+  const zone = set?.service_zones?.find((value) => {
+    const existing = value && zoneCoverage(value.geo_zones ?? []);
+    if (!existing || JSON.stringify(existing) !== JSON.stringify(coverage))
+      return false;
+    const codes = new Set(value?.geo_zones?.map((zone) => zone?.province_code));
+    return coverageGeoZones(coverage).every(
+      (zone) => !("province_code" in zone) || codes.has(zone.province_code),
+    );
+  });
   return {
     location_id: locationId,
-    fulfillment_set_name: shippingSetName(sellerId),
+    fulfillment_set_name: name,
     fulfillment_set_id: set?.id,
     service_zone_id: zone?.id,
     links: [

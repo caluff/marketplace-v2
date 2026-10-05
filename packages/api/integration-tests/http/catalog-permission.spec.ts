@@ -275,6 +275,94 @@ if (!enabled) {
         expect((await readProduct(owner, product.id)).description).toBe("Immediate authorized description");
       });
 
+      it("allows product.update operators to edit, withdraw and republish without bypassing version checks", async () => {
+        const writer = await operator();
+        const reader = await operator(true);
+        const owner = await vendor();
+        await permission(writer, owner, "authorized");
+        const product = await createProduct(owner);
+        const url = `/admin/catalog-products/${product.id}/manage`;
+        const initial = (await request("GET", `/admin/products/${product.id}`, writer)).data.product;
+        const withdrawal = { action: "withdraw", expected_updated_at: initial.updated_at };
+        expect((await request("POST", url, undefined, withdrawal)).status).toBe(401);
+        expect((await request("POST", url, owner, withdrawal)).status).toBe(401);
+        expect((await request("POST", url, reader, withdrawal)).status).toBe(403);
+        expect((await request("POST", url, writer, { ...withdrawal, status: "draft" })).status).toBe(400);
+
+        const content = { title: "Operator edited content", subtitle: null, description: "Operator description" };
+        const edited = await request("POST", url, writer, {
+          action: "update-content", expected_updated_at: initial.updated_at, content,
+        });
+        expect(edited.status).toBe(200);
+        expect(edited.data.product).toMatchObject({ id: product.id, status: "published", ...content });
+        const stale = await request("POST", url, writer, withdrawal);
+        expect(stale.status).toBe(409);
+        expect(stale.data).toMatchObject({ code: "catalog_product_changed", message: "catalog_product_changed" });
+        const withdrawn = await request("POST", url, writer, {
+          action: "withdraw", expected_updated_at: edited.data.product.updated_at,
+        });
+        expect(withdrawn.status).toBe(200);
+        expect(withdrawn.data.product).toMatchObject({ id: product.id, title: content.title, status: "draft" });
+        expect((await persistedProduct(product.id)).product.status).toBe("draft");
+        const published = await request("POST", url, writer, {
+          action: "publish", expected_updated_at: withdrawn.data.product.updated_at,
+        });
+        expect(published.status).toBe(200);
+        expect((await persistedProduct(product.id)).product).toMatchObject({ id: product.id, title: content.title, status: "published" });
+        expect((await readProduct(owner, product.id)).description).toBe(content.description);
+      });
+
+      it("blocks operator management while seller changes are pending and preserves native cancellation", async () => {
+        const writer = await operator();
+        const owner = await vendor();
+        await permission(writer, owner, "authorized");
+        const product = await createProduct(owner);
+        await permission(writer, owner, "supervised");
+        const pending = await request("POST", `/vendor/products/${product.id}`, owner, { title: "Seller pending title" });
+        expect(pending.status).toBe(202);
+        const current = (await request("GET", `/admin/products/${product.id}`, writer)).data.product;
+        const url = `/admin/catalog-products/${product.id}/manage`;
+        for (const action of ["withdraw", "publish", "update-content"]) {
+          const result = await request("POST", url, writer, {
+            action, expected_updated_at: current.updated_at,
+            ...(action === "update-content" ? { content: { title: "Operator title", subtitle: null, description: null } } : {}),
+          });
+          expect(result.status).toBe(409);
+          expect(result.data).toMatchObject({ code: "catalog_pending_change" });
+        }
+        expect((await persistedProduct(product.id)).product).toMatchObject({ title: product.title, status: "published" });
+        const cancelled = await request("POST", `/admin/product-changes/${pending.data.product_change.id}/cancel`, writer, {});
+        expect(cancelled.status).toBe(200);
+        expect(cancelled.data.product_change).toMatchObject({ id: pending.data.product_change.id, status: "canceled" });
+        const fresh = (await request("GET", `/admin/products/${product.id}`, writer)).data.product;
+        const withdrawal = await request("POST", url, writer, { action: "withdraw", expected_updated_at: fresh.updated_at });
+        expect(withdrawal.status).toBe(200);
+      });
+
+      it("coordinates operator management with native confirmation without overwriting the reviewed seller content", async () => {
+        const writer = await operator();
+        const owner = await vendor();
+        await permission(writer, owner, "authorized");
+        const product = await createProduct(owner);
+        await permission(writer, owner, "supervised");
+        const before = (await request("GET", `/admin/products/${product.id}`, writer)).data.product;
+        const pending = await request("POST", `/vendor/products/${product.id}`, owner, { title: "Reviewed seller content" });
+        expect(pending.status).toBe(202);
+        const [managed, confirmed] = await Promise.all([
+          request("POST", `/admin/catalog-products/${product.id}/manage`, writer, {
+            action: "update-content", expected_updated_at: before.updated_at,
+            content: { title: "Stale operator content", subtitle: null, description: null },
+          }),
+          request("POST", `/admin/product-changes/${pending.data.product_change.id}/confirm`, writer, {}),
+        ]);
+        expect(managed.status).toBe(409);
+        expect(["catalog_pending_change", "catalog_product_changed"]).toContain(managed.data.code);
+        expect(confirmed.status).toBe(200);
+        const stored = await persistedProduct(product.id);
+        expect(stored.product.title).toBe("Reviewed seller content");
+        expect(stored.changes.some(change => change.status === "pending")).toBe(false);
+      });
+
       it("applies authorized variants, attributes and owned images while rejecting invalid ownership and options", async () => {
         const writer = await operator();
         const owner = await vendor();

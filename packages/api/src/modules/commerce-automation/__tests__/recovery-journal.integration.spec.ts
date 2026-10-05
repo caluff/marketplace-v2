@@ -14,6 +14,9 @@ import { FinanceSaleSnapshot } from "../models/finance-sale-snapshot";
 import { FinanceRecoveryAttempt } from "../models/finance-recovery-attempt";
 import { FinanceProviderFact } from "../models/finance-provider-fact";
 import { FinanceProviderCost } from "../models/finance-provider-cost";
+import { OrderCompletion } from "../models/order-completion";
+import { VendorSettlementProjection } from "../models/vendor-settlement-projection";
+import { VendorFinanceReportingProjection } from "../models/vendor-finance-reporting-projection";
 import type {
   ProviderFinanceCost,
   ProviderFinanceFact,
@@ -120,6 +123,9 @@ if (!enabled) {
       resolve: resolve(__dirname, ".."),
       dbName,
       moduleModels: [
+        OrderCompletion,
+        VendorSettlementProjection,
+        VendorFinanceReportingProjection,
         CommerceGroupState,
         CommerceOperation,
         CommerceScan,

@@ -49,14 +49,19 @@ export function CustomerMenu({
   })
 
   return (
-    <form ref={formRef} action={action} aria-busy={pending}>
+    <form
+      ref={formRef}
+      action={action}
+      aria-busy={pending}
+      className="h-(--app-header-height)"
+    >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="relative rounded-full"
+            className="h-full w-11"
             aria-label={
               vendorApplication?.unreadCount
                 ? `Abrir menú de usuario, ${vendorApplication.unreadCount} novedades de tu solicitud`
@@ -64,15 +69,17 @@ export function CustomerMenu({
             }
             disabled={pending}
           >
-            <Avatar className="size-9 border border-border">
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            {Boolean(vendorApplication?.unreadCount) ? (
-              <span
-                className="absolute top-0 right-0 size-2.5 rounded-full border border-background bg-brand-accent"
-                aria-hidden="true"
-              />
-            ) : null}
+            <span className="relative">
+              <Avatar className="size-9 border border-border">
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              {Boolean(vendorApplication?.unreadCount) ? (
+                <span
+                  className="absolute top-0 right-0 size-2.5 rounded-full border border-background bg-brand-accent"
+                  aria-hidden="true"
+                />
+              ) : null}
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent

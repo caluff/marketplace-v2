@@ -15,7 +15,7 @@ import {
 export function AdminSidebar({ user }: { user: HttpTypes.AdminUser }) {
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-[65px] justify-center border-b border-sidebar-border">
+      <SidebarHeader className="h-(--app-header-height) justify-center border-b border-sidebar-border py-0">
         <SidebarMenu>
           <SidebarMenuItem>
             <Brand />
@@ -25,7 +25,7 @@ export function AdminSidebar({ user }: { user: HttpTypes.AdminUser }) {
       <SidebarContent>
         <NavigationContent />
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="h-(--app-header-height) shrink-0 justify-center border-t border-sidebar-border py-0">
         <AdminUserMenu user={user} />
       </SidebarFooter>
     </Sidebar>

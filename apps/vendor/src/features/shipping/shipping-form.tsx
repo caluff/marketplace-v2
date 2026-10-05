@@ -1,13 +1,28 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useId, useRef, useState, type RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { notifyFeedback } from "@/lib/feedback";
 import type { MutationState } from "../workspace/presentation";
+import { useUnsavedChanges } from "../workspace/unsaved-changes";
 import { saveShippingAction } from "./actions";
+import { CoverageFields } from "./coverage-fields";
+
+function shippingDraftSnapshot(
+  values: { name: string; description: string; amount: string; enabled: boolean },
+  states: string[] | null,
+) {
+  return JSON.stringify({
+    name: values.name.trim(),
+    description: values.description.trim(),
+    amount: values.amount === "" ? "" : String(Number(values.amount)),
+    enabled: values.enabled,
+    states: states ? [...states].sort() : null,
+  });
+}
 
 export function ShippingForm({
   profileId,
@@ -17,6 +32,11 @@ export function ShippingForm({
   amount = "",
   enabled = true,
   isOption = false,
+  states = null,
+  autoFocusName = false,
+  nameInputRef,
+  onSuccess,
+  onCancel,
 }: {
   profileId?: string;
   optionId?: string;
@@ -25,15 +45,50 @@ export function ShippingForm({
   amount?: string;
   enabled?: boolean;
   isOption?: boolean;
+  states?: string[] | null;
+  autoFocusName?: boolean;
+  nameInputRef?: RefObject<HTMLInputElement | null>;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }) {
   const prefix = useId();
   const [values, setValues] = useState({ name, description, amount, enabled });
+  const [coverageStates, setCoverageStates] = useState(states);
+  const [savedValues, setSavedValues] = useState({
+    ...values,
+    states: coverageStates,
+  });
+  const formRef = useRef<HTMLFormElement>(null);
+  const unsaved = useUnsavedChanges(
+    shippingDraftSnapshot(values, coverageStates) !==
+      shippingDraftSnapshot(savedValues, savedValues.states),
+    formRef,
+  );
   const [state, action, isPending] = useActionState(
     async (previous: MutationState, form: FormData) => {
       const result = await saveShippingAction(previous, form);
       notifyFeedback(result);
-      if (result.status === "success" && !optionId && (isOption || !profileId))
+      if (
+        result.status === "success" &&
+        !optionId &&
+        (isOption || !profileId)
+      ) {
         setValues({ name: "", description: "", amount: "", enabled: true });
+        setCoverageStates(null);
+        setSavedValues({
+          name: "",
+          description: "",
+          amount: "",
+          enabled: true,
+          states: null,
+        });
+      } else if (result.status === "success") {
+        setSavedValues({ ...values, states: coverageStates });
+      }
+      if (result.status === "success") {
+        unsaved.markSaved();
+        onSuccess?.();
+      }
       return result;
     },
     { status: "idle" },
@@ -55,7 +110,12 @@ export function ShippingForm({
         ? "Guardar nombre"
         : "Crear perfil";
   return (
-    <form action={action} className="space-y-4">
+    <form
+      ref={formRef}
+      action={action}
+      className="space-y-4"
+      aria-busy={isPending}
+    >
       <input type="hidden" name="action" value={operation} />
       {profileId ? (
         <input
@@ -128,6 +188,12 @@ export function ShippingForm({
                 placeholder="Por ejemplo: entrega en 3 a 5 días hábiles"
               />
             </Field>
+            <CoverageFields
+              id={prefix}
+              states={coverageStates}
+              onChange={setCoverageStates}
+              disabled={isPending}
+            />
             {optionId ? (
               <Field className="sm:col-span-2">
                 <div className="flex items-center gap-2">
@@ -154,7 +220,7 @@ export function ShippingForm({
             <FieldLabel htmlFor={`${prefix}-name`}>
               Nombre del perfil
             </FieldLabel>
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="flex flex-wrap items-center gap-3">
               <Input
                 id={`${prefix}-name`}
                 name="name"
@@ -165,16 +231,28 @@ export function ShippingForm({
                   setValues({ ...values, name: event.target.value })
                 }
                 placeholder="Productos generales"
+                autoFocus={autoFocusName}
+                ref={nameInputRef}
+                className="min-w-0 flex-1 basis-48"
               />
               <Button type="submit" className="h-10 w-fit">
                 {submitLabel}
               </Button>
+              {onCancel ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => unsaved.confirmDiscard(onCancel)}
+                >
+                  Cancelar
+                </Button>
+              ) : null}
             </div>
           </Field>
         )}
         {isOption ? (
           <Button
             type="submit"
+            disabled={coverageStates !== null && coverageStates.length === 0}
             className="w-fit sm:col-span-2 sm:justify-self-end"
           >
             {submitLabel}

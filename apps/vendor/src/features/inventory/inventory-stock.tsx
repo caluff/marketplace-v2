@@ -1,7 +1,10 @@
-import { MutationForm } from "../workspace/mutation-form";
-import { updateStockAction } from "../workspace/actions";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { warehouseLevel, type InventoryItemWithLevels } from "./data";
 import type { WarehouseResult } from "./warehouse-card";
+import { InventoryProduct } from "./inventory-product";
+import { InventoryRow } from "./inventory-row";
+import { inventoryProducts } from "./presentation";
 
 export async function InventoryStock({
   item,
@@ -17,60 +20,61 @@ export async function InventoryStock({
       : null;
   if (stock?.status !== "ready")
     return (
-      <p className="text-sm leading-6 text-muted-foreground">
-        {!stock
-          ? "Los ajustes estarán disponibles cuando se confirme el almacén aprobado."
-          : stock.status === "missing"
-            ? "Este artículo no tiene existencias configuradas en el almacén aprobado. Solicita al operador revisar su vinculación."
-            : "Las existencias de este artículo necesitan revisión. Solicita al operador corregir las ubicaciones o cantidades antes de ajustar el stock."}
-      </p>
+      <TableRow>
+        <TableCell>
+          <InventoryProduct item={item} />
+        </TableCell>
+        <TableCell colSpan={4} className="text-sm text-muted-foreground">
+          {!stock
+            ? "Confirma el almacén para ajustar las existencias."
+            : stock.status === "missing"
+              ? "Este artículo no tiene existencias en el almacén aprobado. Contacta al operador."
+              : "Estas existencias necesitan revisión. Contacta al operador."}
+        </TableCell>
+      </TableRow>
     );
+  const name =
+    inventoryProducts(item)
+      .map((product) =>
+        [product.title, product.presentation].filter(Boolean).join(" · "),
+      )
+      .join(", ") ||
+    item.title ||
+    "artículo";
   return (
-    <>
-      <dl className="grid grid-cols-3 gap-4 text-sm">
-        {[
-          ["Físico", stock.stocked],
-          ["Reservado", stock.reserved],
-          ["Disponible", stock.available],
-        ].map(([label, quantity]) => (
-          <div key={label}>
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="mt-1 text-xl font-semibold tabular-nums">
-              {quantity}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <MutationForm
-        key={`${stock.level.id}:${stock.stocked}:${stock.reserved}`}
-        action={updateStockAction}
-        submit="Actualizar existencias"
-        hidden={{
-          id: item.id,
-          location_id: stock.level.location_id,
-          expected_quantity: String(stock.stocked),
-        }}
-        fields={[
-          {
-            name: "stocked_quantity",
-            label: "Nuevo total físico",
-            type: "number",
-            value: String(stock.stocked),
-            required: true,
-            min: stock.reserved,
-          },
-        ]}
-      />
-    </>
+    <InventoryRow
+      identity={<InventoryProduct item={item} />}
+      name={name}
+      itemId={item.id}
+      locationId={stock.level.location_id}
+      stocked={stock.stocked}
+      reserved={stock.reserved}
+      available={stock.available}
+    />
   );
 }
 
-export function StockSkeleton() {
+export function StockSkeleton({ item }: { item?: InventoryItemWithLevels }) {
   return (
-    <div
-      role="status"
-      aria-label="Verificando existencias en el almacén"
-      className="h-40 rounded bg-muted motion-safe:animate-pulse"
-    />
+    <TableRow aria-busy="true" aria-label="Cargando existencias">
+      <TableCell>
+        {item ? (
+          <InventoryProduct item={item} />
+        ) : (
+          <div className="flex items-center gap-3">
+            <Skeleton data-slot="thumbnail" className="size-12 shrink-0" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        )}
+      </TableCell>
+      {[0, 1, 2].map((index) => (
+        <TableCell key={index}>
+          <Skeleton className="ml-auto h-4 w-8" />
+        </TableCell>
+      ))}
+      <TableCell>
+        <Skeleton className="ml-auto h-8 w-20" />
+      </TableCell>
+    </TableRow>
   );
 }
