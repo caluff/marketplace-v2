@@ -1,4 +1,4 @@
-import type { VendorSettlementsQuery } from "@marketplace-v2/api/finance-contracts";
+import type { VendorSettlementsQuery } from "@usapeek/api/finance-contracts";
 import { listInput } from "../workspace/presentation";
 
 export type SettlementSearchParams = {

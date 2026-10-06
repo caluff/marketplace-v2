@@ -1,5 +1,5 @@
 import { FetchError } from "@medusajs/js-sdk";
-import type { FinanceReportingPeriod } from "@marketplace-v2/api/finance-contracts";
+import type { FinanceReportingPeriod } from "@usapeek/api/finance-contracts";
 import { Suspense, type ReactNode } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,7 +85,9 @@ export function FinanceReportSkeleton() {
         {Object.entries(primaryMetrics).map(([key, label]) => (
           <Card key={key}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{label}</CardTitle>
+              <CardTitle asChild className="text-sm font-medium">
+                <h3>{label}</h3>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Skeleton className="h-8 w-28" />
@@ -94,7 +96,7 @@ export function FinanceReportSkeleton() {
           </Card>
         ))}
       </div>
-      <div className="flex gap-8 border-y py-3">
+      <div className="flex min-h-14 flex-wrap items-center gap-x-8 gap-y-3 border-b pb-3">
         <Skeleton className="h-5 w-36" />
         <Skeleton className="h-5 w-32" />
       </div>

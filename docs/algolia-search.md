@@ -11,10 +11,12 @@ Set these variables in the ignored root `.env` locally, and in both the API and 
 ```dotenv
 ALGOLIA_APP_ID=<application-id>
 ALGOLIA_API_KEY=<private restricted indexing key>
-ALGOLIA_PRODUCT_INDEX=marketplace_v2_dev_products
+ALGOLIA_PRODUCT_INDEX=usapeek_dev_products
 ```
 
-Use a key restricted to the configured index and its replicas (for the example, `marketplace_v2_dev_products*`), with the permissions `search`, `browse`, `addObject`, `deleteObject`, `settings`, and `editSettings`. These are required configuration expectations, not a fresh inspection of the remote key. Never put the key in `NEXT_PUBLIC_*`, `apps/web/.env.local`, a commit, or a browser bundle. Production must use a separate index prefix and restricted key.
+Use a key restricted to the configured index and its replicas (for the example, `usapeek_dev_products*`), with the permissions `search`, `browse`, `addObject`, `deleteObject`, `settings`, and `editSettings`. These are required configuration expectations, not a fresh inspection of the remote key. Never put the key in `NEXT_PUBLIC_*`, `apps/web/.env.local`, a commit, or a browser bundle. Production must use a separate index prefix and restricted key.
+
+This is an example for a new index. The existing local index retains its stored name and restricted key during the [usapeek rename](operations/usapeek-rename-2026-10-05.md); changing the brand does not provision a replacement index.
 
 Without `ALGOLIA_API_KEY`, the module is not registered and `POST /store/products/search` returns 503; the remaining storefront can still run. With a key, startup requires an application ID and an index name containing only letters, numbers, hyphens or underscores. Missing search configuration is not treated as an empty result set.
 
@@ -25,7 +27,7 @@ The API and worker also require a working `REDIS_URL`. Updating the root environ
 The following command writes to Algolia and may remove obsolete records in the configured index. Confirm that the environment points to the intended development index before running it; it is not a read-only verification command.
 
 ```powershell
-pnpm --filter @marketplace-v2/api search:reindex
+pnpm --filter @usapeek/api search:reindex
 ```
 
 This native Medusa workflow configures the primary index and three standard replicas (`_price_asc`, `_price_desc`, `_newest`), indexes eligible products, and removes obsolete records from this index. It does not delete other indexes or modify products, prices, orders, or inventory. No manual product upload or Algolia onboarding wizard is required.
@@ -50,11 +52,11 @@ The index is updated by product, offer, pricing, seller, category, region, and s
 
 ## Contracts and validation
 
-`POST /store/products/search` is called through the existing Medusa SDK. Its body is validated with Medusa's Zod, and generated declarations are exposed through the type-only `@marketplace-v2/api/search-contracts` export.
+`POST /store/products/search` is called through the existing Medusa SDK. Its body is validated with Medusa's Zod, and generated declarations are exposed through the type-only `@usapeek/api/search-contracts` export.
 
 ```powershell
-pnpm --filter @marketplace-v2/api search:contracts:generate
-pnpm --filter @marketplace-v2/api search:contracts:check
+pnpm --filter @usapeek/api search:contracts:generate
+pnpm --filter @usapeek/api search:contracts:check
 pnpm lint:web
 pnpm typecheck:web
 pnpm test:web

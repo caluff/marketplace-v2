@@ -7,7 +7,7 @@ import {
 } from "@/features/orders/components";
 import { parseOrderFilters } from "@/features/orders/helpers";
 
-export const metadata: Metadata = { title: "Pedidos | Marketplace Admin" };
+export const metadata: Metadata = { title: "Pedidos | usapeek Admin" };
 export default async function OrdersPage({
   searchParams,
 }: {

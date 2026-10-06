@@ -1,4 +1,4 @@
-import type { OrderFinanceResponse } from "@marketplace-v2/api/finance-contracts";
+import type { OrderFinanceResponse } from "@usapeek/api/finance-contracts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireAdminSdk } from "@/lib/auth-sdk";

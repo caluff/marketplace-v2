@@ -1,4 +1,4 @@
-import type { VendorSessionConsumeResponse } from "@marketplace-v2/api/auth-contracts";
+import type { VendorSessionConsumeResponse } from "@usapeek/api/auth-contracts";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";

@@ -20,6 +20,9 @@ export function CustomerRowsSkeleton() {
             <Skeleton className="h-4 w-48 max-w-full" />
           </TableCell>
           <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell>
             <Skeleton className="h-6 w-20" />
           </TableCell>
           <TableCell>
@@ -40,7 +43,7 @@ export async function CustomerRows({ customers }: CustomerListProps) {
     return (
       <TableBody>
         <TableRow>
-          <TableCell colSpan={4} className="py-8">
+          <TableCell colSpan={5} className="py-8">
             <div role="alert" className="space-y-3">
               <p className="text-sm text-destructive">{data.message}</p>
               {data.isDenied ? null : (
@@ -66,7 +69,7 @@ export async function CustomerRows({ customers }: CustomerListProps) {
     return (
       <TableBody>
         <TableRow>
-          <TableCell colSpan={4} className="py-8 text-muted-foreground">
+          <TableCell colSpan={5} className="py-8 text-muted-foreground">
             <div className="space-y-3">
               <p>
                 {data.result.count

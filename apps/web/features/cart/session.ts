@@ -36,6 +36,7 @@ export async function adoptCustomerCart(
   store: CartCookieStore,
   cartClient: Pick<Medusa["store"]["cart"], "retrieve" | "transferCart">,
   customerId: string,
+  { preserveReceipt = false }: { preserveReceipt?: boolean } = {},
 ) {
   const cartId = store.get(CART_COOKIE)?.value
   if (cartId && /^cart_[a-zA-Z0-9]+$/.test(cartId)) {
@@ -55,5 +56,5 @@ export async function adoptCustomerCart(
   } else if (cartId) {
     store.delete(CART_COOKIE)
   }
-  store.delete(RECEIPT_COOKIE)
+  if (!preserveReceipt) store.delete(RECEIPT_COOKIE)
 }

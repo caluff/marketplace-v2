@@ -10,7 +10,7 @@ import { retrieveProductForReview } from "@/features/product-review/data";
 import { isProductReviewId } from "@/features/product-review/helpers";
 
 export const metadata: Metadata = {
-  title: "Revisar producto | Marketplace V2",
+  title: "Revisar producto | usapeek",
 };
 
 async function ProductContent({ params }: { params: Promise<{ id: string }> }) {

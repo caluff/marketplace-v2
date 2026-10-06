@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/checkbox";
+export * from "@usapeek/ui/checkbox";

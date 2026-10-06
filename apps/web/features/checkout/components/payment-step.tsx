@@ -68,10 +68,7 @@ export function PaymentStep({
     }
   }, [])
   return (
-    <section className="space-y-6" aria-labelledby="payment-title">
-      <h2 id="payment-title" className="text-2xl font-medium tracking-tight">
-        Revisar y pagar
-      </h2>
+    <section className="space-y-6" aria-label="Revisar y pagar">
       <div className="divide-y divide-border border border-border text-sm">
         <div className="flex items-start gap-3 px-4 py-3">
           <MapPin

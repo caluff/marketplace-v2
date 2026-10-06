@@ -1,6 +1,6 @@
 "use client"
 
-import { Thumbnail } from "@marketplace-v2/ui/thumbnail"
+import { Thumbnail } from "@usapeek/ui/thumbnail"
 import Image, { type ImageProps } from "next/image"
 import { getProductImage } from "@/features/catalog/image"
 

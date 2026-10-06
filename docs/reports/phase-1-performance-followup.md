@@ -46,7 +46,7 @@ server. This is a correctness smoke test, not a before/after latency measurement
 Reusable command:
 
 ```text
-pnpm --filter @marketplace-v2/api exec node scripts/profile-vendor-readiness.cjs
+pnpm --filter @usapeek/api exec node scripts/profile-vendor-readiness.cjs
 ```
 
 The helper reads the ignored root `.env` in memory, opens one PostgreSQL connection, enforces a read-only transaction, performs two passes over five SELECT stages, and rolls back/closes. It imports only installed seller-role definitions and never calls `ensureSellerDefaultRoles`, starts Medusa, connects to Redis, creates roles, or grants bindings. It lives outside watched API `src` to avoid triggering the development-server restart. Output is timings, counts, payload sizes, and aggregate missing-record counts; connection errors are sanitized.
@@ -107,9 +107,9 @@ This is a concrete reduction in unnecessary link work for detail preflight, not 
 
 ## Validation and limits
 
-- Final `pnpm --filter @marketplace-v2/vendor lint`: passed.
-- Final `pnpm --filter @marketplace-v2/vendor typecheck`: passed.
-- Final `pnpm --filter @marketplace-v2/vendor test`: **88 passed**, including eight added category regressions. The tests use SDK spies and isolated component evaluation; they do not claim a browser/RSC integration pass.
+- Final `pnpm --filter @usapeek/vendor lint`: passed.
+- Final `pnpm --filter @usapeek/vendor typecheck`: passed.
+- Final `pnpm --filter @usapeek/vendor test`: **88 passed**, including eight added category regressions. The tests use SDK spies and isolated component evaluation; they do not claim a browser/RSC integration pass.
 - Final API typecheck and explicit `eslint --no-ignore` of the new visibility test: passed.
 - Focused API patch suites: **25 passed** (16 visibility and 9 RBAC), exercising the maintained unified diff in temporary copies. No `node_modules` write occurred.
 - SQL helper syntax check and its live read-only execution: passed.

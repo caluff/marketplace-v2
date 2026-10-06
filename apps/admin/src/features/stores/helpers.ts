@@ -1,7 +1,7 @@
 import type {
   CatalogPermissionDTO,
   CatalogPermissionMode,
-} from "@marketplace-v2/api/catalog-permission-contracts";
+} from "@usapeek/api/catalog-permission-contracts";
 import { DEFAULT_TABLE_PAGE_SIZE, parseTableOffset } from "@/lib/pagination";
 
 export const CATALOG_PERMISSION_LABELS = {

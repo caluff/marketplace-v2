@@ -2,7 +2,7 @@ import {
   createAdminNotificationConnection,
   type NotificationSource,
 } from "./notification-connection";
-import type { AdminNotificationEvent } from "@marketplace-v2/api/order-notification-contracts";
+import type { AdminNotificationEvent } from "@usapeek/api/order-notification-contracts";
 
 const EVENTS = [
   "orders-changed",

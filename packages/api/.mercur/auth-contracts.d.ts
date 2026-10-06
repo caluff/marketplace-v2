@@ -7,6 +7,9 @@ export type CompleteGoogleAuthResponse = {
     status: "complete";
     token: string;
 };
+export type GooglePanelProfileResponse = {
+    updated: boolean;
+};
 export type VendorSessionIssueResponse = {
     code: string;
 };
@@ -18,3 +21,16 @@ export type VendorSessionConsumeResponse = {
     token: string;
     email: string;
 };
+export type AccountEmailVerificationResponse = {
+    email: string;
+    status: "verified" | "unverified";
+    source: "email" | "google" | null;
+};
+export type RequestAccountEmailVerificationResponse = {
+    status: "requested";
+};
+export type RequestAccountEmailVerificationInput = { [x: string]: never; };
+export type ConfirmAccountEmailVerificationInput = { code: string; };
+export type GoogleOneTapTransactionInput = { [x: string]: never; };
+export type GoogleOneTapTransactionResponse = { client_id: string; nonce: string; transaction_token: string; expires_at: string; };
+export type GoogleOneTapLoginInput = { id_token: string; transaction_token: string; };

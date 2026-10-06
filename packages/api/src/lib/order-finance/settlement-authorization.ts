@@ -37,7 +37,10 @@ export async function requireSettlementAuthority(
   authority?: typeof AUTOMATIC_SETTLEMENT_AUTHORITY,
 ) {
   if (authority === AUTOMATIC_SETTLEMENT_AUTHORITY) {
-    if (actorId !== AUTOMATIC_SETTLEMENT_ACTOR || !automaticSettlementEnabled())
+    if (
+      actorId !== AUTOMATIC_SETTLEMENT_ACTOR ||
+      !(await automaticSettlementEnabled(container))
+    )
       throw new MedusaError(
         MedusaError.Types.NOT_ALLOWED,
         "La liquidación automática no está habilitada.",

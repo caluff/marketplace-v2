@@ -13,6 +13,7 @@ import {
   productReviewHref,
 } from "../helpers";
 import { ProductReviewList } from "./product-list";
+import { productStatusTabClassName } from "./status-badge";
 import { AdminAutoRefresh } from "@/features/realtime/auto-refresh";
 
 export function ProductReviewSkeleton() {
@@ -75,7 +76,7 @@ export async function ProductReviewBrowser({
                 className={cn(
                   "shrink-0 border-b-2 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   filters.status === value
-                    ? "border-primary text-foreground"
+                    ? productStatusTabClassName(value)
                     : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >

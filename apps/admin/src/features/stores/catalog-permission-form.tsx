@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { CatalogPermissionMode } from "@marketplace-v2/api/catalog-permission-contracts";
+import type { CatalogPermissionMode } from "@usapeek/api/catalog-permission-contracts";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import {

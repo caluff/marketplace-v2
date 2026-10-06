@@ -1,5 +1,5 @@
 import { TablePagination } from "@/components/table-pagination";
-import type { AdminApplicationListResponse } from "@marketplace-v2/vendor-onboarding-contracts";
+import type { AdminApplicationListResponse } from "@usapeek/vendor-onboarding-contracts";
 import Link from "next/link";
 import { ClipboardCheck, Search } from "lucide-react";
 

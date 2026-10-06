@@ -10,6 +10,10 @@ const verificationSchema = z.object({
   expires_at: z.union([z.string().datetime({ offset: true }), z.date()]),
 });
 const resetSchema = z.object({ reset_url: actionUrl });
+const orderConfirmationSchema = z.object({
+  order_number: z.string().min(1),
+  order_url: actionUrl,
+});
 const shipmentSchema = z.object({
   order_number: z.string().min(1),
   order_url: actionUrl,
@@ -22,10 +26,10 @@ const applicationSchema = z.object({
 });
 
 const APPLICATION_MESSAGES = {
-  submitted: { subject: "Marketplace V2: recibimos tu solicitud", message: "Recibimos tu solicitud para vender en Marketplace V2. Te avisaremos por correo cuando cambie su estado. Podés consultar el avance en la sección para vender de tu cuenta." },
-  changes_requested: { subject: "Marketplace V2: tu solicitud necesita cambios", message: "Revisá los comentarios y actualizá tu solicitud desde la sección para vender de tu cuenta de Marketplace V2 antes de volver a enviarla." },
-  approved: { subject: "Marketplace V2: tu solicitud fue aprobada", message: "Tu solicitud para vender en Marketplace V2 fue aprobada. Ya podés ingresar al portal de vendedores con tu cuenta." },
-  rejected: { subject: "Marketplace V2: novedades sobre tu solicitud", message: "Tu solicitud para vender en Marketplace V2 no fue aprobada. Podés consultar el estado y los comentarios en la sección para vender de tu cuenta." },
+  submitted: { subject: "usapeek: recibimos tu solicitud", message: "Recibimos tu solicitud para vender en usapeek. Te avisaremos por correo cuando cambie su estado. Podés consultar el avance en la sección para vender de tu cuenta." },
+  changes_requested: { subject: "usapeek: tu solicitud necesita cambios", message: "Revisá los comentarios y actualizá tu solicitud desde la sección para vender de tu cuenta de usapeek antes de volver a enviarla." },
+  approved: { subject: "usapeek: tu solicitud fue aprobada", message: "Tu solicitud para vender en usapeek fue aprobada. Ya podés ingresar al portal de vendedores con tu cuenta." },
+  rejected: { subject: "usapeek: novedades sobre tu solicitud", message: "Tu solicitud para vender en usapeek no fue aprobada. Podés consultar el estado y los comentarios en la sección para vender de tu cuenta." },
 } as const;
 
 function escapeHtml(value: string): string {
@@ -45,25 +49,33 @@ function render(subject: string, paragraphs: string[], action?: { label: string;
 
 export function renderNotification(template: string, data: Record<string, unknown> | null | undefined) {
   switch (template) {
+    case "order-confirmed": {
+      const input = orderConfirmationSchema.parse(data);
+      return render(`usapeek: recibimos tu pedido ${input.order_number}`, [
+        "Recibimos tu pedido. Podés consultar su estado y seguir el envío desde el siguiente enlace, sin iniciar sesión.",
+        "Este enlace es privado y vence en 90 días. Guardá este correo y evitá compartirlo.",
+      ], { label: "Seguir mi pedido", url: input.order_url });
+    }
     case "order-shipped": {
       const input = shipmentSchema.parse(data);
-      return render(`Marketplace V2: tu pedido #${input.order_number} fue enviado`, [
-        "Se envió un paquete de tu pedido. Consultá los detalles y el seguimiento desde tu cuenta.",
+      return render(`usapeek: tu pedido ${input.order_number} fue enviado`, [
+        "Se envió un paquete de tu pedido. Podés consultar los detalles y el seguimiento desde el siguiente enlace, sin iniciar sesión.",
         ...input.tracking_numbers.map((number) => `Número de seguimiento: ${number}`),
-      ], { label: "Ver pedido", url: input.order_url });
+        "Este enlace es privado y vence en 90 días. Guardá este correo y evitá compartirlo.",
+      ], { label: "Seguir mi pedido", url: input.order_url });
     }
     case "auth-email-verification": {
       const input = verificationSchema.parse(data);
-      return render("Marketplace V2: verificá tu correo", [
-        "Confirmá tu dirección de correo para continuar en Marketplace V2.",
+      return render("usapeek: verificá tu correo", [
+        "Confirmá tu dirección de correo para continuar en usapeek.",
         `Este enlace vence el ${new Date(input.expires_at).toISOString()} (UTC).`,
         "Si no solicitaste esta verificación, podés ignorar este correo.",
       ], { label: "Verificar correo", url: input.verification_url });
     }
     case "auth-password-reset": {
       const input = resetSchema.parse(data);
-      return render("Marketplace V2: restablecé tu contraseña", [
-        "Usá el enlace para elegir una nueva contraseña para tu cuenta de Marketplace V2.",
+      return render("usapeek: restablecé tu contraseña", [
+        "Usá el enlace para elegir una nueva contraseña para tu cuenta de usapeek.",
         "Si no solicitaste este cambio, podés ignorar este correo. Tu contraseña seguirá siendo la misma.",
       ], { label: "Restablecer contraseña", url: input.reset_url });
     }

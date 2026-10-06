@@ -78,7 +78,7 @@ export function VendorSidebar({
   const { setOpenMobile } = useSidebar();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" expandOnHover>
       <SidebarHeader
         className="h-(--app-header-height) justify-center border-b border-sidebar-border py-0"
         data-testid="vendor-sidebar-brand"

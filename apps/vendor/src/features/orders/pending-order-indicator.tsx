@@ -8,7 +8,7 @@ import {
 } from "./notification-monitor";
 import { useSellerNotifications } from "../workspace/seller-notifications";
 import { publishDashboardOrderEvent } from "../dashboard/order-events";
-import { PendingIndicator } from "@marketplace-v2/ui/pending-indicator";
+import { PendingIndicator } from "@usapeek/ui/pending-indicator";
 
 export function PendingOrderIndicator({ sellerId }: { sellerId: string }) {
   const pathname = usePathname();

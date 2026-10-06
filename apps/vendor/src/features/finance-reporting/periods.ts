@@ -1,4 +1,4 @@
-import type { FinanceReportingPeriod } from "@marketplace-v2/api/finance-contracts";
+import type { FinanceReportingPeriod } from "@usapeek/api/finance-contracts";
 
 export const FINANCE_PERIODS = [
   { value: "today", label: "Hoy" },

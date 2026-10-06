@@ -24,7 +24,7 @@ export async function listProductsForReview(
         offset: filters.offset,
         ...(filters.status === "all" ? {} : { status: [filters.status] }),
         fields:
-          "id,title,status,updated_at,thumbnail,variants.id,changes.id,changes.status,changes.created_by,changes.actions.action",
+          "id,title,status,updated_at,thumbnail,images.id,images.url,variants.id,changes.id,changes.status,changes.created_by,changes.actions.action",
       },
       cache: "no-store",
     },

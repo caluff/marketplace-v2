@@ -30,6 +30,7 @@ build
 dist
 .medusa/
 .cache/
+packages/api/static/
 
 # Yarn (PnP)
 .yarn/cache

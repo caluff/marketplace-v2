@@ -10,7 +10,7 @@ export function AdminHeader() {
           aria-label="Alternar navegación"
         />
         <div className="hidden min-w-0 items-center gap-2 text-xs sm:flex">
-          <span className="text-muted-foreground">Marketplace</span>
+          <span className="text-muted-foreground">usapeek</span>
           <span className="text-border">/</span>
           <span className="truncate font-semibold text-foreground">
             Administración

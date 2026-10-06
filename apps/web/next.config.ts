@@ -5,8 +5,7 @@ function getServerActionAllowedOrigins() {
   const configured =
     process.env.SERVER_ACTIONS_ALLOWED_ORIGINS?.split(",") ?? []
   const candidates = [
-    process.env.RAILWAY_PUBLIC_DOMAIN,
-    ...configured,
+    ...(configured.length ? configured : [process.env.RAILWAY_PUBLIC_DOMAIN]),
     // Orca forwards the local preview to localhost:3000 with a different host.
     process.env.NODE_ENV === "development"
       ? "marketplace-v2.orca.localhost:6136"
@@ -60,7 +59,22 @@ function getBackendImagePatterns() {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@marketplace-v2/ui", "@marketplace-v2/order-reference"],
+  transpilePackages: ["@usapeek/ui", "@usapeek/order-reference"],
+  async headers() {
+    return [
+      {
+        source: "/orders/track",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0, must-revalidate",
+          },
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
+        ],
+      },
+    ]
+  },
   experimental: {
     serverActions: {
       allowedOrigins: getServerActionAllowedOrigins(),

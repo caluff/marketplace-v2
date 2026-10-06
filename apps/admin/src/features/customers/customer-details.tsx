@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { AdminCustomerPurchasesDetailResponse } from "@marketplace-v2/api/customer-contracts";
-import { formatOrderNumber } from "@marketplace-v2/order-reference";
+import type { AdminCustomerPurchasesDetailResponse } from "@usapeek/api/customer-contracts";
+import { formatOrderNumber } from "@usapeek/order-reference";
+import { formatPhoneNumber } from "@usapeek/ui/format-phone-number";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { tablePagination } from "@/lib/pagination";
-import { money, orderDate, statusLabel } from "../orders/helpers";
+import { money, orderDate } from "../orders/helpers";
+import { OrderStatusBadge } from "../orders/status-badge";
 import {
   customerAccountLabel,
   customerCountryName,
@@ -82,7 +84,7 @@ export default function CustomerDetails({
             </dd>
             <dt className="text-muted-foreground">Teléfono</dt>
             <dd className="break-words">
-              {result.customer.phone ?? "Sin teléfono"}
+              {formatPhoneNumber(result.customer.phone) ?? "Sin teléfono"}
             </dd>
             <dt className="text-muted-foreground">Cuenta</dt>
             <dd>
@@ -220,13 +222,9 @@ export default function CustomerDetails({
                       ))}
                     </ul>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">
-                        {statusLabel(order.status)}
-                      </Badge>
+                      <OrderStatusBadge status={order.status} />
                       {order.payment_status ? (
-                        <Badge variant="outline">
-                          {statusLabel(order.payment_status)}
-                        </Badge>
+                        <OrderStatusBadge status={order.payment_status} />
                       ) : null}
                     </div>
                   </article>

@@ -1,4 +1,4 @@
-import type { AdminCustomerPurchasesDetailResponse } from "@marketplace-v2/api/customer-contracts";
+import type { AdminCustomerPurchasesDetailResponse } from "@usapeek/api/customer-contracts";
 
 export class CustomerDetailReadError extends Error {
   constructor(public status: number) {

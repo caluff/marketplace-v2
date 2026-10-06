@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/button";
+export * from "@usapeek/ui/button";

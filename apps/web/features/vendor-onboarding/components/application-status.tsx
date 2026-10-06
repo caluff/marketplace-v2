@@ -1,4 +1,4 @@
-import type { ApplicationResponse } from "@marketplace-v2/vendor-onboarding-contracts"
+import type { ApplicationResponse } from "@usapeek/vendor-onboarding-contracts"
 import { ArrowUpRight, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -22,7 +22,7 @@ export function ApplicationStatus({
     ? "Tu cuenta de comprador sigue disponible. En el panel de vendedores podrás completar el perfil, configurar una ubicación y preparar tus primeros productos."
     : application?.status === "rejected"
       ? "Revisamos tu solicitud y no fue aprobada. Esta decisión cierra la solicitud; no necesitas crear otra cuenta."
-      : "Recibimos tu solicitud. El equipo de Marketplace V2 revisará los datos y aquí podrás consultar la decisión o las correcciones necesarias."
+      : "Recibimos tu solicitud. El equipo de usapeek revisará los datos y aquí podrás consultar la decisión o las correcciones necesarias."
   return (
     <div className="space-y-6">
       <Card>
@@ -75,8 +75,8 @@ export function ApplicationStatus({
                   className="text-sm leading-6 text-muted-foreground"
                 >
                   {!canAccess
-                    ? "La solicitud fue aprobada, pero el acceso de la tienda no está habilitado actualmente. Contacta al equipo de Marketplace V2."
-                    : "El enlace al panel de vendedores aún no está configurado. El equipo de Marketplace V2 debe habilitarlo."}
+                    ? "La solicitud fue aprobada, pero el acceso de la tienda no está habilitado actualmente. Contacta al equipo de usapeek."
+                    : "El enlace al panel de vendedores aún no está configurado. El equipo de usapeek debe habilitarlo."}
                 </p>
               )}
               <p className="text-xs leading-6 text-muted-foreground">

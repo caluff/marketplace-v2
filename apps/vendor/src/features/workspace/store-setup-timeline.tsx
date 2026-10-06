@@ -1,6 +1,6 @@
 "use client";
 
-import type { SetupCheck } from "@marketplace-v2/vendor-onboarding-contracts";
+import type { SetupCheck } from "@usapeek/vendor-onboarding-contracts";
 import { AlertCircle, Check } from "lucide-react";
 import Link from "next/link";
 

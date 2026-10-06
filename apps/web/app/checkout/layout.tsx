@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { getStorefrontCategories } from "@/lib/medusa"
 
 export const metadata: Metadata = {
-  title: "Finalizar compra | Marketplace V2",
+  title: "Finalizar compra | usapeek",
   robots: { index: false, follow: false },
 }
 export const dynamic = "force-dynamic"

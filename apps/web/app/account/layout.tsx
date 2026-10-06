@@ -14,7 +14,7 @@ import { getAccount } from "@/features/account/data"
 import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
 
 export const metadata: Metadata = {
-  title: "Mi cuenta | Marketplace V2",
+  title: "Mi cuenta | usapeek",
   robots: { index: false, follow: false },
 }
 export const dynamic = "force-dynamic"
@@ -72,7 +72,7 @@ export default async function AccountLayout({
         </aside>
         <div id="account-content" className="min-w-0 pb-8">
           <Link
-            href="/#catalog"
+            href="/search"
             className="mb-6 inline-flex min-h-11 items-center gap-2 text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />

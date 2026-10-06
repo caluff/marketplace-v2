@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/sidebar";
+export * from "@usapeek/ui/sidebar";

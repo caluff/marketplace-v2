@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto"
-import type { VendorSessionIssueResponse } from "@marketplace-v2/api/auth-contracts"
+import type { VendorSessionIssueResponse } from "@usapeek/api/auth-contracts"
 import { redirect } from "next/navigation"
 import { createCustomerSdk, getCustomerSessionToken } from "@/lib/auth-sdk"
 import { vendorSessionCallbackUrl, vendorSessionDocument } from "@/lib/vendor-session"

@@ -3,6 +3,7 @@ import type {
   OrderDetailDTO,
   OrderLineItemDTO,
 } from "@medusajs/types";
+import type { VendorOrderCompletionResponse } from "@usapeek/api/order-notification-contracts";
 import { scopedClient, type AuthorizeVendor } from "../workspace/operations";
 import { resourceId, stockQuantity, textField } from "../workspace/validation";
 import { sellerWarehouse } from "../inventory/data";
@@ -41,7 +42,10 @@ export function preparationIssue(order: OrderDetailDTO) {
   return null;
 }
 
-export function orderCapabilities(order: OrderDetailDTO) {
+export function orderCapabilities(
+  order: OrderDetailDTO,
+  completion?: VendorOrderCompletionResponse,
+) {
   const active = order.status === "pending";
   const fulfillments = (order.fulfillments ?? []).filter(
     (entry) => !entry.canceled_at,
@@ -53,22 +57,42 @@ export function orderCapabilities(order: OrderDetailDTO) {
       !fulfillments.some((entry) => entry.shipped_at || entry.delivered_at),
     complete:
       active &&
-      Boolean(order.items?.length) &&
-      (order.items ?? []).every(
-        (item) =>
-          Boolean(item) &&
-          remainingToPrepare(item) !== null &&
-          typeof item.requires_shipping === "boolean" &&
-          Number(
-            item.requires_shipping
-              ? Math.max(
-                  Number(item.detail?.shipped_quantity ?? 0),
-                  Number(item.detail?.delivered_quantity ?? 0),
-                )
-              : item.detail?.fulfilled_quantity,
-          ) >= Number(item.quantity),
-      ),
+      (completion
+        ? completion.can_complete
+        : Boolean(order.items?.length) &&
+          (order.items ?? []).every((item) => {
+            if (!item) return false;
+            const completedQuantity = orderQuantity(
+              item.requires_shipping
+                ? item.detail?.delivered_quantity
+                : item.detail?.fulfilled_quantity,
+            );
+            return (
+              remainingToPrepare(item) !== null &&
+              typeof item.requires_shipping === "boolean" &&
+              completedQuantity !== null &&
+              completedQuantity >= Number(item.quantity)
+            );
+          })),
   };
+}
+
+export function preparationGroup(
+  completion: VendorOrderCompletionResponse | undefined,
+  shippingOptionId: string | null,
+  itemIds: string[],
+) {
+  const groups = completion?.preparation_groups.filter(
+    (group) =>
+      group.shipping_option_id === shippingOptionId &&
+      itemIds.length > 0 &&
+      itemIds.every((id) => group.item_ids.includes(id)),
+  );
+  if (groups?.length !== 1)
+    throw new Error(
+      "No se pudo verificar la opción de entrega de estos artículos. Actualiza el pedido y prepara cada grupo por separado.",
+    );
+  return groups[0];
 }
 
 function trackingUrl(value: string) {
@@ -110,14 +134,18 @@ export function orderOperations(authorize: AuthorizeVendor) {
         textField(form, "confirmation") !== "yes"
       )
         throw new Error("Confirma la operación antes de continuar.");
-      const { order } = await client.get<{ order: OrderDetailDTO }>(
-        `/vendor/orders/${id}`,
-        {
+      const [{ order }, completion] = await Promise.all([
+        client.get<{ order: OrderDetailDTO }>(`/vendor/orders/${id}`, {
           fields:
             "id,status,items.id,items.quantity,items.requires_shipping,items.detail.quantity,items.detail.fulfilled_quantity,items.detail.shipped_quantity,items.detail.delivered_quantity,fulfillments.id,fulfillments.canceled_at,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.items.*",
-        },
-      );
-      const capabilities = orderCapabilities(order);
+        }),
+        ["prepare", "complete", "ship", "deliver"].includes(action)
+          ? client.get<VendorOrderCompletionResponse>(
+              `/vendor/orders/${id}/completion`,
+            )
+          : undefined,
+      ]);
+      const capabilities = orderCapabilities(order, completion);
       if (action === "complete") {
         if (!capabilities[action])
           throw new Error(
@@ -150,6 +178,15 @@ export function orderOperations(authorize: AuthorizeVendor) {
           throw new Error("Selecciona al menos un artículo para preparar.");
         if (new Set(items.map((item) => item.id)).size !== items.length)
           throw new Error("Los artículos no pueden repetirse.");
+        const submittedOption = textField(form, "shipping_option_id");
+        const shippingOptionId = submittedOption
+          ? resourceId(submittedOption)
+          : null;
+        preparationGroup(
+          completion,
+          shippingOptionId,
+          items.map((item) => item.id),
+        );
         const shippingRequirements = new Set(
           items.map(
             (selected) =>
@@ -168,6 +205,7 @@ export function orderOperations(authorize: AuthorizeVendor) {
           );
         const body = {
           items,
+          ...(shippingOptionId ? { shipping_option_id: shippingOptionId } : {}),
           location_id: resourceId(warehouse.location.id),
           requires_shipping: items.some(
             (selected) =>
@@ -185,6 +223,13 @@ export function orderOperations(authorize: AuthorizeVendor) {
       );
       if (!fulfillment || fulfillment.canceled_at)
         throw new Error("La preparación no está disponible para este pedido.");
+      if (
+        ["ship", "deliver"].includes(action) &&
+        completion?.pickup_fulfillment_ids.includes(fulfillmentId)
+      )
+        throw new Error(
+          "Esta preparación es para recogida en tienda y no requiere registrar envío ni entrega.",
+        );
       const path = `/vendor/orders/${id}/fulfillments/${fulfillmentId}`;
       if (action === "cancel_fulfillment") {
         if (fulfillment.shipped_at || fulfillment.delivered_at)

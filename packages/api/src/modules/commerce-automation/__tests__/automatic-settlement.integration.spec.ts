@@ -16,6 +16,7 @@ import { OrderCompletion } from "../models/order-completion";
 import { VendorSettlementProjection } from "../models/vendor-settlement-projection";
 import { VendorFinanceReportingProjection } from "../models/vendor-finance-reporting-projection";
 import { Migration20261003061545 } from "../migrations/Migration20261003061545";
+import { Migration20261006171340 } from "../migrations/Migration20261006171340";
 import { originalSales } from "../../../lib/order-finance/__tests__/fixtures";
 import type { OriginalSale } from "../../../lib/order-finance/snapshot";
 
@@ -105,8 +106,17 @@ if (!enabled) {
               undefined as never,
             );
             await up.up();
+            const configurableDelay = new Migration20261006171340(
+              undefined as never,
+              undefined as never,
+            );
+            await configurableDelay.up();
             await connection.query("begin");
-            for (const sql of [...down.getQueries(), ...up.getQueries()]) {
+            for (const sql of [
+              ...down.getQueries(),
+              ...up.getQueries(),
+              ...configurableDelay.getQueries(),
+            ]) {
               await connection.query(String(sql));
             }
             await connection.query("commit");
@@ -119,8 +129,13 @@ if (!enabled) {
         },
       },
       testSuite: ({ service, MikroOrmWrapper }) => {
-        function recordCompletions(orderIds: string[]) {
-          return service.recordOrderCompletions(confirmedOrders(orderIds));
+        function recordCompletions(orderIds: string[], days = 3) {
+          return service.recordOrderCompletions(
+            confirmedOrders(orderIds).map((order) => ({
+              ...order,
+              release_delay_days: days,
+            })),
+          );
         }
 
         beforeEach(async () => {
@@ -134,8 +149,10 @@ if (!enabled) {
         function restartService(): CommerceAutomationService {
           // Rebuild the actual service with its native repositories: cursor and
           // completion state must survive losing all service-instance state.
-          const container = Reflect.get(service, "__container__") as
-            ConstructorParameters<typeof CommerceAutomationService>[0];
+          const container = Reflect.get(
+            service,
+            "__container__",
+          ) as ConstructorParameters<typeof CommerceAutomationService>[0];
           return new CommerceAutomationService(container);
         }
 
@@ -198,6 +215,92 @@ if (!enabled) {
           );
         });
 
+        it.each([0, 1, 2, 3, 365])(
+          "persists a %i-day clock, enforces its boundary and keeps it on replay with another setting",
+          async (days) => {
+            const original = originalOrder(`order_delay_${days}`);
+            await service.recordOriginalSales([original]);
+            const [receipt] = await recordCompletions(
+              [original.order_id],
+              days,
+            );
+            const completedAt = parseISO(receipt.completed_at);
+            const eligibleAt = parseISO(receipt.eligible_at);
+            expect(receipt.release_delay_days).toBe(days);
+            expect(eligibleAt.getTime() - completedAt.getTime()).toBe(
+              days * 86_400_000,
+            );
+            expect(
+              await service.listDueOrderCompletions({
+                position: null,
+                now: new Date(eligibleAt.getTime() - 1),
+                take: 100,
+              }),
+            ).toEqual([]);
+            expect(
+              (
+                await service.listDueOrderCompletions({
+                  position: null,
+                  now: eligibleAt,
+                  take: 100,
+                })
+              ).map((entry) => entry.id),
+            ).toEqual([original.order_id]);
+            const restarted = restartService();
+            expect(
+              await restarted.recordOrderCompletions(
+                confirmedOrders([original.order_id]).map((order) => ({
+                  ...order,
+                  release_delay_days: days === 0 ? 3 : 0,
+                })),
+              ),
+            ).toEqual([]);
+            expect(
+              await restarted.readOrderCompletion(original.order_id),
+            ).toMatchObject({
+              completed_at: completedAt,
+              eligible_at: eligibleAt,
+              registration_token: receipt.registration_token,
+              release_delay_days: days,
+            });
+          },
+        );
+
+        it("rejects invalid delays and a snapshot that disagrees with the SQL deadline", async () => {
+          const original = originalOrder("order_bad_delay");
+          await service.recordOriginalSales([original]);
+          for (const days of [-1, 0.5, 366, NaN, Infinity]) {
+            await expect(
+              recordCompletions([original.order_id], days),
+            ).rejects.toThrow();
+          }
+          expect(
+            await service.readOrderCompletion(original.order_id),
+          ).toBeNull();
+          await recordCompletions([original.order_id]);
+          const manager = MikroOrmWrapper.getManager();
+          for (const days of [-1, 0, 366]) {
+            await expect(
+              manager.execute(
+                `insert into order_completion
+                (id, group_id, cart_id, seller_id, completed_at, eligible_at, registration_token, observed_order_updated_at, release_delay_days)
+              select id || '_invalid_' || cast(? as text), group_id, cart_id, seller_id,
+                completed_at, eligible_at, registration_token, observed_order_updated_at, ?
+              from order_completion where id = ?`,
+                [days, days, original.order_id],
+              ),
+            ).rejects.toThrow("order_completion_retention");
+          }
+          await expect(
+            manager.execute(
+              "update order_completion set release_delay_days = 0 where id = ?",
+              [original.order_id],
+            ),
+          ).rejects.toThrow(
+            "Order completion clocks and bindings are immutable",
+          );
+        });
+
         it("rolls back an earlier clock in the same batch when a later SQL insertion fails", async () => {
           await service.recordOriginalSales([
             originalOrder("order_a"),
@@ -228,7 +331,9 @@ if (!enabled) {
               throw new Error("Simulated response lost after SQL commit");
             })(),
           ).rejects.toThrow("Simulated response lost after SQL commit");
-          const committed = await service.readOrderCompletion(original.order_id);
+          const committed = await service.readOrderCompletion(
+            original.order_id,
+          );
           expect(committed).not.toBeNull();
           const restarted = restartService();
           expect(
@@ -272,10 +377,7 @@ if (!enabled) {
             originalOrder("order_b"),
             originalOrder("order_a"),
           ]);
-          const [receipt] = await recordCompletions([
-            "order_b",
-            "order_a",
-          ]);
+          const [receipt] = await recordCompletions(["order_b", "order_a"]);
           const due = parseISO(receipt.eligible_at);
           expect(
             await service.listDueOrderCompletions({
@@ -300,10 +402,7 @@ if (!enabled) {
             originalOrder("order_a"),
             originalOrder("order_b"),
           ]);
-          const receipts = await recordCompletions([
-            "order_a",
-            "order_b",
-          ]);
+          const receipts = await recordCompletions(["order_a", "order_b"]);
           const now = parseISO(receipts[0].eligible_at);
           await service.createCommerceScans({
             id: "groups",
@@ -333,7 +432,9 @@ if (!enabled) {
             }),
           ).toEqual([]);
           await restarted.advanceAutomaticSettlementScan("order_b", null);
-          expect(await restartService().readAutomaticSettlementScan()).toBeNull();
+          expect(
+            await restartService().readAutomaticSettlementScan(),
+          ).toBeNull();
           expect((await service.retrieveCommerceScan("groups")).position).toBe(
             "group_unrelated",
           );
@@ -423,19 +524,13 @@ if (!enabled) {
         });
 
         it("does not fabricate a clock for a missing original and rejects a replacement with a different seller binding", async () => {
-          expect(await recordCompletions(["order_legacy"])).toEqual(
-            [],
-          );
+          expect(await recordCompletions(["order_legacy"])).toEqual([]);
           expect(await service.readOrderCompletion("order_legacy")).toBeNull();
           const original = originalOrder("order_binding");
           await service.recordOriginalSales([original]);
-          const [receipt] = await recordCompletions([
-            original.order_id,
-          ]);
+          const [receipt] = await recordCompletions([original.order_id]);
           await service.discardOriginalSales([original.order_id]);
-          expect(
-            await recordCompletions([original.order_id]),
-          ).toEqual([]);
+          expect(await recordCompletions([original.order_id])).toEqual([]);
           await service.recordOriginalSales([
             { ...original, seller_id: "seller_replaced" },
           ]);
@@ -517,27 +612,31 @@ if (!enabled) {
         it("rejects SQL and generated CRUD updates to an existing clock", async () => {
           const original = originalOrder("order_immutable");
           await service.recordOriginalSales([original]);
-          const [receipt] = await recordCompletions([
-            original.order_id,
-          ]);
+          const [receipt] = await recordCompletions([original.order_id]);
           await expect(
             MikroOrmWrapper.getManager().execute(
               "update order_completion set eligible_at = eligible_at + interval '1 hour' where id = ?",
               [original.order_id],
             ),
-          ).rejects.toThrow("Order completion clocks and bindings are immutable");
+          ).rejects.toThrow(
+            "Order completion clocks and bindings are immutable",
+          );
           await expect(
             service.updateOrderCompletions({
               id: original.order_id,
               seller_id: "seller_changed",
             }),
-          ).rejects.toThrow("Order completion clocks and bindings are immutable");
+          ).rejects.toThrow(
+            "Order completion clocks and bindings are immutable",
+          );
           await expect(
             MikroOrmWrapper.getManager().execute(
               "update order_completion set observed_order_updated_at = observed_order_updated_at + interval '1 second' where id = ?",
               [original.order_id],
             ),
-          ).rejects.toThrow("Order completion clocks and bindings are immutable");
+          ).rejects.toThrow(
+            "Order completion clocks and bindings are immutable",
+          );
           expect(
             await service.readOrderCompletion(original.order_id),
           ).toMatchObject({

@@ -4,7 +4,7 @@ import { use } from "react";
 import type {
   FinanceReportingPeriod,
   VendorFinanceReportingResponse,
-} from "@marketplace-v2/api/finance-contracts";
+} from "@usapeek/api/finance-contracts";
 import { FinanceReportContent } from "../finance-reporting/report-content";
 import { dashboardResult, type DashboardResult } from "./live-data";
 import { useDashboardLiveData } from "./use-live-data";

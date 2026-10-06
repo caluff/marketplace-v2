@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { HttpTypes } from "@mercurjs/types";
 import type { OrderDetailDTO } from "@medusajs/types";
-import { formatOrderNumber } from "@marketplace-v2/order-reference";
+import { formatOrderNumber } from "@usapeek/order-reference";
 import {
   Table,
   TableBody,

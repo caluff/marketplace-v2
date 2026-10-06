@@ -3,6 +3,7 @@ import { z } from "@medusajs/framework/zod";
 import { randomUUID } from "node:crypto";
 import { parseISO } from "date-fns/parseISO";
 import { isValid } from "date-fns/isValid";
+import { paymentReleaseDelayDaysSchema } from "../../lib/order-finance/contracts";
 
 const instant = z
   .union([z.date(), z.iso.datetime({ offset: true })])
@@ -45,6 +46,7 @@ export const settlementSourceRowSchema = z.object({
   seller_id: z.string(),
   completed_at: instant,
   eligible_at: instant,
+  release_delay_days: paymentReleaseDelayDaysSchema,
   observed_order_updated_at: instant,
   registration_token: z.string(),
   source_revision: z.string(),
@@ -81,7 +83,7 @@ export type RegistryReadResult = z.infer<typeof registryResultSchema>;
 
 // Operations can finish without updating group state; facts also change independently.
 // Compare every local journal revision, rather than treating the largest timestamp as a version.
-const SOURCE_REVISION_SQL = `md5(concat_ws('|', c.updated_at::text, c.registration_token, c.observed_order_updated_at::text,
+const SOURCE_REVISION_SQL = `md5(concat_ws('|', c.updated_at::text, c.registration_token, c.observed_order_updated_at::text, c.release_delay_days::text,
   s.updated_at::text, s.cart_id, s.active_token, s.review_required::text, s.observation::text,
   (select string_agg(o.id || ':' || o.state || ':' || o.updated_at::text || ':' || coalesce(o.result::text, ''), '|' order by o.id)
     from commerce_operation o where o.group_id = c.group_id and o.deleted_at is null),
@@ -170,7 +172,7 @@ export async function readSettlementGroupSource(
 ): Promise<SettlementSourceRow[]> {
   const result = await database(manager).raw(
     `with scoped as (${SOURCE_SCOPE_SQL} and c.group_id = ?)
-    select id, group_id, cart_id, seller_id,
+    select id, group_id, cart_id, seller_id, release_delay_days,
       to_json(completed_at) #>> '{}' as completed_at,
       to_json(eligible_at) #>> '{}' as eligible_at,
       to_json(observed_order_updated_at) #>> '{}' as observed_order_updated_at,
@@ -265,6 +267,7 @@ export async function saveSettlementGroupProjection(
         prior.group_id !== row.group_id ||
         prior.completed_at.getTime() !== row.completed_at.getTime() ||
         prior.eligible_at.getTime() !== row.eligible_at.getTime() ||
+        prior.release_delay_days !== row.release_delay_days ||
         prior.observed_order_updated_at.getTime() !==
           row.observed_order_updated_at.getTime()
       );

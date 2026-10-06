@@ -3,9 +3,9 @@ import type {
   DraftData,
   SaveApplicationBody,
   WizardStep,
-} from "@marketplace-v2/vendor-onboarding-contracts"
+} from "@usapeek/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
-import { normalizeUsState } from "@marketplace-v2/ui/us-states"
+import { normalizeUsState } from "@usapeek/ui/us-states"
 import { normalizeUsPhone } from "../account/validation"
 import { US_STATES } from "../account/us-states"
 

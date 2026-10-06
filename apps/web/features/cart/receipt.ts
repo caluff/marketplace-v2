@@ -1,10 +1,12 @@
 import { FetchError } from "@medusajs/js-sdk"
 import type Medusa from "@medusajs/js-sdk"
+import type { HttpTypes } from "@medusajs/types"
 
 export async function retrieveReceiptOrders(
   client: Pick<Medusa["store"]["order"], "retrieve">,
   value: string | undefined,
-) {
+  guestClient?: () => Promise<Pick<Medusa["store"]["order"], "retrieve">>,
+): Promise<HttpTypes.StoreOrder[]> {
   const receipt = readReceipt(value)
   if (!receipt) return []
   try {
@@ -25,7 +27,12 @@ export async function retrieveReceiptOrders(
       ),
     )
   } catch (error) {
-    if (error instanceof FetchError && error.status === 404) return []
+    if (error instanceof FetchError && error.status === 404) {
+      if (guestClient) {
+        return retrieveReceiptOrders(await guestClient(), value)
+      }
+      return []
+    }
     throw error
   }
 }

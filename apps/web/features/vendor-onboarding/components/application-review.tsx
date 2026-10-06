@@ -1,7 +1,7 @@
 import type {
   DraftData,
   WizardStep,
-} from "@marketplace-v2/vendor-onboarding-contracts"
+} from "@usapeek/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
 import { Button } from "@/components/ui/button"
 

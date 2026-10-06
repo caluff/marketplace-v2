@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Thumbnail } from "@marketplace-v2/ui/thumbnail";
+import { Thumbnail } from "@usapeek/ui/thumbnail";
 
 export function ProductThumbnail({
   src,

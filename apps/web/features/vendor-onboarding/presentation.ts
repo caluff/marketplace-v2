@@ -1,7 +1,7 @@
 import type {
   ApplicationResponse,
   ApplicationStatus,
-} from "@marketplace-v2/vendor-onboarding-contracts"
+} from "@usapeek/vendor-onboarding-contracts"
 import { intlFormat } from "date-fns/intlFormat"
 import { isValid } from "date-fns/isValid"
 import { parseISO } from "date-fns/parseISO"
@@ -48,7 +48,7 @@ export function applicationNavigation(
             ? "Corregir solicitud"
             : application
               ? "Ver solicitud"
-              : "Vender en Marketplace V2",
+              : "Vender en usapeek",
     unreadCount: response?.unread_count ?? 0,
     ...(application &&
     !response?.applicant.existing_vendor_access &&

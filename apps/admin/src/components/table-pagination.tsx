@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   TablePagination as SharedTablePagination,
   type TablePaginationProps,
-} from "@marketplace-v2/ui/table-pagination";
+} from "@usapeek/ui/table-pagination";
 
 export function TablePagination(
   props: Omit<TablePaginationProps, "linkComponent">,

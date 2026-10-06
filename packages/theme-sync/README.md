@@ -4,10 +4,10 @@ The three applications mount `ThemeSync` inside their existing `next-themes`
 provider. This CSS-free package synchronizes only `light`, `dark`, or `system`;
 it does not share authentication, profile data, or resolved operating-system
 colors. The canonical CSS tokens, component primitives, and motion rules live in
-`@marketplace-v2/ui`; each application only keeps composition styles that are
+`@usapeek/ui`; each application only keeps composition styles that are
 specific to that product surface.
 
-The non-sensitive `marketplace-v2-theme` cookie takes precedence over stale
+The non-sensitive `usapeek-theme` cookie takes precedence over stale
 origin-local storage when an application mounts. Subsequent user changes are
 published to that cookie. `next-themes` continues to manage classes, system
 preference, hydration and same-origin tab synchronization. Cookie access happens
@@ -36,5 +36,5 @@ cross-origin persistence.
 Run focused state and domain tests with:
 
 ```sh
-pnpm --filter @marketplace-v2/theme-sync test
+pnpm --filter @usapeek/theme-sync test
 ```

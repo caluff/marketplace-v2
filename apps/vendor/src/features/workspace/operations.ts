@@ -1,5 +1,5 @@
 import type Medusa from "@medusajs/js-sdk";
-import { normalizeUsState } from "@marketplace-v2/ui/us-states";
+import { normalizeUsState } from "@usapeek/ui/us-states";
 import type { InventoryLevelDTO, HttpTypes as MedusaHttpTypes } from "@medusajs/types";
 import type {
   CreateProductDTO,

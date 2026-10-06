@@ -133,6 +133,7 @@ if (!enabled) {
         ids = ["order_own"],
         seller = "seller_own",
         group = "group_own",
+        delayDays = 3,
       ) {
         const manager = MikroOrmWrapper.getManager();
         await manager.execute(
@@ -141,9 +142,20 @@ if (!enabled) {
         );
         for (const id of ids)
           await manager.execute(
-            `insert into order_completion (id, seller_id, group_id, cart_id, completed_at, eligible_at, observed_order_updated_at, registration_token)
-          values (?, ?, ?, ?, ?::timestamptz, ?::timestamptz + interval '72 hours', ?::timestamptz, ?)`,
-            [id, seller, group, `cart_${group}`, now, now, now, randomUUID()],
+            `insert into order_completion (id, seller_id, group_id, cart_id, completed_at, eligible_at, observed_order_updated_at, registration_token, release_delay_days)
+          values (?, ?, ?, ?, ?::timestamptz, ?::timestamptz + (? * interval '24 hours'), ?::timestamptz, ?, ?)`,
+            [
+              id,
+              seller,
+              group,
+              `cart_${group}`,
+              now,
+              now,
+              delayDays,
+              now,
+              randomUUID(),
+              delayDays,
+            ],
           );
         return service.readVendorSettlementGroupSource(group);
       }
@@ -165,6 +177,38 @@ if (!enabled) {
             "select ssl from pg_stat_ssl where pid = pg_backend_pid()",
           );
         expect(rows[0].ssl).toBe(true);
+      });
+
+      it.each([0, 1, 2, 3])(
+        "carries the %i-day immutable snapshot into projection sources and vendor dates",
+        async (days) => {
+          const [source] = await seed(
+            ["order_delay"],
+            "seller_own",
+            "group_delay",
+            days,
+          );
+          expect(source.release_delay_days).toBe(days);
+          expect(
+            source.eligible_at.getTime() - source.completed_at.getTime(),
+          ).toBe(days * 86_400_000);
+          expect(await save([source])).toBe(true);
+          const result = await read();
+          expect(result.items[0].eligible_at).toEqual(source.eligible_at);
+          expect(result.next_release_at).toEqual(source.eligible_at);
+        },
+      );
+
+      it("rejects a changed delay snapshot in projection input without changing saved data", async () => {
+        const source = await seed();
+        expect(await save(source)).toBe(true);
+        const before = await read();
+        const changed = source.map((row) => ({
+          ...row,
+          release_delay_days: 0,
+        }));
+        expect(await save(changed, [{ pending_amount: 0 }])).toBe(false);
+        expect(await read()).toEqual(before);
       });
 
       it("shows completion before its first refresh, scopes sellers and totals before pagination", async () => {

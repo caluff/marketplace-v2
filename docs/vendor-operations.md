@@ -171,8 +171,8 @@ Los contratos de transporte se generan desde los esquemas Zod del backend en
 importado por los frontends:
 
 ```powershell
-pnpm --filter @marketplace-v2/api contracts:generate
-pnpm --filter @marketplace-v2/api contracts:check
+pnpm --filter @usapeek/api contracts:generate
+pnpm --filter @usapeek/api contracts:check
 pnpm lint
 pnpm typecheck
 pnpm test

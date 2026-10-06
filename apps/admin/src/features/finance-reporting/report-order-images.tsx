@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import type { AdminFinanceReportingResponse } from "@marketplace-v2/api/finance-contracts";
+import type { AdminFinanceReportingResponse } from "@usapeek/api/finance-contracts";
 import { ProductThumbnail } from "@/components/ui/product-thumbnail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { REPORT_PAGE_SIZE } from "./parameters";

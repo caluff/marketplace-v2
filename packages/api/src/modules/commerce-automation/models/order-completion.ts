@@ -9,6 +9,7 @@ export const OrderCompletion = model
     observed_order_updated_at: model.dateTime(),
     completed_at: model.dateTime(),
     eligible_at: model.dateTime(),
+    release_delay_days: model.number().default(3),
     registration_token: model.text(),
   })
   .indexes([

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Thumbnail } from "@marketplace-v2/ui/thumbnail";
+import { Thumbnail } from "@usapeek/ui/thumbnail";
 import type { InventoryItemWithLevels } from "./data";
 import { inventoryProducts } from "./presentation";
 

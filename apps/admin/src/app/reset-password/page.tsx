@@ -11,7 +11,7 @@ import {
 import { getAdminReset } from "@/lib/auth-sdk";
 
 export const metadata: Metadata = {
-  title: "Nueva contraseña | Marketplace Admin",
+  title: "Nueva contraseña | usapeek Admin",
   robots: { index: false, follow: false },
 };
 

@@ -5,7 +5,7 @@ import type {
   AdminApplicationResponse,
   ReviewApplicationBody,
   ReviewApplicationResponse,
-} from "@marketplace-v2/vendor-onboarding-contracts";
+} from "@usapeek/vendor-onboarding-contracts";
 import { requireAdminSdk } from "@/lib/auth-sdk";
 import { isApplicationId, type parseApplicationFilters } from "./helpers";
 import {

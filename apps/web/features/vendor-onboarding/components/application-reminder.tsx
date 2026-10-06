@@ -30,7 +30,7 @@ export function ApplicationReminder({
   className?: string
 }) {
   const storageKey = navigation.pendingKey
-    ? `marketplace-v2:application-reminder:${navigation.pendingKey}`
+    ? `usapeek:application-reminder:${navigation.pendingKey}`
     : null
   const dismissed = useSyncExternalStore(
     subscribe,

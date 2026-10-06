@@ -10,13 +10,13 @@ import {
   ShoppingBag,
   Store,
 } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useActionState, useId, useState, type ReactNode } from "react"
+import { useActionState, useId, useRef, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import type { AddCartItemResult } from "@/features/cart/add-item"
 import { submitCartItem } from "@/features/cart/add-item-client"
 import { notifyCartUpdated } from "@/features/cart/cart-events"
+import { notifyCartItemAdded } from "@/features/cart/cart-sheet-events"
 import {
   formatPrice,
   getLowestOfferPrice,
@@ -95,6 +95,7 @@ export function ProductPurchase({
   paymentMethods?: ReactNode
 }) {
   const router = useRouter()
+  const cartButtonRef = useRef<HTMLButtonElement>(null)
   const [variantId, setVariantId] = useState(
     variants.length === 1 ? variants[0].id : "",
   )
@@ -121,11 +122,11 @@ export function ProductPurchase({
     if (typeof result.cartCount === "number") {
       notifyCartUpdated(result.cartCount, result.confirmedAt)
       if (form.get("intent") === "buy") router.push("/checkout")
+      else notifyCartItemAdded(cartButtonRef.current)
     }
     return result
   }, null)
   const error = state && "error" in state ? state.error : undefined
-  const success = state && "success" in state ? state.success : undefined
   const discount =
     price &&
     price.originalAmount !== null &&
@@ -311,6 +312,7 @@ export function ProductPurchase({
           />
           <QuantityField maximum={maximum} disabled={!available || isPending} />
           <Button
+            ref={cartButtonRef}
             type="submit"
             name="intent"
             value="cart"
@@ -341,14 +343,6 @@ export function ProductPurchase({
           {error ? (
             <p role="alert" className="text-sm text-destructive">
               {error}
-            </p>
-          ) : null}
-          {success ? (
-            <p role="status" className="text-sm text-success">
-              {success}{" "}
-              <Link href="/cart" className="underline underline-offset-4">
-                Ver carrito
-              </Link>
             </p>
           ) : null}
         </form>

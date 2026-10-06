@@ -34,7 +34,7 @@ export function Hero() {
             size="lg"
             className="mt-8 w-full sm:w-auto"
           >
-            <Link href="#catalog">
+            <Link href="/search">
               Explorar catálogo
               <ArrowDownRight aria-hidden="true" className="size-5" />
             </Link>

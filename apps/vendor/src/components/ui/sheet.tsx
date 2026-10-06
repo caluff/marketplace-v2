@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/sheet";
+export * from "@usapeek/ui/sheet";

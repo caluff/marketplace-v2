@@ -1836,6 +1836,22 @@
           "enumItems": [],
           "mappedType": "datetime"
         },
+        "release_delay_days": {
+          "name": "release_delay_days",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "3",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
         "registration_token": {
           "name": "registration_token",
           "type": "text",

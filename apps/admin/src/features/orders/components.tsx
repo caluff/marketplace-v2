@@ -1,10 +1,9 @@
 import { TablePagination } from "@/components/table-pagination";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { formatOrderNumber } from "@marketplace-v2/order-reference";
+import { formatOrderNumber } from "@usapeek/order-reference";
 import { FetchError } from "@medusajs/js-sdk";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,7 +26,6 @@ import {
 } from "./data";
 import {
   canComplete,
-  logisticsLabel,
   orderDate,
   canDeliver,
   isOrderId,
@@ -40,6 +38,11 @@ import {
 } from "./helpers";
 import { OrderActionForm } from "./action-form";
 import { OrderImages, OrderItemImage } from "./order-images";
+import {
+  OrderLogisticsBadge,
+  OrderStatusBadge,
+  orderStatusTabClassName,
+} from "./status-badge";
 import { AdminAutoRefresh } from "@/features/realtime/auto-refresh";
 
 const ORDER_LIST_HEADERS = [
@@ -149,7 +152,7 @@ export function OrderFilters({
               className={cn(
                 "shrink-0 border-b-2 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                 filters.status === value
-                  ? "border-primary text-foreground"
+                  ? orderStatusTabClassName(value)
                   : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
               )}
             >
@@ -284,10 +287,14 @@ export async function OrderResults({
                     <Buyer order={order} />
                   </TableCell>
                   <TableCell>
-                    <Badge variant="neutral">{statusLabel(order.status)}</Badge>
+                    <OrderStatusBadge status={order.status} />
                   </TableCell>
-                  <TableCell>{statusLabel(order.payment_status)}</TableCell>
-                  <TableCell>{logisticsLabel(order)}</TableCell>
+                  <TableCell>
+                    <OrderStatusBadge status={order.payment_status} />
+                  </TableCell>
+                  <TableCell>
+                    <OrderLogisticsBadge order={order} />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap font-medium">
                     {money(order.total, order.currency_code)}
                   </TableCell>
@@ -326,7 +333,7 @@ function OrderDetails({
         <CardHeader>
           <div className="flex flex-wrap items-center gap-3">
             <CardTitle>Pedido {formatOrderNumber(order)}</CardTitle>
-            <Badge variant="neutral">{statusLabel(order.status)}</Badge>
+            <OrderStatusBadge status={order.status} />
           </div>
           <p className="text-xs text-muted-foreground">
             Creado {orderDate(order.created_at)} · hora de Uruguay
@@ -345,7 +352,7 @@ function OrderDetails({
             <p className="mb-1 text-xs text-muted-foreground">
               Pago de la compra
             </p>
-            <p>{statusLabel(order.payment_status)}</p>
+            <OrderStatusBadge status={order.payment_status} />
           </div>
         </CardContent>
       </Card>
@@ -394,7 +401,7 @@ function OrderDetails({
               <CardTitle>Preparación y seguimiento</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm">{logisticsLabel(order)}</p>
+              <OrderLogisticsBadge order={order} />
               {order.fulfillments?.length ? (
                 order.fulfillments.map((fulfillment) => (
                   <div
@@ -405,15 +412,17 @@ function OrderDetails({
                       <p className="break-all text-xs text-muted-foreground">
                         {fulfillment.id}
                       </p>
-                      <Badge variant="neutral">
-                        {fulfillment.canceled_at
-                          ? "Cancelado"
-                          : fulfillment.delivered_at
-                            ? "Entregado"
-                            : fulfillment.shipped_at
-                              ? "Enviado"
-                              : "Preparado"}
-                      </Badge>
+                      <OrderStatusBadge
+                        status={
+                          fulfillment.canceled_at
+                            ? "canceled"
+                            : fulfillment.delivered_at
+                              ? "delivered"
+                              : fulfillment.shipped_at
+                                ? "shipped"
+                                : "fulfilled"
+                        }
+                      />
                     </div>
                     {fulfillment.labels?.length ? (
                       <ul className="space-y-2 text-sm">

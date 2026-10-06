@@ -5,6 +5,57 @@ import { getMoneyRoundingAdjustment } from "@/lib/money-rounding"
 import { getDiscountSubtotal } from "../discount-subtotal"
 import { formatMoney } from "../presentation"
 
+function OrderSummaryItem({
+  item,
+  currency,
+}: {
+  item: HttpTypes.StoreCartLineItem
+  currency: string
+}) {
+  const title = item.product_title ?? item.title
+  const optionValues = item.variant?.options
+    ?.map((option) => option.value.trim())
+    .filter((value) => value && !/^_*default_*$/i.test(value))
+  const variantTitle = item.variant_title?.trim()
+  const variant =
+    optionValues?.join(" / ") ||
+    (variantTitle && !/^(default variant|_*default_*)$/i.test(variantTitle)
+      ? variantTitle
+      : null)
+
+  return (
+    <li className="flex items-start gap-4">
+      <ProductThumbnail
+        src={
+          item.thumbnail ||
+          item.variant?.thumbnail ||
+          item.product?.thumbnail ||
+          item.product?.images?.[0]?.url ||
+          item.variant?.product?.thumbnail ||
+          item.variant?.product?.images?.[0]?.url
+        }
+        alt={title}
+        className="size-20"
+        sizes="80px"
+      />
+      <div className="min-w-0 flex-1 font-sans">
+        <h3 className="text-sm leading-snug font-semibold wrap-break-word">
+          {title}
+        </h3>
+        {variant ? (
+          <p className="mt-1 text-xs text-muted-foreground wrap-break-word">
+            {variant}
+          </p>
+        ) : null}
+        <p className="mt-2 text-sm text-muted-foreground tabular-nums">
+          {item.quantity} × {formatMoney(item.unit_price, currency)}
+          <span className="sr-only"> por unidad</span>
+        </p>
+      </div>
+    </li>
+  )
+}
+
 export function OrderSummary({
   cart,
   children,
@@ -13,6 +64,11 @@ export function OrderSummary({
   children?: ReactNode
 }) {
   const money = (amount: number) => formatMoney(amount, cart.currency_code)
+  const subtotal = cart.item_subtotal ?? cart.subtotal
+  const shippingAmount = cart.shipping_methods?.length
+    ? cart.shipping_subtotal
+    : undefined
+  const taxAmount = cart.shipping_address?.address_1 ? cart.tax_total : undefined
   const discount = getDiscountSubtotal(cart)
   const roundingAdjustment =
     cart.shipping_methods?.length && cart.shipping_address?.address_1
@@ -29,43 +85,47 @@ export function OrderSummary({
       : 0
   const itemCount =
     cart.items?.reduce((total, item) => total + item.quantity, 0) ?? 0
+  const showSubtotal =
+    typeof subtotal === "number" &&
+    (discount > 0 ||
+      (shippingAmount ?? 0) !== 0 ||
+      (taxAmount ?? 0) !== 0 ||
+      roundingAdjustment !== 0 ||
+      (typeof cart.total === "number" && subtotal !== cart.total))
+  const hasPriceBreakdown =
+    showSubtotal ||
+    discount > 0 ||
+    typeof shippingAmount === "number" ||
+    typeof taxAmount === "number" ||
+    roundingAdjustment !== 0
   return (
     <section
       aria-label="Resumen del pedido"
       className="border border-border bg-card p-6"
     >
-      <p className="font-sans text-xs font-bold tracking-[0.12em] text-muted-foreground uppercase">
-        Resumen
-      </p>
-      <h2 className="mt-2 text-2xl font-semibold">Tu pedido</h2>
+      <h2 className="text-2xl font-semibold">Tu pedido</h2>
       {cart.items?.length ? (
-        <ul className="mt-5 flex flex-wrap gap-2" aria-label="Productos del pedido">
+        <ul className="mt-5 space-y-5" aria-label="Productos del pedido">
           {cart.items.map((item) => (
-            <li key={item.id} title={`${item.quantity} × ${item.title}`}>
-              <ProductThumbnail
-                src={
-                  item.thumbnail ||
-                  item.variant?.thumbnail ||
-                  item.product?.thumbnail ||
-                  item.product?.images?.[0]?.url ||
-                  item.variant?.product?.thumbnail ||
-                  item.variant?.product?.images?.[0]?.url
-                }
-                alt={item.title}
-              />
-            </li>
+            <OrderSummaryItem
+              key={item.id}
+              item={item}
+              currency={cart.currency_code}
+            />
           ))}
         </ul>
       ) : null}
-      <dl className="mt-6 space-y-4 border-t border-border pt-5 font-sans text-sm">
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">
-            Subtotal ({itemCount} {itemCount === 1 ? "producto" : "productos"})
-          </dt>
-          <dd className="font-medium tabular-nums">
-            {money(cart.item_subtotal ?? cart.subtotal ?? 0)}
-          </dd>
-        </div>
+      <dl
+        className={`mt-6 space-y-4 font-sans text-sm ${hasPriceBreakdown ? "border-t border-border pt-5" : ""}`}
+      >
+        {showSubtotal ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">
+              Subtotal ({itemCount} {itemCount === 1 ? "producto" : "productos"})
+            </dt>
+            <dd className="font-medium tabular-nums">{money(subtotal)}</dd>
+          </div>
+        ) : null}
         {discount > 0 ? (
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Descuentos</dt>
@@ -74,22 +134,18 @@ export function OrderSummary({
             </dd>
           </div>
         ) : null}
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Envío</dt>
-          <dd className="font-medium tabular-nums">
-            {cart.shipping_methods?.length
-              ? money(cart.shipping_subtotal ?? 0)
-              : "A calcular"}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Impuestos</dt>
-          <dd className="font-medium tabular-nums">
-            {cart.shipping_address?.address_1
-              ? money(cart.tax_total ?? 0)
-              : "A calcular"}
-          </dd>
-        </div>
+        {typeof shippingAmount === "number" ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">Envío</dt>
+            <dd className="font-medium tabular-nums">{money(shippingAmount)}</dd>
+          </div>
+        ) : null}
+        {typeof taxAmount === "number" ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">Impuestos</dt>
+            <dd className="font-medium tabular-nums">{money(taxAmount)}</dd>
+          </div>
+        ) : null}
         {roundingAdjustment !== 0 ? (
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Ajuste por redondeo</dt>
@@ -98,10 +154,12 @@ export function OrderSummary({
             </dd>
           </div>
         ) : null}
-        <div className="flex justify-between gap-3 border-t border-foreground pt-5 text-lg font-black">
-          <dt>Total (USD)</dt>
-          <dd className="tabular-nums">{money(cart.total ?? 0)}</dd>
-        </div>
+        {typeof cart.total === "number" ? (
+          <div className="flex justify-between gap-3 border-t border-dashed border-foreground pt-5 text-lg font-black">
+            <dt>Total (USD)</dt>
+            <dd className="tabular-nums">{money(cart.total)}</dd>
+          </div>
+        ) : null}
       </dl>
       {children}
     </section>

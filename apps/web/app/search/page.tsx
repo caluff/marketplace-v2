@@ -10,9 +10,9 @@ import type { SearchUrlParameters } from "@/features/search/parameters";
 import { getStorefrontCategories } from "@/lib/medusa";
 
 export const metadata: Metadata = {
-  title: "Buscar productos | Marketplace V2",
+  title: "Buscar productos | usapeek",
   description:
-    "Busca productos y filtra por categoría, tienda y precio en Marketplace V2.",
+    "Busca productos y filtra por categoría, tienda y precio en usapeek.",
   robots: { index: false, follow: true },
 };
 

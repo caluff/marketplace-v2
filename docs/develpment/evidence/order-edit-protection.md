@@ -11,7 +11,7 @@ El cambio no registra hooks ni sustituye validación, autenticación, RBAC o own
 La regresión prueba las 11 combinaciones de método/ruta bajo cada prefijo admin/vendor, el matcher registrado, el ID real consultado, normalización/codificación, grupos ocupados, no-marketplace y ausencia de mutación. Suite:
 
 ```sh
-pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/lib/order-finance/__tests__/middlewares.unit.spec.ts
+pnpm --filter @usapeek/api test:unit --runTestsByPath src/lib/order-finance/__tests__/middlewares.unit.spec.ts
 ```
 
 Resultado: **47 tests PASS** (incluyen regresiones previas de writers financieros). Son pruebas unitarias con query/journal simulados; no prueban todavía el orden efectivo de middlewares ni autorización HTTP del sistema integrado.
@@ -22,7 +22,7 @@ Resultado: **47 tests PASS** (incluyen regresiones previas de writers financiero
 
 ```powershell
 $env:ORDER_EDIT_PROTECTION_TESTS = 'disposable-local'
-pnpm --filter @marketplace-v2/api test:integration:http --runTestsByPath integration-tests/http/order-edit-protection.spec.ts
+pnpm --filter @usapeek/api test:integration:http --runTestsByPath integration-tests/http/order-edit-protection.spec.ts
 ```
 
 Resultado final: **6 PASS**. La matriz de 11 rutas × admin/vendor × grupo libre/reservado/en revisión verifica **66 rechazos HTTP 400 `not_allowed`** y conserva el snapshot SQL de 13 tablas, incluidos pedidos, dos reservas, dos comisiones, una colección compartida y journal. Se usan autenticación, RBAC, pasos y enlaces nativos, sin simular la capa HTTP.

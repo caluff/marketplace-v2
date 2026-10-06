@@ -50,7 +50,7 @@ Liquidación de A: `pout_01M2BSMB0256RCSYVT888NAZMC`; transferencia TEST `tr_3UE
 
 ## Conciliación final
 
-`pnpm --filter @marketplace-v2/api exec cross-env NODE_ENV=development medusa exec ./src/scripts/inspect-order-finance-extension-qa.ts final` terminó con código 0 después de todas las operaciones.
+`pnpm --filter @usapeek/api exec cross-env NODE_ENV=development medusa exec ./src/scripts/inspect-order-finance-extension-qa.ts final` terminó con código 0 después de todas las operaciones.
 
 - Tres compras compartidas, seis pedidos etiquetados; autorización inicial total de 102 USD.
 - Cobros efectivos: 12 + 34 + 12 = 58 USD; reembolsos efectivos: los mismos 58 USD.

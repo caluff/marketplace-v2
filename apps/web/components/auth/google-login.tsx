@@ -10,9 +10,11 @@ import { INITIAL_AUTH_STATE } from "@/lib/auth-utils"
 export function GoogleLogin({
   next,
   link = false,
+  orderTrackingToken,
 }: {
   next: string
   link?: boolean
+  orderTrackingToken?: string
 }) {
   const [state, action, pending] = useActionState(
     startCustomerGoogleAction,
@@ -22,6 +24,9 @@ export function GoogleLogin({
     <form action={action} className="space-y-3">
       <input type="hidden" name="next" value={next} />
       <input type="hidden" name="link" value={String(link)} />
+      {orderTrackingToken ? (
+        <input type="hidden" name="orderTrackingToken" value={orderTrackingToken} />
+      ) : null}
       <Button
         type="submit"
         variant="outline"

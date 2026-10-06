@@ -21,7 +21,7 @@ import { getOrderItemThumbnail } from "@/features/account/order-item-image"
 import styles from "./invoice.module.css"
 
 export const metadata: Metadata = {
-  title: "Comprobante del pedido | Marketplace V2",
+  title: "Comprobante del pedido | usapeek",
 }
 type Props = { params: Promise<{ id: string }> }
 

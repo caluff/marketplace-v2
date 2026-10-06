@@ -28,7 +28,9 @@ export function VendorHeader({ sellerName }: { sellerName: string }) {
           aria-current="page"
           className="shrink-0 font-semibold text-foreground"
         >
-          {currentRoute?.label ?? "Portal vendedor"}
+          {pathname === "/seller/account"
+            ? "Configuración"
+            : currentRoute?.label ?? "Portal vendedor"}
         </span>
       </nav>
     </header>

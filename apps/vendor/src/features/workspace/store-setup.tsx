@@ -1,4 +1,4 @@
-import type { VendorOnboardingResponse } from "@marketplace-v2/vendor-onboarding-contracts";
+import type { VendorOnboardingResponse } from "@usapeek/vendor-onboarding-contracts";
 
 import { resultOf, workspace } from "./data";
 import { StoreSetupTimeline } from "./store-setup-timeline";

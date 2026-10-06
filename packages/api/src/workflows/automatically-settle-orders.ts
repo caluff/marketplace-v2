@@ -18,7 +18,7 @@ export async function automaticallySettleOrdersBatch(
   container: MedusaContainer,
 ) {
   const result = { status: "disabled", evaluated: 0, settled: 0, held: 0 };
-  if (!automaticSettlementEnabled()) return result;
+  if (!(await automaticSettlementEnabled(container))) return result;
   const journal = container.resolve<CommerceAutomationService>(
     COMMERCE_AUTOMATION_MODULE,
   );

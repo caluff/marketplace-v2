@@ -1,8 +1,10 @@
 "use client"
 
-import { ShoppingBag } from "lucide-react"
+import { ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useSyncExternalStore } from "react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   getCartCount,
   publishCartSnapshot,
@@ -27,18 +29,33 @@ export function CartIndicator({
   }, [initialCount, snapshotAt])
 
   return (
-    <Link
-      href="/cart"
-      prefetch={false}
-      className="relative inline-flex min-h-11 min-w-11 items-center justify-center gap-1 px-2 font-sans text-xs font-bold"
-      aria-label={
-        count === null ? "Ver carrito" : `Ver carrito, ${count} productos`
-      }
-    >
-      <ShoppingBag className="size-5" aria-hidden="true" />
-      <span aria-live="polite" aria-atomic="true">
-        {count === null ? "—" : count}
-      </span>
-    </Link>
+    <Button asChild variant="ghost" size="icon" className="relative size-11">
+      <Link
+        href="/cart"
+        prefetch={false}
+        title="Carrito"
+        aria-label={
+          count === null
+            ? "Ver carrito"
+            : `Ver carrito, ${count} ${count === 1 ? "producto" : "productos"}`
+        }
+      >
+        <ShoppingCart className="size-5" strokeWidth={1.75} aria-hidden="true" />
+        {count !== null && count > 0 ? (
+          <Badge
+            variant="accent"
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-0.5 -right-0.5 h-4.5 min-w-4.5 rounded-full px-1 text-[10px] leading-none tabular-nums ring-2 ring-background"
+          >
+            {count > 99 ? "99+" : count}
+          </Badge>
+        ) : null}
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {count === null
+            ? ""
+            : `${count} ${count === 1 ? "producto" : "productos"} en el carrito`}
+        </span>
+      </Link>
+    </Button>
   )
 }

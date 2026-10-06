@@ -12,7 +12,7 @@ import {
 } from "@/features/orders/finance-region";
 
 export const metadata: Metadata = {
-  title: "Detalle del pedido | Marketplace Admin",
+  title: "Detalle del pedido | usapeek Admin",
 };
 export default async function OrderPage({
   params,

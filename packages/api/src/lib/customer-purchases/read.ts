@@ -23,7 +23,14 @@ export async function readAdminCustomerPurchases(
         query.graph(
           {
             entity: "customer",
-            fields: ["id", "first_name", "last_name", "email", "has_account"],
+            fields: [
+              "id",
+              "first_name",
+              "last_name",
+              "email",
+              "phone",
+              "has_account",
+            ],
             filters: {
               id: ids,
             },
@@ -45,6 +52,7 @@ export async function readAdminCustomerPurchases(
         first_name: customer?.first_name ?? null,
         last_name: customer?.last_name ?? null,
         email: customer?.email ?? null,
+        phone: customer?.phone ?? null,
         has_account: customer?.has_account ?? null,
         purchase_count,
         spent_totals: spent

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SiteHeader } from "@/components/site-header"
 import { SiteHeaderVisibility } from "@/components/site-header-visibility"
 import { Toaster } from "@/components/ui/sonner"
+import { CartSheet } from "@/features/cart/components/cart-sheet"
 import "./globals.css"
 
 const publicSans = Public_Sans({
@@ -20,7 +21,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Marketplace V2",
+  title: "usapeek",
   description: "Una selección independiente impulsada por Mercur y Medusa.",
 }
 
@@ -37,12 +38,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-          storageKey="marketplace-v2-theme"
+          storageKey="usapeek-theme"
         >
           <SiteHeaderVisibility>
             <SiteHeader />
           </SiteHeaderVisibility>
           {children}
+          <CartSheet />
           <Toaster />
         </ThemeProvider>
       </body>

@@ -1,8 +1,11 @@
-# marketplace-v2
+# usapeek
+
+El [registro de renombrado](docs/operations/usapeek-rename-2026-10-05.md) documenta
+los nombres, URLs, callbacks y límites de despliegue actuales.
 
 Marketplace con storefront, panel de operador y panel de vendedor independientes sobre un backend modular Mercur/Medusa. El alcance obligatorio **F01–F12 / Phase 1–6 está DONE**, con **Financial Readiness: PASS para Stripe TEST, USD y operación manual**. Incluye histórico de comisiones, liquidación, recuperación y reporting. Ese cierre no certifica pagos reales ni preparación de producción.
 
-Documentación vigente actualizada el **3 de octubre de 2026**. La liberación automática a las 72 horas está implementada y activa en el entorno habitual TEST; su recorrido completo con un pedido nuevo y 72 horas reales permanece **NEEDS VERIFICATION**. Los resultados y sus límites están en el [progreso](docs/develpment/development-progress.md), separado de la auditoría histórica del 13–14 de septiembre.
+Documentación vigente actualizada el **6 de octubre de 2026**. Pagos permite elegir liberación Manual o Automático y configurar una espera de 0–365 días, con opciones Inmediato, 3 días y Una semana, un campo contiguo para escribir otra cantidad y valor inicial de 3. El nuevo plazo afecta solo a futuras finalizaciones; los relojes existentes conservan sus fechas. La ampliación tiene pruebas aisladas de configuración y persistencia; el recorrido completo del pedido TEST #16 con sus 72 horas originales permanece **NEEDS VERIFICATION** y su seguimiento está pausado por el cambio de entorno. La copia local usa PostgreSQL Docker y un índice Algolia independiente; su modo de liberación se verificó en Manual. Los resultados y sus límites están en el [progreso](docs/develpment/development-progress.md), separado de la auditoría histórica del 13–14 de septiembre.
 
 El pedido TEST #16 ya está capturado y completado, sin transferencia anticipada.
 Su plazo vence el **6 de octubre a las 12:51 de Uruguay**; el
@@ -49,7 +52,7 @@ La comisión es configurable en backend; cero o ausencia de regla bloquean la ve
 
 - Node.js compatible con el mínimo declarado (`>=20.9.0`) y las dependencias instaladas.
 - pnpm 12.0.0, declarado en `packageManager`; usar exclusivamente pnpm.
-- PostgreSQL y Redis accesibles desde desarrollo. Redis acepta `redis://` en redes privadas confiables, como Railway, y `rediss://` para conexiones TLS externas.
+- Docker disponible para PostgreSQL y Redis locales. La configuración de desarrollo y la copia de Supabase están descritas en [desarrollo local](docs/local-development.md). Redis acepta `redis://` en redes privadas confiables, como Railway, y `rediss://` para conexiones TLS externas.
 
 Las credenciales backend van en el `.env` ignorado de la raíz. Medusa encuentra esa raíz desde fuente o artefacto compilado. No copiar secretos a documentación, código ni variables `NEXT_PUBLIC_*`.
 
@@ -74,7 +77,7 @@ pnpm dev
 
 Antes del primer arranque, configurar el entorno y verificar las migraciones de la base seleccionada. `pnpm db:migrate` **modifica esa base**: ejecutarlo como paso explícito contra el destino de desarrollo autorizado, siguiendo las skills/instrucciones de migraciones. Arrancar no crea por sí solo regiones, vendedores aprobados, ofertas, stock, opciones de envío o cuentas Stripe aptas para comprar.
 
-`pnpm dev` inicia API, web, admin y vendor. El modo API local `shared` incluye trabajo asíncrono; no hace falta iniciar otro worker para ese mismo modo. Los comandos `dev:web`, `dev:admin`, `dev:vendor` y `dev:api` ejecutan un área. La API ofrece `/health`; los accesos son `/login` (admin) y `/seller/login` (vendor), con autenticación real.
+`pnpm dev` levanta PostgreSQL y Redis con Docker, espera que estén disponibles e inicia API, web, admin y vendor. `pnpm dev:api` también prepara ambos servicios. El modo API local `shared` incluye trabajo asíncrono; no hace falta iniciar otro worker para ese mismo modo. Los comandos `dev:web`, `dev:admin` y `dev:vendor` ejecutan sólo su aplicación. La API ofrece `/health`; los accesos son `/login` (admin) y `/seller/login` (vendor), con autenticación real.
 
 ## Verificación
 

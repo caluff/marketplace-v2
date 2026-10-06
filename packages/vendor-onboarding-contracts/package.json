@@ -1,5 +1,5 @@
 {
-  "name": "@marketplace-v2/vendor-onboarding-contracts",
+  "name": "@usapeek/vendor-onboarding-contracts",
   "version": "1.0.0",
   "private": true,
   "types": "./index.d.ts",

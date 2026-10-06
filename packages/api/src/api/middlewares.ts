@@ -29,14 +29,21 @@ import { adminNotificationsMiddlewares } from "./admin/notifications/middlewares
 import { adminOverviewMiddlewares } from "./admin/overview/middlewares";
 import { orderFinanceMiddlewares } from "./order-finance-middlewares";
 import { googleAuthMiddlewares } from "./auth/google/complete/middlewares";
+import { googleOneTapMiddlewares } from "./auth/google/one-tap/transaction/middlewares";
 import { vendorSessionMiddlewares } from "./auth/vendor-session/middlewares";
 import { commissionFinanceMiddlewares } from "./commission-finance-middlewares";
+import { paymentCaptureSettingsMiddlewares } from "./admin/payment-capture-settings/middlewares";
+import { paymentReleaseSettingsMiddlewares } from "./admin/payment-release-settings/middlewares";
 import { storeCartOwnershipMiddlewares } from "./store/cart-ownership/middlewares";
 import { storeCartPricingMiddlewares } from "./store/cart-pricing/middlewares";
 import { financeReportingMiddlewares } from "./finance-reporting/middlewares";
 import { catalogPermissionMiddlewares } from "./catalog-permission-middlewares";
 import { adminCatalogManagementMiddlewares } from "./admin/catalog-products/middlewares";
 import { adminCustomerPurchasesMiddlewares } from "./admin/customer-purchases/middlewares";
+import { accountEmailVerificationMiddlewares } from "./auth/account/email-verification/middlewares";
+import { googlePanelProfileMiddlewares } from "./auth/account/profile/google/middlewares";
+import { orderTrackingMiddlewares } from "./store/order-tracking/middlewares";
+import { orderTrackingClaimMiddlewares } from "./store/order-tracking/claim/middlewares";
 
 const requireSellerRegistrationFlag = (
   _req: MedusaRequest,
@@ -55,14 +62,21 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
+    ...orderTrackingClaimMiddlewares,
+    ...orderTrackingMiddlewares,
+    ...googlePanelProfileMiddlewares,
+    ...accountEmailVerificationMiddlewares,
     ...adminCustomerPurchasesMiddlewares,
     ...adminCatalogManagementMiddlewares,
     ...catalogPermissionMiddlewares,
     ...commissionFinanceMiddlewares,
+    ...paymentCaptureSettingsMiddlewares,
+    ...paymentReleaseSettingsMiddlewares,
     ...storeCartOwnershipMiddlewares,
     ...storeCartPricingMiddlewares,
     ...financeReportingMiddlewares,
     ...googleAuthMiddlewares,
+    ...googleOneTapMiddlewares,
     ...vendorSessionMiddlewares,
     {
       matcher: /^\/(?:store|admin|vendor)(?:\/.*)?$/,

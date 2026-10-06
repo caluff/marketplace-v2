@@ -6,7 +6,7 @@ import {
 } from "@/features/product-review/components/review-browser";
 
 export const metadata: Metadata = {
-  title: "Revisión del catálogo | Marketplace V2",
+  title: "Revisión del catálogo | usapeek",
 };
 
 export default function ProductReviewPage({

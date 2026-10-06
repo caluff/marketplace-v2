@@ -1,8 +1,8 @@
 "use client"
 
 import type { HttpTypes } from "@medusajs/types"
-import { UsAddressFields } from "@marketplace-v2/ui/us-address-fields"
-import { normalizeUsState } from "@marketplace-v2/ui/us-states"
+import { UsAddressFields } from "@usapeek/ui/us-address-fields"
+import { normalizeUsState } from "@usapeek/ui/us-states"
 import { MapPin, Phone } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useActionState, useId, useState } from "react"
@@ -107,10 +107,12 @@ export function AddressStep({
   ]
 
   return (
-    <form action={action} className="space-y-6" aria-busy={pending}>
-      <h2 className="text-2xl font-medium tracking-tight">
-        Contacto y dirección
-      </h2>
+    <form
+      action={action}
+      className="space-y-6"
+      aria-busy={pending}
+      aria-label="Contacto y dirección"
+    >
       <input type="hidden" name="country_code" value="us" />
       {customer ? (
         <input type="hidden" name="customer_id" value={customer.id} />
@@ -241,6 +243,7 @@ export function AddressStep({
             </Field>
           ))}
           <UsAddressFields
+            showAttribution={false}
             idPrefix={id}
             province={values.province}
             city={values.city}

@@ -32,7 +32,7 @@ export function AccountNav({
             : [
                 {
                   href: "/account/sell",
-                  label: vendorApplication?.label ?? "Vender en Marketplace V2",
+                  label: vendorApplication?.label ?? "Vender en usapeek",
                   icon: Store,
                 },
               ]),

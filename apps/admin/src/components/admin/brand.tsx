@@ -9,11 +9,11 @@ export function Brand() {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <SidebarMenuButton size="lg" asChild tooltip="Marketplace" className="h-11">
+    <SidebarMenuButton size="lg" asChild tooltip="usapeek" className="h-11">
       <Link
         href="/dashboard"
         data-testid="admin-brand-link"
-        aria-label="Marketplace"
+        aria-label="usapeek"
         onNavigate={() => setOpenMobile(false)}
       >
         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
@@ -21,7 +21,7 @@ export function Brand() {
         </span>
         <span className="min-w-0 group-data-[collapsible=icon]:sr-only">
           <span className="block truncate text-sm font-semibold tracking-[-0.02em]">
-            Marketplace
+            usapeek
           </span>
         </span>
       </Link>

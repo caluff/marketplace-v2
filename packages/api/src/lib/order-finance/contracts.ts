@@ -1,5 +1,46 @@
 import { z } from "@medusajs/framework/zod";
 
+export const paymentCaptureModeSchema = z.enum(["manual", "automatic"]);
+export const updatePaymentCaptureSettingsSchema = z.strictObject({
+  mode: paymentCaptureModeSchema,
+  expected_revision: z.string().min(1).max(64),
+});
+export type UpdatePaymentCaptureSettings = z.infer<
+  typeof updatePaymentCaptureSettingsSchema
+>;
+export const paymentCaptureSettingsResponseSchema = z.strictObject({
+  settings: z.strictObject({
+    mode: paymentCaptureModeSchema,
+    revision: z.string(),
+  }),
+});
+export type PaymentCaptureSettingsResponse = z.infer<
+  typeof paymentCaptureSettingsResponseSchema
+>;
+
+export const paymentReleaseModeSchema = z.enum(["manual", "automatic"]);
+export const DEFAULT_PAYMENT_RELEASE_DELAY_DAYS = 3;
+export const paymentReleaseDelayDaysSchema = z.number().int().min(0).max(365);
+export const updatePaymentReleaseSettingsSchema = z.strictObject({
+  mode: paymentReleaseModeSchema,
+  delay_days: paymentReleaseDelayDaysSchema,
+  expected_revision: z.string().min(1).max(64),
+});
+export type UpdatePaymentReleaseSettings = z.infer<
+  typeof updatePaymentReleaseSettingsSchema
+>;
+export const paymentReleaseSettingsResponseSchema = z.strictObject({
+  settings: z.strictObject({
+    mode: paymentReleaseModeSchema,
+    delay_days: paymentReleaseDelayDaysSchema,
+    revision: z.string(),
+  }),
+  automatic_available: z.boolean(),
+});
+export type PaymentReleaseSettingsResponse = z.infer<
+  typeof paymentReleaseSettingsResponseSchema
+>;
+
 export const FINANCE_REPORTING_PERIODS = [
   "today",
   "last_7_days",
@@ -97,6 +138,14 @@ export type AdminFinanceReportingResponse = {
       pending_groups: number;
       discovery_complete: boolean;
     };
+    pending_settlements: {
+      stores: Array<{
+        seller_id: string;
+        seller_name: string | null;
+        amount: number;
+      }>;
+      complete: boolean;
+    } | null;
   };
 };
 

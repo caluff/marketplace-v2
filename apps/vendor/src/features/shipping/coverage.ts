@@ -1,5 +1,5 @@
-import type { ShippingCoverage } from "@marketplace-v2/api/shipping-contracts";
-import { US_STATES, normalizeUsState } from "@marketplace-v2/ui/us-states";
+import type { ShippingCoverage } from "@usapeek/api/shipping-contracts";
+import { US_STATES, normalizeUsState } from "@usapeek/ui/us-states";
 import { textField } from "../workspace/validation";
 
 export function shippingCoverage(form: FormData): ShippingCoverage {

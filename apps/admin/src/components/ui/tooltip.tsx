@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/tooltip";
+export * from "@usapeek/ui/tooltip";

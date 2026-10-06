@@ -15,6 +15,7 @@ const customerPurchasesSchema = z.strictObject({
   first_name: z.string().nullable(),
   last_name: z.string().nullable(),
   email: z.string().nullable(),
+  phone: z.string().nullable(),
   has_account: z.boolean().nullable(),
   purchase_count: z.number().int().positive(),
   spent_totals: z.array(CustomerSpentTotalSchema),
@@ -35,7 +36,6 @@ export const AdminCustomerPurchasesResponseSchema = z.strictObject({
 
 export const AdminCustomerPurchasesDetailResponseSchema = z.strictObject({
   customer: customerPurchasesSchema.extend({
-    phone: z.string().nullable(),
     addresses: z.array(
       z.strictObject({
         address_1: z.string().nullable(),

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import type { AdminCustomerPurchasesResponse } from "@marketplace-v2/api/customer-contracts";
+import type { AdminCustomerPurchasesResponse } from "@usapeek/api/customer-contracts";
+import { formatPhoneNumber } from "@usapeek/ui/format-phone-number";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +62,11 @@ export function CustomerRow({
               {customer.email}
             </p>
           ) : null}
+        </TableCell>
+        <TableCell className="whitespace-nowrap tabular-nums">
+          {customer.is_deleted
+            ? "No disponible"
+            : formatPhoneNumber(customer.phone) || "Sin teléfono"}
         </TableCell>
         <TableCell>
           <Badge variant="outline">{customerAccountLabel(customer)}</Badge>

@@ -1,8 +1,8 @@
 {
-  "name": "@marketplace-v2/admin",
+  "name": "@usapeek/admin",
   "version": "0.1.0",
   "private": true,
-  "description": "Independent operator dashboard shell for marketplace-v2.",
+  "description": "Independent operator dashboard shell for usapeek.",
   "license": "MIT",
   "scripts": {
     "dev": "next dev --port 7000",
@@ -12,9 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@marketplace-v2/order-reference": "workspace:*",
-    "@marketplace-v2/theme-sync": "workspace:*",
-    "@marketplace-v2/ui": "workspace:*",
+    "@usapeek/order-reference": "workspace:*",
+    "@usapeek/theme-sync": "workspace:*",
+    "@usapeek/ui": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
     "class-variance-authority": "0.7.1",
@@ -30,8 +30,8 @@
     "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
-    "@marketplace-v2/api": "workspace:*",
-    "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
+    "@usapeek/api": "workspace:*",
+    "@usapeek/vendor-onboarding-contracts": "workspace:*",
     "@mercurjs/types": "2.3.3",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",

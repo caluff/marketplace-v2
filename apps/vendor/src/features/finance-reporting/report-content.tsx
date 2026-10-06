@@ -1,4 +1,4 @@
-import type { VendorFinanceReportingResponse } from "@marketplace-v2/api/finance-contracts";
+import type { VendorFinanceReportingResponse } from "@usapeek/api/finance-contracts";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

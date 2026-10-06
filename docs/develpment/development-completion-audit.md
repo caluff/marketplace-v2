@@ -468,7 +468,7 @@ Resultados ejecutados durante la auditoría, no repetidos al persistir este docu
 
 Se usaron verificaciones sin emisión de TypeScript y sin caché para las suites correspondientes. Comandos efectivamente utilizados:
 
-- Web: `pnpm --filter @marketplace-v2/web lint`; `pnpm --filter @marketplace-v2/web exec tsc --noEmit --incremental false`; `pnpm --filter @marketplace-v2/web test` con `TSX_DISABLE_CACHE=1` en el proceso.
+- Web: `pnpm --filter @usapeek/web lint`; `pnpm --filter @usapeek/web exec tsc --noEmit --incremental false`; `pnpm --filter @usapeek/web test` con `TSX_DISABLE_CACHE=1` en el proceso.
 - Admin/vendor: `pnpm --dir apps/admin exec eslint . --no-cache` y equivalente vendor; `pnpm --dir apps/admin exec tsc --noEmit --incremental false` y equivalente vendor. Tests `tsx --no-cache --test` con la lista de archivos declarada en cada manifest; admin incluyó `tests/admin-smoke.test.mjs tests/*.test.ts`.
 - API, desde `packages/api`: `pnpm exec tsc --noEmit --incremental false`; `pnpm exec eslint . --no-cache`; `pnpm exec cross-env TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit --no-cache`. 68 suites y 858 tests.
 - Tema: `pnpm --dir packages/theme-sync exec tsx --no-cache --test preference.test.ts`. Un intento inicial con un nombre de archivo inexistente no ejecutó tests; se corrigió el nombre y la suite indicada pasó.

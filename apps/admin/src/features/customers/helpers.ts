@@ -1,4 +1,4 @@
-import type { AdminCustomerPurchasesResponse } from "@marketplace-v2/api/customer-contracts";
+import type { AdminCustomerPurchasesResponse } from "@usapeek/api/customer-contracts";
 import { money } from "../orders/helpers";
 import {
   DEFAULT_TABLE_PAGE_SIZE,

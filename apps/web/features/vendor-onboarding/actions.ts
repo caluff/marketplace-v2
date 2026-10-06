@@ -7,7 +7,7 @@ import type {
   SaveApplicationBody,
   SubmitApplicationBody,
   VerificationResponse,
-} from "@marketplace-v2/vendor-onboarding-contracts"
+} from "@usapeek/vendor-onboarding-contracts"
 import { FetchError } from "@medusajs/js-sdk"
 import { revalidatePath } from "next/cache"
 import { clearVerificationSecrets, getVerificationCode } from "@/lib/auth-sdk"
@@ -85,7 +85,7 @@ export async function requestApplicationVerificationAction(): Promise<
       status: "error",
       message:
         status === 503
-          ? "El envío de correos aún no está configurado. Tu borrador está disponible, pero no podrás enviarlo hasta que Marketplace V2 habilite la verificación."
+          ? "El envío de correos aún no está configurado. Tu borrador está disponible, pero no podrás enviarlo hasta que usapeek habilite la verificación."
           : status === 429
             ? "Espera antes de solicitar otro código. El servicio limita los reenvíos."
             : "No pudimos solicitar el código. Inténtalo de nuevo más tarde.",

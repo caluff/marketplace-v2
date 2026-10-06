@@ -1,4 +1,4 @@
-import { orderSearchQuery } from "@marketplace-v2/order-reference";
+import { orderSearchQuery } from "@usapeek/order-reference";
 import { orderListInput } from "./parameters";
 
 export type OrderListInput = ReturnType<typeof orderListInput>;

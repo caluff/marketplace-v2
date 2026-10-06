@@ -55,7 +55,7 @@ Follow the [root README](../../README.md) for workspace installation and backend
 configuration, then run:
 
 ```bash
-pnpm --filter @marketplace-v2/vendor dev
+pnpm --filter @usapeek/vendor dev
 ```
 
 Open `http://localhost:7001/seller`. Configure

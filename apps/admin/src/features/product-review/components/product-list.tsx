@@ -14,12 +14,13 @@ import {
 } from "@/components/ui/table";
 import {
   parseProductReviewFilters,
-  PRODUCT_STATUS_LABELS,
+  productImageUrl,
   productReviewHref,
 } from "@/features/product-review/helpers";
 import { listProductReviewCommerce } from "../data";
 import { productUpdatedAt } from "../management";
 import { ProductActionsMenu } from "./product-actions-menu";
+import { ProductStatusBadge } from "./status-badge";
 import {
   ProductReviewCommerceCells,
   ProductReviewCommerceSkeleton,
@@ -44,7 +45,9 @@ export function ProductReviewList({
               <TableHead>Precio</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Cambios</TableHead>
-              <TableHead className="w-14 text-right"><span className="sr-only">Acciones</span></TableHead>
+              <TableHead className="w-14 text-right">
+                <span className="sr-only">Acciones</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -60,9 +63,10 @@ export function ProductReviewList({
                   >
                     <ProductThumbnail
                       src={
-                        product.thumbnail?.startsWith("https://")
-                          ? product.thumbnail
-                          : undefined
+                        productImageUrl(product.thumbnail) ??
+                        product.images
+                          ?.map((image) => productImageUrl(image.url))
+                          .find((url) => url !== null)
                       }
                     />
                     <span className="font-semibold">{product.title}</span>
@@ -75,13 +79,7 @@ export function ProductReviewList({
                   />
                 </Suspense>
                 <TableCell>
-                  <Badge
-                    variant={
-                      product.status === "published" ? "success" : "neutral"
-                    }
-                  >
-                    {PRODUCT_STATUS_LABELS[product.status] ?? product.status}
-                  </Badge>
+                  <ProductStatusBadge status={product.status} />
                 </TableCell>
                 <TableCell>
                   {product.changes?.some(
@@ -98,7 +96,11 @@ export function ProductReviewList({
                     title={product.title}
                     status={product.status}
                     updatedAt={productUpdatedAt(product.updated_at)}
-                    hasPendingChange={product.changes?.some((change) => change.status === "pending") ?? false}
+                    hasPendingChange={
+                      product.changes?.some(
+                        (change) => change.status === "pending",
+                      ) ?? false
+                    }
                   />
                 </TableCell>
               </TableRow>

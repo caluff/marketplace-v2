@@ -6,19 +6,24 @@ import {
 import { z } from "@medusajs/framework/zod";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
-import { getStripeConnectConfiguration } from "../stripe-connect-configuration";
+import {
+  automaticReleaseAvailable,
+  readPaymentReleaseSettings,
+} from "./release-settings";
 import type { readOrderFinance } from "./read";
 import { decimal } from "./policy";
+import { paymentReleaseDelayDaysSchema } from "./contracts";
 
-export const AUTOMATIC_SETTLEMENT_DELAY_MS = 72 * 60 * 60 * 1000;
+const ELAPSED_DAY_MS = 24 * 60 * 60 * 1000;
 export const MAX_AUTOMATIC_SETTLEMENTS = 25;
 
-export function automaticSettlementEnabled(
+export async function automaticSettlementEnabled(
+  container: MedusaContainer,
   env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  if (env.STRIPE_AUTOMATIC_SETTLEMENT_ENABLED !== "true") return false;
-  const configuration = getStripeConnectConfiguration(env);
-  return Boolean(configuration && !configuration.jobsEnabled);
+): Promise<boolean> {
+  if (!automaticReleaseAvailable(env)) return false;
+  const settings = await readPaymentReleaseSettings(container, env);
+  return settings.mode === "automatic";
 }
 
 const instant = z
@@ -34,13 +39,14 @@ export const orderCompletionSchema = z
     registration_token: z.uuid(),
     completed_at: instant,
     eligible_at: instant,
+    release_delay_days: paymentReleaseDelayDaysSchema,
     observed_order_updated_at: instant,
   })
   .refine(
     (value) =>
       value.eligible_at.getTime() - value.completed_at.getTime() ===
-      AUTOMATIC_SETTLEMENT_DELAY_MS,
-    "The completion retention must be exactly 72 elapsed hours.",
+      value.release_delay_days * ELAPSED_DAY_MS,
+    "The completion retention must match its recorded elapsed days.",
   );
 export type OrderCompletion = z.infer<typeof orderCompletionSchema>;
 
@@ -77,7 +83,7 @@ export async function assertAutomaticSettlementEligible(
     (entry) => entry.id === completion.id,
   );
   if (
-    !automaticSettlementEnabled() ||
+    !(await automaticSettlementEnabled(container)) ||
     !Number.isFinite(now) ||
     completion.eligible_at.getTime() > now ||
     current.group.id !== completion.group_id ||
@@ -89,7 +95,7 @@ export async function assertAutomaticSettlementEligible(
   )
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,
-      "El pedido todavía no cumple la retención de 72 horas desde su finalización verificada.",
+      "El pedido todavía no cumple las condiciones de liberación y el plazo registrado desde su finalización verificada.",
     );
 
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
@@ -111,6 +117,8 @@ export async function assertAutomaticSettlementEligible(
           "updated_at",
           "items.quantity",
           "items.requires_shipping",
+          // Medusa formats item.quantity from the versioned order detail.
+          "items.detail.quantity",
           "items.detail.fulfilled_quantity",
           "items.detail.shipped_quantity",
           "items.detail.delivered_quantity",

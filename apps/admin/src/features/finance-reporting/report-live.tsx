@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import type { FinanceReportingPeriod } from "@marketplace-v2/api/finance-contracts";
+import type { FinanceReportingPeriod } from "@usapeek/api/finance-contracts";
 import { Button } from "@/components/ui/button";
 import { useAdminNotifications } from "@/features/realtime/admin-notifications";
 import { createFinanceReadQueue } from "./live-read-queue";

@@ -4,7 +4,8 @@ import type {
   MedusaResponse,
   MiddlewareRoute,
 } from "@medusajs/framework/http";
-import { ContainerRegistrationKeys, MathBN, MedusaError } from "@medusajs/framework/utils";
+import { validateAndTransformQuery } from "@medusajs/framework/http";
+import { ContainerRegistrationKeys, MathBN, MedusaError, PolicyOperation } from "@medusajs/framework/utils";
 import { z } from "@medusajs/framework/zod";
 
 export const FulfillmentStage = z.enum(["pending", "prepared", "shipped"]);
@@ -182,6 +183,12 @@ async function applyFulfillmentStage(
 }
 
 export const vendorOrderStageMiddlewares: MiddlewareRoute[] = [
+  {
+    matcher: "/vendor/orders/:id/completion",
+    method: "GET",
+    middlewares: [validateAndTransformQuery(z.strictObject({}), {})],
+    policies: [{ resource: "order", operation: PolicyOperation.read }],
+  },
   {
     // Regex middleware runs before native static-route validation. The exact
     // static middleware below runs after Mercur's seller-link filter.

@@ -2,8 +2,8 @@
 
 import { useActionState, useId, useState } from "react";
 import type { HttpTypes } from "@mercurjs/types";
-import { UsAddressFields } from "@marketplace-v2/ui/us-address-fields";
-import { normalizeUsState } from "@marketplace-v2/ui/us-states";
+import { UsAddressFields } from "@usapeek/ui/us-address-fields";
+import { normalizeUsState } from "@usapeek/ui/us-states";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";

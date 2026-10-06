@@ -1,7 +1,7 @@
 import type {
   AdminApplicationView,
   DraftData,
-} from "@marketplace-v2/vendor-onboarding-contracts";
+} from "@usapeek/vendor-onboarding-contracts";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 

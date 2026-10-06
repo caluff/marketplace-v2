@@ -1,4 +1,4 @@
-import type { AdminNotificationsResponse } from "@marketplace-v2/api/order-notification-contracts";
+import type { AdminNotificationsResponse } from "@usapeek/api/order-notification-contracts";
 import {
   adminReadErrorResponse,
   requireAdminReadSdk,

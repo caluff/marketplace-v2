@@ -1,1 +1,1 @@
-export { US_STATES } from "@marketplace-v2/ui/us-states"
+export { US_STATES } from "@usapeek/ui/us-states"

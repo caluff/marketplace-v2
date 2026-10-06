@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/dropdown-menu";
+export * from "@usapeek/ui/dropdown-menu";

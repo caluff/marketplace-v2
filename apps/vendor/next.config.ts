@@ -3,8 +3,7 @@ import type { NextConfig } from "next";
 function getServerActionAllowedOrigins() {
   const configured = process.env.SERVER_ACTIONS_ALLOWED_ORIGINS?.split(",") ?? [];
   const candidates = [
-    process.env.RAILWAY_PUBLIC_DOMAIN,
-    ...configured,
+    ...(configured.length ? configured : [process.env.RAILWAY_PUBLIC_DOMAIN]),
     // Orca forwards the vendor preview to localhost:7001 with a different host.
     process.env.NODE_ENV === "development"
       ? "marketplace-v2-2.orca.localhost:6136"
@@ -35,7 +34,7 @@ function getServerActionAllowedOrigins() {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@marketplace-v2/ui", "@marketplace-v2/order-reference"],
+  transpilePackages: ["@usapeek/ui", "@usapeek/order-reference"],
   experimental: {
     serverActions: {
       allowedOrigins: getServerActionAllowedOrigins(),

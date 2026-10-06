@@ -1,6 +1,6 @@
 import type Medusa from "@medusajs/js-sdk"
 import type { HttpTypes } from "@medusajs/types"
-import { normalizeUsState } from "@marketplace-v2/ui/us-states"
+import { normalizeUsState } from "@usapeek/ui/us-states"
 
 import { normalizeUsPhone, validateAddress } from "../account/validation"
 

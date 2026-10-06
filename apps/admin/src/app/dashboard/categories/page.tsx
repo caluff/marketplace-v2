@@ -6,7 +6,7 @@ import {
 } from "@/features/categories/components/category-browser";
 import { CreateCategoryForm } from "@/features/categories/components/create-category-form";
 
-export const metadata: Metadata = { title: "Categorías | Marketplace V2" };
+export const metadata: Metadata = { title: "Categorías | usapeek" };
 
 export default function CategoriesPage({
   searchParams,

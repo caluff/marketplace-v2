@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Recuperar acceso | Marketplace Admin",
+  title: "Recuperar acceso | usapeek Admin",
 };
 
 export default function ForgotPasswordPage() {

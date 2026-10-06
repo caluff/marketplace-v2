@@ -1,4 +1,4 @@
-# Marketplace admin
+# usapeek Admin
 
 Independent Next.js operator application connected to the Mercur/Medusa Admin API.
 This is no longer a demonstration shell. Authentication, protected reads and the
@@ -14,7 +14,7 @@ listed mutations use the application SDK and backend authorization.
 | `/dashboard/product-review`        | Review of proposed products and pending content/image changes.                                                                                                                     |
 | `/dashboard/stores`                | Store list/detail and catalog permission selector: Supervised (admin review) or Authorized (native publication/confirmation). Store suspension/reactivation controls are not yet connected in this panel. |
 | `/dashboard/orders`                | Orders and details, supported order operations and financial controls for capture, cancellation and refunds in Stripe TEST. Availability comes from backend state and permissions. |
-| `/dashboard/commissions`           | Read and edit the global commission rule, subject to operator permissions. This is configuration, not financial reporting.                                                         |
+| `/dashboard/commissions`           | Pagos: global commission, capture mode and release mode (Manual/Automatic). Automatic accepts a 0–365-day wait (default 3; Immediate/3 days/One week presets and an adjacent numeric field); changes apply only to new verified completions, preserving existing deadlines. Settings use permissions and concurrency revisions. |
 
 Financial reporting uses backend snapshots and reconciled movements in TEST/USD,
 with periods defined in `America/Montevideo`. Four primary cards keep the operator
@@ -23,9 +23,11 @@ Incomplete coverage leaves the result after fees unknown rather than treating
 missing costs as zero. Transfer reporting is separate from bank payouts.
 
 F01–F12 / Phase 1–6 are **DONE**, with **Financial Readiness: PASS for TEST/USD
-and manual operations**. Automatic settlement is implemented and active in the
-local TEST environment, but its full new-order verification after 72 real hours
-is pending. LIVE and production readiness remain unverified; the
+and manual operations**. Automatic settlement is implemented; Pagos controls its
+mode, while safe TEST configuration remains mandatory. The development copy is
+currently Manual. Full new-order verification after 72 real hours is pending;
+the original TEST #16 follow-up is paused after the environment change. LIVE and
+production readiness remain unverified; the
 [progress](../../docs/develpment/development-progress.md) records current evidence.
 
 ## Development
@@ -34,7 +36,7 @@ After the workspace installation and backend configuration described in the
 [root README](../../README.md):
 
 ```bash
-pnpm --filter @marketplace-v2/admin dev
+pnpm --filter @usapeek/admin dev
 ```
 
 Open `http://localhost:7000/login` or `http://localhost:7000/dashboard`.

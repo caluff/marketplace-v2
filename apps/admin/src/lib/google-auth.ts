@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { CompleteGoogleAuthInput, CompleteGoogleAuthResponse } from "@marketplace-v2/api/auth-contracts";
+import type { CompleteGoogleAuthInput, CompleteGoogleAuthResponse } from "@usapeek/api/auth-contracts";
 import type Medusa from "@medusajs/js-sdk";
 import type { AuthCallbackResponse } from "@medusajs/js-sdk";
 

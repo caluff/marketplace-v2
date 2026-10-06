@@ -2,7 +2,7 @@ import type Medusa from "@medusajs/js-sdk";
 import type {
   FinanceReportingQuery,
   AdminFinanceReportingResponse,
-} from "@marketplace-v2/api/finance-contracts";
+} from "@usapeek/api/finance-contracts";
 
 export function readFinanceReport(
   sdk: Medusa,

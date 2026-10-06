@@ -1,6 +1,6 @@
 "use client";
 
-import type { StoreSearchProductsResponse } from "@marketplace-v2/api/search-contracts";
+import type { StoreSearchProductsResponse } from "@usapeek/api/search-contracts";
 import { ArrowUpLeft, LoaderCircle, Search } from "lucide-react";
 import Form from "next/form";
 import Image from "next/image";

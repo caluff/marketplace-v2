@@ -108,7 +108,7 @@ function RetryButton({
   page: number
 }) {
   return (
-    <form action="/#catalog" method="get">
+    <form action="/search" method="get">
       {activeCategoryId ? (
         <input type="hidden" name="category_id" value={activeCategoryId} />
       ) : null}
@@ -191,7 +191,7 @@ async function CatalogContent(props: CatalogSectionProps) {
           {activeCategory ? (
             <div className="mb-7 flex justify-end">
               <Button asChild variant="ghost" size="sm">
-                <Link href="/#catalog">Quitar filtro</Link>
+                <Link href="/search">Quitar filtro</Link>
               </Button>
             </div>
           ) : null}
@@ -268,7 +268,7 @@ async function CatalogContent(props: CatalogSectionProps) {
             </CardDescription>
             {activeCategory ? (
               <Button asChild variant="accent" className="mt-4">
-                <Link href="/#catalog">Ver todo el catálogo</Link>
+                <Link href="/search">Ver todo el catálogo</Link>
               </Button>
             ) : null}
           </CardHeader>

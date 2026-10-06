@@ -39,7 +39,7 @@ The table was migrated and all 11 groups prepared in the current environment.
 Other environments need their normal migration and an initial preparation run:
 
 ```powershell
-pnpm --filter @marketplace-v2/api exec medusa exec ./src/scripts/prepare-admin-finance-reporting.ts
+pnpm --filter @usapeek/api exec medusa exec ./src/scripts/prepare-admin-finance-reporting.ts
 ```
 
 Preparation uses the existing workflow and lock, defaults to 25 bounded batches,

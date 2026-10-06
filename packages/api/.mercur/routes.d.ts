@@ -527,6 +527,8 @@ export type Routes = {
         overview: {
             orders: typeof import("../src/api/admin/overview/orders/route");
         };
+        paymentCaptureSettings: typeof import("../src/api/admin/payment-capture-settings/route");
+        paymentReleaseSettings: typeof import("../src/api/admin/payment-release-settings/route");
         vendorApplications: typeof import("../src/api/admin/vendor-applications/route") & {
             $id: typeof import("../src/api/admin/vendor-applications/[id]/route") & {
                 review: typeof import("../src/api/admin/vendor-applications/[id]/review/route");
@@ -563,8 +565,20 @@ export type Routes = {
             confirm: typeof import("@medusajs/medusa/api/auth/verification/confirm/route");
             request: typeof import("@medusajs/medusa/api/auth/verification/request/route");
         };
+        account: {
+            emailVerification: typeof import("../src/api/auth/account/email-verification/route") & {
+                confirm: typeof import("../src/api/auth/account/email-verification/confirm/route");
+                request: typeof import("../src/api/auth/account/email-verification/request/route");
+            };
+            profile: {
+                google: typeof import("../src/api/auth/account/profile/google/route");
+            };
+        };
         google: {
             complete: typeof import("../src/api/auth/google/complete/route");
+            oneTap: {
+                transaction: typeof import("../src/api/auth/google/one-tap/transaction/route");
+            };
         };
         vendorSession: {
             consume: typeof import("../src/api/auth/vendor-session/consume/route");
@@ -668,6 +682,9 @@ export type Routes = {
             $id: {
                 calculate: typeof import("../src/api/store/shipping-options/[id]/calculate/route");
             };
+        };
+        orderTracking: typeof import("../src/api/store/order-tracking/route") & {
+            claim: typeof import("../src/api/store/order-tracking/claim/route");
         };
         vendorApplication: typeof import("../src/api/store/vendor-application/route") & {
             notifications: typeof import("../src/api/store/vendor-application/notifications/route") & {
@@ -804,15 +821,16 @@ export type Routes = {
                 cancel: typeof import("@mercurjs/core/api/vendor/orders/[id]/cancel/route");
                 changes: typeof import("@mercurjs/core/api/vendor/orders/[id]/changes/route");
                 commissionLines: typeof import("@mercurjs/core/api/vendor/orders/[id]/commission-lines/route");
-                complete: typeof import("@mercurjs/core/api/vendor/orders/[id]/complete/route");
+                complete: typeof import("../src/api/vendor/orders/[id]/complete/route");
                 fulfillments: typeof import("@mercurjs/core/api/vendor/orders/[id]/fulfillments/route") & {
                     $fulfillmentId: {
                         cancel: typeof import("@mercurjs/core/api/vendor/orders/[id]/fulfillments/[fulfillment_id]/cancel/route");
-                        markAsDelivered: typeof import("@mercurjs/core/api/vendor/orders/[id]/fulfillments/[fulfillment_id]/mark-as-delivered/route");
+                        markAsDelivered: typeof import("../src/api/vendor/orders/[id]/fulfillments/[fulfillment_id]/mark-as-delivered/route");
                         shipments: typeof import("@mercurjs/core/api/vendor/orders/[id]/fulfillments/[fulfillment_id]/shipments/route");
                     };
                 };
                 preview: typeof import("@mercurjs/core/api/vendor/orders/[id]/preview/route");
+                completion: typeof import("../src/api/vendor/orders/[id]/completion/route");
                 finance: typeof import("../src/api/vendor/orders/[id]/finance/route");
             };
         };

@@ -42,8 +42,8 @@ Uploaded-but-unsubmitted images can remain in storage. The UI does not claim to 
 
 Executed successfully:
 
-- `pnpm --filter @marketplace-v2/vendor exec tsx --test src/features/catalog/catalog.test.ts src/features/offers/offers.test.ts src/features/workspace/workspace.test.ts`: 27 tests passed.
-- `pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/lib/__tests__/catalog-offers.unit.spec.ts`: 13 tests passed.
+- `pnpm --filter @usapeek/vendor exec tsx --test src/features/catalog/catalog.test.ts src/features/offers/offers.test.ts src/features/workspace/workspace.test.ts`: 27 tests passed.
+- `pnpm --filter @usapeek/api test:unit --runTestsByPath src/lib/__tests__/catalog-offers.unit.spec.ts`: 13 tests passed.
 - Vendor lint and typecheck; full API typecheck also passed on the final run.
 - Targeted API ESLint for catalog libraries, workflow, hooks, middleware and catalog-options route.
 - Scoped `git diff --check`.

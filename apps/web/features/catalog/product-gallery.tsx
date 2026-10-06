@@ -1,16 +1,12 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, ImageIcon, ZoomIn } from "lucide-react"
+import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getProductImage } from "@/features/catalog/image"
+import { ProductImageZoom } from "@/features/catalog/product-image-zoom"
 import { cn } from "@/lib/utils"
 
 export function ProductGallery({
@@ -48,31 +44,17 @@ export function ProductGallery({
       >
         <div
           className={cn(
-            "relative aspect-square overflow-hidden border border-border bg-background",
+            "relative aspect-square",
             hasMultipleImages && "lg:col-start-2 lg:row-start-1",
           )}
         >
           {active ? (
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Ampliar imagen de ${title}`}
-                className="group absolute inset-0 cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40"
-              >
-                <Image
-                  src={active.source}
-                  alt={title}
-                  fill
-                  sizes="(max-width: 1023px) 100vw, (max-width: 1440px) 40vw, 520px"
-                  unoptimized={active.unoptimized}
-                  className="object-contain p-3"
-                  preload
-                />
-                <span className="absolute right-3 bottom-3 grid size-10 place-items-center border border-border bg-background/90 text-muted-foreground transition-colors group-hover:text-foreground">
-                  <ZoomIn className="size-4" aria-hidden="true" />
-                </span>
-              </button>
-            </DialogTrigger>
+            <ProductImageZoom
+              key={active.source}
+              title={title}
+              source={active.source}
+              unoptimized={active.unoptimized}
+            />
           ) : (
             <div className="grid h-full place-items-center text-muted-foreground">
               <ImageIcon

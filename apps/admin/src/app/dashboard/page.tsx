@@ -5,12 +5,14 @@ import {
   OverviewMetricSkeleton,
 } from "@/features/overview/components";
 import { OVERVIEW_METRICS } from "@/features/overview/metrics";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FinanceReport, FinanceReportSkeleton } from "@/features/finance-reporting/report";
+import {
+  FinanceReport,
+  FinanceReportSkeleton,
+} from "@/features/finance-reporting/report";
 import { OverviewReportToolbar } from "@/features/overview/report-toolbar";
 import { parseOverviewReportFilters } from "@/features/overview/report-filters";
 
-export const metadata: Metadata = { title: "Resumen | Marketplace Admin" };
+export const metadata: Metadata = { title: "Resumen | usapeek Admin" };
 
 export default async function DashboardPage({
   searchParams,
@@ -43,19 +45,12 @@ export default async function DashboardPage({
           </h2>
           <OverviewReportToolbar period={period} />
         </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Pruebas · USD</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Suspense
-              key={`${period}:${page}`}
-              fallback={<FinanceReportSkeleton />}
-            >
-              <FinanceReport period={period} page={page} />
-            </Suspense>
-          </CardContent>
-        </Card>
+        <Suspense
+          key={`${period}:${page}`}
+          fallback={<FinanceReportSkeleton />}
+        >
+          <FinanceReport period={period} page={page} />
+        </Suspense>
       </section>
     </div>
   );

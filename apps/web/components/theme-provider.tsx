@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { ThemeSync } from "@marketplace-v2/theme-sync"
+import { ThemeSync } from "@usapeek/theme-sync"
 
 export function ThemeProvider({
   children,

@@ -39,12 +39,18 @@ export function createCustomerSdk(token?: string) {
 
 const secureCookie = process.env.NODE_ENV === "production"
 
-export async function setCustomerSession(token: string, preserveVerificationCode = false) {
+export async function setCustomerSession(
+  token: string,
+  preserveVerificationCode = false,
+  { preserveReceipt = false }: { preserveReceipt?: boolean } = {},
+) {
   const store = await cookies()
   const sdk = createCustomerSdk(token)
   if (!sdk) throw new Error("El servicio de cuenta no está disponible.")
   const { customer } = await sdk.store.customer.retrieve()
-  await adoptCustomerCart(store, sdk.store.cart, customer.id)
+  await adoptCustomerCart(store, sdk.store.cart, customer.id, {
+    preserveReceipt,
+  })
   store.set(WEB_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: secureCookie,

@@ -82,20 +82,23 @@ export function reviewCommerceSummary(
     commerce.sellers?.find((seller) => seller.id === creatorId) ??
     offers?.find((offer) => offer.seller?.id === creatorId)?.seller;
   if (creatorId && commerce.sellers === null && !creator) {
-    return { store: "No disponible", prices: null };
+    return { store: "No disponible", stores: [], prices: null };
   }
-  const sellerNames = creator
-    ? [creator.name]
+  const stores = creator
+    ? [creator]
     : [
-        ...new Set(
+        ...new Map(
           offers?.flatMap((offer) =>
-            offer.seller?.name ? [offer.seller.name] : [],
+            offer.seller?.id && offer.seller.name
+              ? [[offer.seller.id, offer.seller] as const]
+              : [],
           ),
-        ),
+        ).values(),
       ];
   return {
-    store: sellerNames.length
-      ? sellerNames.join(", ")
+    stores,
+    store: stores.length
+      ? stores.map((seller) => seller.name).join(", ")
       : commerce.offers === null || (creatorId && commerce.sellers === null)
         ? "No disponible"
         : "Catálogo compartido",

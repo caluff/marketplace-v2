@@ -19,7 +19,7 @@ import {
 } from "@/features/vendor-applications/helpers";
 
 export const metadata: Metadata = {
-  title: "Solicitudes de vendedores | Marketplace V2",
+  title: "Solicitudes de vendedores | usapeek",
 };
 
 export default async function VendorApplicationsPage({

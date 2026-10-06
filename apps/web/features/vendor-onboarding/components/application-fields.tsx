@@ -4,10 +4,10 @@ import type {
   ApplicationOptionsResponse,
   DraftData,
   WizardStep,
-} from "@marketplace-v2/vendor-onboarding-contracts"
+} from "@usapeek/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
-import { UsAddressFields } from "@marketplace-v2/ui/us-address-fields"
-import { normalizeUsState } from "@marketplace-v2/ui/us-states"
+import { UsAddressFields } from "@usapeek/ui/us-address-fields"
+import { normalizeUsState } from "@usapeek/ui/us-states"
 import type { ChangeEvent, ComponentProps } from "react"
 import { useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"

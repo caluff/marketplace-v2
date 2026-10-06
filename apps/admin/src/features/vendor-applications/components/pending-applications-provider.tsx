@@ -10,8 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { CircleHelp } from "lucide-react";
-import { PendingIndicator } from "@marketplace-v2/ui/pending-indicator";
-import type { AdminNotificationsResponse } from "@marketplace-v2/api/order-notification-contracts";
+import { PendingIndicator } from "@usapeek/ui/pending-indicator";
+import type { AdminNotificationsResponse } from "@usapeek/api/order-notification-contracts";
 import { useAdminNotifications } from "@/features/realtime/admin-notifications";
 import { createLiveReadQueue } from "@/features/realtime/live-read-queue";
 import {

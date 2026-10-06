@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { US_STATES } from "@marketplace-v2/ui/us-states";
+import { US_STATES } from "@usapeek/ui/us-states";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

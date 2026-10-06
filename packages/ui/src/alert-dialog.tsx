@@ -26,7 +26,7 @@ function AlertDialogContent({
     <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Overlay
         data-slot="alert-dialog-overlay"
-        className="fixed inset-0 z-50 bg-foreground/45 backdrop-blur-xs"
+        className="fixed inset-0 z-50 bg-transparent backdrop-blur-[4px]"
       />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"

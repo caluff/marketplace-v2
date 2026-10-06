@@ -5,6 +5,7 @@ import { Suspense } from "react"
 import { HeaderSearch } from "@/components/header-search"
 import { CatalogMenu } from "@/components/catalog-menu"
 import { ModeToggle } from "@/components/mode-toggle"
+import { GoogleOneTap } from "@/components/auth/google-one-tap"
 import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -12,7 +13,8 @@ import { CustomerMenu } from "@/features/account/components/customer-menu"
 import { catalogHref } from "@/features/catalog/catalog-navigation"
 import { CartLink } from "@/features/cart/components/cart-link"
 import { getApplicationNavigation } from "@/features/vendor-onboarding/data"
-import { getCurrentCustomer } from "@/lib/auth-sdk"
+import { getCurrentCustomer, getCustomerSessionToken } from "@/lib/auth-sdk"
+import { readGoogleCustomerProfile } from "@/lib/google-customer-profile"
 import { getStorefrontCategories } from "@/lib/medusa"
 
 async function CategoryLinks() {
@@ -33,14 +35,9 @@ async function HeaderCustomerMenu() {
     customer = await getCurrentCustomer()
   } catch {
     return (
-      <Button
-        asChild
-        variant="ghost"
-        size="icon"
-        className="h-(--app-header-height) w-11"
-      >
+      <Button asChild variant="ghost" size="icon" className="size-11">
         <Link href="/account" aria-label="Abrir mi cuenta">
-          <UserRound className="size-5" aria-hidden="true" />
+          <UserRound className="size-5" strokeWidth={1.75} aria-hidden="true" />
         </Link>
       </Button>
     )
@@ -48,26 +45,42 @@ async function HeaderCustomerMenu() {
 
   if (!customer) {
     return (
-      <Button
-        asChild
-        variant="ghost"
-        size="icon"
-        className="h-(--app-header-height) w-11"
-      >
-        <Link href="/login" aria-label="Iniciar sesión" title="Iniciar sesión">
-          <UserRound className="size-5" aria-hidden="true" />
-        </Link>
-      </Button>
+      <>
+        <Button
+          asChild
+          variant="ghost"
+          className="h-11 w-11 p-0 sm:w-auto sm:px-3"
+        >
+          <Link
+            href="/login"
+            aria-label="Iniciar sesión"
+            title="Iniciar sesión"
+          >
+            <UserRound
+              className="size-5"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+            <span className="hidden sm:inline">Iniciar sesión</span>
+          </Link>
+        </Button>
+        <GoogleOneTap />
+      </>
     )
   }
 
   const vendorApplication = await getApplicationNavigation()
+  const googleProfile = readGoogleCustomerProfile(
+    await getCustomerSessionToken(),
+    customer.id,
+  )
 
   return (
     <CustomerMenu
       first_name={customer.first_name}
       last_name={customer.last_name}
       email={customer.email}
+      googleProfile={googleProfile}
       vendorApplication={vendorApplication}
     />
   )
@@ -79,10 +92,10 @@ export function SiteHeader() {
       <div className="mx-auto grid w-full max-w-[90rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 px-4 py-2 sm:gap-x-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-6 lg:px-10 lg:py-3">
         <Link
           href="/"
-          aria-label="Marketplace V2, inicio"
+          aria-label="usapeek, inicio"
           className="inline-flex min-h-11 min-w-0 items-center font-sans text-xs leading-5 font-black tracking-[0.14em] uppercase outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:text-sm sm:tracking-[0.18em]"
         >
-          Marketplace V2
+          usapeek
         </Link>
 
         <div className="col-span-2 row-start-2 flex min-w-0 items-center gap-2 pb-1 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:pb-0">
@@ -116,24 +129,19 @@ export function SiteHeader() {
           </Button>
           <Suspense
             fallback={
-              <Skeleton
-                className="mx-1 h-11 w-12"
-                aria-label="Cargando carrito"
-              />
+              <Skeleton className="size-11" aria-label="Cargando carrito" />
             }
           >
             <CartLink />
           </Suspense>
-          <div className="flex h-11 w-11 items-center justify-center">
+          <div className="flex h-11 min-w-0 items-center">
             <Suspense
               fallback={
-                <div className="flex h-(--app-header-height) w-11 items-center justify-center">
-                  <Skeleton
-                    role="status"
-                    aria-label="Cargando cuenta"
-                    className="size-9 rounded-full"
-                  />
-                </div>
+                <Skeleton
+                  role="status"
+                  aria-label="Cargando cuenta"
+                  className="h-11 w-11 sm:w-36"
+                />
               }
             >
               <HeaderCustomerMenu />

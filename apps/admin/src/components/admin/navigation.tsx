@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  BadgePercent,
+  CreditCard,
   ClipboardCheck,
   FolderTree,
   LayoutDashboard,
@@ -60,8 +60,8 @@ const navigationGroups: ReadonlyArray<{
       { label: "Pedidos", icon: ShoppingCart, href: "/dashboard/orders" },
       { label: "Clientes", icon: Users, href: "/dashboard/customers" },
       {
-        label: "Comisiones",
-        icon: BadgePercent,
+        label: "Pagos",
+        icon: CreditCard,
         href: "/dashboard/commissions",
       },
     ],

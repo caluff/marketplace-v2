@@ -8,7 +8,7 @@ import {
 } from "@/features/customers/customer-list";
 import { getPurchasingCustomers } from "@/features/customers/data";
 
-export const metadata: Metadata = { title: "Clientes | Marketplace V2" };
+export const metadata: Metadata = { title: "Clientes | usapeek" };
 
 export default function CustomersPage({
   searchParams,
@@ -17,13 +17,14 @@ export default function CustomersPage({
 }) {
   const customers = getPurchasingCustomers(searchParams);
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
       <div>
         <Table aria-label="Clientes que han comprado">
           <TableHeader>
             <TableRow>
               <TableHead>Cliente</TableHead>
+              <TableHead className="w-48">Teléfono</TableHead>
               <TableHead className="w-36">Cuenta</TableHead>
               <TableHead className="w-24 text-right">Compras</TableHead>
               <TableHead className="w-40 text-right">Total gastado</TableHead>

@@ -1,4 +1,4 @@
-# marketplace-v2
+# usapeek
 
 ## Objective
 
@@ -158,7 +158,7 @@ Frontend rules:
 - Motion must use shared tokens, remain restrained for high-frequency dashboard
   interactions, and preserve keyboard usability and `prefers-reduced-motion`.
 - When a flow needs a confirmation dialog, reuse `ConfirmationDialog` from
-  `@marketplace-v2/ui/confirmation-dialog` through the application's
+  `@usapeek/ui/confirmation-dialog` through the application's
   `components/ui/confirmation-dialog` adapter. Its implementation is in
   `packages/ui/src/confirmation-dialog.tsx`, based on the shared Radix alert
   dialog. Do not create another confirmation modal or use `window.confirm`.
@@ -166,6 +166,46 @@ Frontend rules:
   must leave saved data unchanged, and asynchronous confirmations must pass
   `isPending`, close after the request completes, and restore focus to their
   control with `returnFocusRef` when there is no dialog trigger.
+
+### Settings and configurable options
+
+Use the established Configuración/Comisiones presentation for new settings
+menus and configurable option views across the applications:
+
+- Reuse `SettingsOption` from `packages/ui/src/settings-option.tsx` through the
+  application's `components/ui/settings-option` adapter. Keep domain-specific
+  forms and persistence in the owning feature; do not copy the generic row or
+  dialog implementation.
+- Group options under clearly separated section headings. Use the existing
+  subtle brand tint:
+  `text-[color-mix(in_oklch,var(--brand-accent)_30%,var(--foreground))]`, with
+  `text-lg font-semibold` and the spacing used in Configuración.
+- Present each configurable option as a plain row: label on the left, current
+  value and optional status badge on the right, followed by the arrow button.
+  Avoid enclosing cards, row separators, and a background highlight across the
+  whole row. Put status badges beside their values instead of adding a separate
+  Estado row when the status only describes that option.
+- The arrow opens the editing dialog. Only the arrow button gains a background
+  on hover; the adjacent value moves 4 px to the left with the shared 120 ms
+  motion tokens. Preserve the component's 44 px button, visible keyboard focus,
+  pointer/hover guards, and reduced-motion behavior.
+- When an option needs a calculation or explanation, make its label a separate
+  accessible button with a discreet dotted underline that opens an information
+  dialog. Use `labelContent` while retaining the plain `label` for the editing
+  dialog title and arrow's accessible name. The information button's accessible
+  name must include its visible label. Avoid a separate explanatory option row
+  such as Cómo se calcula when the information belongs to an existing option.
+- Use the shared dialog with its transparent, blurred backdrop. Editing and
+  information dialogs must have distinct triggers and return focus to the
+  appropriate trigger on close.
+- Canceling an editor discards its draft without changing saved data. Preserve
+  validation, pending guards, error feedback, and existing concurrency checks.
+  Close after a successful save and keep the row's trigger stable when refreshed
+  data resets the inner form.
+- Reference implementations are the account settings features in admin/vendor
+  and `apps/admin/src/features/commissions/components/commission-form.tsx`.
+  Apply this pattern to configurable options; keep navigation lists, data tables,
+  and other domain-specific views suited to their own purpose.
 
 ### Progressive rendering and loading states
 

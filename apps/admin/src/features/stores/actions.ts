@@ -1,7 +1,7 @@
 "use server";
 
 import { FetchError } from "@medusajs/js-sdk";
-import type { CatalogPermissionResponse } from "@marketplace-v2/api/catalog-permission-contracts";
+import type { CatalogPermissionResponse } from "@usapeek/api/catalog-permission-contracts";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { requireAdminSdk } from "@/lib/auth-sdk";

@@ -20,11 +20,11 @@ El helper nuevo `packages/api/integration-tests/helpers/complete-native-finance-
 Tras preparar el entorno aislado autorizado, la inspección y ejecución usan estos formatos; los argumentos se transportan con `--args=` según el parser instalado de Medusa 2.18:
 
 ```text
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=before-settlement
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=before-settlement --args=--execute
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=after-settlement
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=after-settlement --args=--execute
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=inspect
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=before-settlement
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=before-settlement --args=--execute
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=after-settlement
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=after-settlement --args=--execute
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/complete-native-finance-refunds.ts --args=inspect
 ```
 
 Sin `--execute`, cada fase valida precondiciones y muestra su plan. `inspect` permite revisar el resultado final sin exigir otra vez el estado inicial. `before-settlement` requiere el target parcial capturado, sin refund ni payout, con el hermano cancelado y captura cero. `after-settlement` requiere el target normal tras exactamente 2 → liquidación → 3. Ambos bloquean cualquier fence, revisión u operación incierta, incluida una recuperación F08 pendiente en el hermano.
@@ -46,10 +46,10 @@ Pruebas enfocadas: **34 PASS** con escenarios simulados, incluidos límites de c
 El helper separado `packages/api/integration-tests/helpers/verify-native-finance-rate-costs.ts` acepta `inspect`, `rate` y `costs`. Reutiliza el entorno/manifest protegido y añade `FINANCE_NATIVE_QA_RATE_ORDER_IDS`: los cuatro IDs explícitos, primero el par normal y después el parcial. Comprueba que forman dos grupos y dos carts distintos, que ambas compras tienen originales y que no existen operaciones inciertas. El parcial puede estar pendiente de cancelación/captura cuando se cambia la regla. Requiere `FINANCE_NATIVE_QA_RATE_COST_OUTPUT_PATH` privado y nuevo para ejecutar el cambio o guardar el contraste de costes.
 
 ```text
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=inspect
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=rate
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=rate --args=--execute
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=costs
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=inspect
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=rate
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=rate --args=--execute
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/verify-native-finance-rate-costs.ts --args=costs
 ```
 
 La fase `rate` sin `--execute` inspecciona el cambio 10→12. La ejecución valida el `commission_rate_id` conservado en el manifest, nombre del run, código QA con UUID, porcentaje USD habilitado/no predeterminado, exclusión de impuestos/envíos y reglas de producto exactamente iguales al conjunto completo del manifest. Los cuatro originales deben referenciar esa regla al 10%; sus líneas nativas deben coincidir por ancla e importe.

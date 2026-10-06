@@ -5,6 +5,15 @@ database sourced from the repository's `develop` branch. It records builds,
 start commands, watch paths, networking and variable references. It does not
 prove that a remote environment matches.
 
+All six resources declare one replica in US East (Virginia),
+`us-east4-eqdc4a`. PostgreSQL and product images remain in Supabase North
+Virginia (`us-east-1`). See the [migration record](../docs/operations/east-region-migration-2026-10-05.md)
+for the verified remote state and deployment limits.
+
+The project and GitHub source are `usapeek` / `caluff/usapeek`. Public domains,
+private frontend DNS names, CORS and Google callbacks follow the new name.
+See the [rename record](../docs/operations/usapeek-rename-2026-10-05.md).
+
 | Service    | Build                      | Start               | Health check    |
 | ---------- | -------------------------- | ------------------- | --------------- |
 | API        | `pnpm build:api:deploy`    | `pnpm start:api`    | `/health`       |
@@ -24,9 +33,14 @@ deployment environment, never in docs or Git.
 
 This file does not declare every optional integration supported by
 [medusa-config.ts](../packages/api/medusa-config.ts). Email/Resend, Algolia,
-product-media storage, onboarding options and the public theme-cookie domain are
+onboarding options and the public theme-cookie domain are
 not all mapped here. Review feature configuration alongside this definition
 before later deployment work.
+
+API and worker preserve the five Supabase Storage variables, and Storefront
+preserves `NEXT_PUBLIC_PRODUCT_IMAGE_URL`. Their values are managed in Railway;
+`preserve()` does not provision credentials. Changing the storefront's public
+image origin requires a new Next.js build.
 
 `NODE_ENV=production` does not enable live Stripe: the application accepts TEST
 keys only and financial operations are scoped to USD. General commerce jobs stay
@@ -41,7 +55,7 @@ enabled by replacing keys alone, and transfer to a Connect balance does not prov
 arrival at the seller's bank. Consult [current development progress](../docs/develpment/development-progress.md)
 and the [job contract](../packages/api/src/jobs/README.md).
 
-This docs refresh does not apply remote configuration, run migrations or change
-deployment state. Before production, validate the five deployed services,
-migrations, HTTPS/authentication, optional integrations, monitoring, financial
-recovery and backup restoration against the selected destination.
+The migration record documents the remote region changes, temporary deployment
+checks and final shutdown of all six Railway services. Before production,
+validate authenticated business flows, optional integrations, monitoring,
+financial recovery and backup restoration against the selected destination.

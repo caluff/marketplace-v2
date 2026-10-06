@@ -1,7 +1,7 @@
 "use client";
 
-import type { FinanceReportingSale } from "@marketplace-v2/api/finance-contracts";
-import { formatOrderNumber } from "@marketplace-v2/order-reference";
+import type { FinanceReportingSale } from "@usapeek/api/finance-contracts";
+import { formatOrderNumber } from "@usapeek/order-reference";
 import { Fragment, useId, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";

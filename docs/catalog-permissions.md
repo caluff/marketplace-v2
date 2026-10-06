@@ -39,9 +39,9 @@ stock, pagos o envíos.
   y devuelve `{ catalog_permission: { seller_id, mode } }`.
 - `GET /vendor/catalog-permission` lee únicamente el permiso de la tienda activa.
 - Los contratos públicos derivan de Zod y se exportan desde
-  `@marketplace-v2/api/catalog-permission-contracts`. Generación y comprobación:
-  `pnpm --filter @marketplace-v2/api catalog:contracts:generate` y
-  `pnpm --filter @marketplace-v2/api catalog:contracts:check`.
+  `@usapeek/api/catalog-permission-contracts`. Generación y comprobación:
+  `pnpm --filter @usapeek/api catalog:contracts:generate` y
+  `pnpm --filter @usapeek/api catalog:contracts:check`.
 
 Los wrappers reutilizan creación, staging, confirmación, auditoría y compensación
 nativos. No registran nuevos hooks ni desactivan la revisión global de Mercur.

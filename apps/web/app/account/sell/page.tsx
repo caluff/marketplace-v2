@@ -15,7 +15,7 @@ import { vendorPanelUrl } from "@/features/vendor-onboarding/presentation"
 import { getVerificationCode } from "@/lib/auth-sdk"
 
 export const metadata: Metadata = {
-  title: "Vender en Marketplace V2",
+  title: "Vender en usapeek",
   robots: { index: false, follow: false },
 }
 
@@ -26,7 +26,7 @@ export default function SellPage({
 }) {
   return (
     <div className="max-w-4xl">
-      <AccountHeading title="Vender en Marketplace V2" />
+      <AccountHeading title="Vender en usapeek" />
       <Suspense fallback={null}>
         <VendorSessionFeedback searchParams={searchParams} />
       </Suspense>

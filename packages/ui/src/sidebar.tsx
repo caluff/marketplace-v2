@@ -30,6 +30,8 @@ type SidebarContextProps = {
   state: "expanded" | "collapsed";
   open: boolean;
   setOpen: (open: boolean) => void;
+  isHoverExpanded: boolean;
+  setHoverOpen: (open: boolean) => void;
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
@@ -66,6 +68,7 @@ function SidebarProvider({
   const isMobile = useIsMobile();
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [hoverOpen, setHoverOpen] = React.useState(false);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -74,6 +77,7 @@ function SidebarProvider({
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value;
+      setHoverOpen(false);
       if (setOpenProp) {
         setOpenProp(openState);
       } else {
@@ -107,22 +111,40 @@ function SidebarProvider({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleSidebar]);
 
+  React.useEffect(() => {
+    const resetHover = () => setHoverOpen(false);
+    window.addEventListener("resize", resetHover);
+    return () => window.removeEventListener("resize", resetHover);
+  }, []);
+
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
-  const state = open ? "expanded" : "collapsed";
+  const isHoverExpanded = hoverOpen && !open && !isMobile;
+  const state = open || isHoverExpanded ? "expanded" : "collapsed";
 
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
       state,
       open,
       setOpen,
+      isHoverExpanded,
+      setHoverOpen,
       isMobile,
       openMobile,
       setOpenMobile,
       toggleSidebar,
       triggerRef,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [
+      state,
+      open,
+      setOpen,
+      isHoverExpanded,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+    ],
   );
 
   return (
@@ -154,6 +176,7 @@ function Sidebar({
   side = "left",
   variant = "sidebar",
   collapsible = "offcanvas",
+  expandOnHover = false,
   className,
   children,
   ...props
@@ -161,9 +184,19 @@ function Sidebar({
   side?: "left" | "right";
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
+  expandOnHover?: boolean;
 }) {
-  const { isMobile, state, openMobile, setOpenMobile, triggerRef } =
-    useSidebar();
+  const {
+    isMobile,
+    state,
+    open,
+    isHoverExpanded,
+    setHoverOpen,
+    openMobile,
+    setOpenMobile,
+    triggerRef,
+  } = useSidebar();
+  const isPointerInside = React.useRef(false);
 
   if (collapsible === "none") {
     return (
@@ -215,6 +248,7 @@ function Sidebar({
     <div
       className="group peer hidden text-sidebar-foreground md:block"
       data-state={state}
+      data-hover-expanded={isHoverExpanded}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
       data-side={side}
@@ -224,18 +258,18 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-[var(--motion-fast)] ease-[var(--ease-out)] motion-reduce:transition-none",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
-            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))] group-data-[hover-expanded=true]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[hover-expanded=true]:w-(--sidebar-width-icon)",
         )}
       />
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-40 hidden h-dvh w-(--sidebar-width) border-sidebar-border transition-[left,right,width] duration-200 ease-linear motion-reduce:transition-none md:flex",
+          "fixed inset-y-0 z-40 hidden h-dvh w-(--sidebar-width) border-sidebar-border transition-[left,right,width] duration-[var(--motion-fast)] ease-[var(--ease-out)] motion-reduce:transition-none md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -246,6 +280,45 @@ function Sidebar({
           className,
         )}
         {...props}
+        onPointerEnter={(event) => {
+          isPointerInside.current = true;
+          props.onPointerEnter?.(event);
+          if (
+            !event.defaultPrevented &&
+            expandOnHover &&
+            collapsible === "icon" &&
+            !open &&
+            event.pointerType === "mouse" &&
+            window.matchMedia("(hover: hover) and (pointer: fine)").matches
+          ) {
+            setHoverOpen(true);
+          }
+        }}
+        onPointerLeave={(event) => {
+          isPointerInside.current = false;
+          props.onPointerLeave?.(event);
+          const focusedElement = document.activeElement;
+          if (
+            focusedElement &&
+            event.currentTarget.contains(focusedElement) &&
+            focusedElement.matches(":focus-visible")
+          ) {
+            return;
+          }
+          setHoverOpen(false);
+        }}
+        onBlur={(event) => {
+          props.onBlur?.(event);
+          if (
+            !isPointerInside.current &&
+            !(
+              event.relatedTarget instanceof Node &&
+              event.currentTarget.contains(event.relatedTarget)
+            )
+          ) {
+            setHoverOpen(false);
+          }
+        }}
       >
         <div
           data-sidebar="sidebar"
@@ -264,7 +337,7 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar, isMobile, openMobile, open, triggerRef } =
+  const { toggleSidebar, isMobile, openMobile, state, triggerRef } =
     useSidebar();
 
   return (
@@ -273,7 +346,7 @@ function SidebarTrigger({
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       type="button"
-      aria-expanded={isMobile ? openMobile : open}
+      aria-expanded={isMobile ? openMobile : state === "expanded"}
       variant="ghost"
       size="icon"
       className={cn("size-7", className)}
@@ -290,14 +363,14 @@ function SidebarTrigger({
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
-  const { toggleSidebar, isMobile, openMobile, open } = useSidebar();
+  const { toggleSidebar, isMobile, openMobile, state } = useSidebar();
 
   return (
     <button
       data-sidebar="rail"
       data-slot="sidebar-rail"
       type="button"
-      aria-expanded={isMobile ? openMobile : open}
+      aria-expanded={isMobile ? openMobile : state === "expanded"}
       aria-label="Alternar navegación"
       tabIndex={-1}
       onClick={toggleSidebar}
@@ -534,7 +607,7 @@ function SidebarMenuButton({
     />
   );
 
-  if (!tooltip || state !== "collapsed" || isMobile) {
+  if (!tooltip) {
     return button;
   }
 
@@ -547,7 +620,12 @@ function SidebarMenuButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="right" align="center" {...tooltip} />
+      <TooltipContent
+        side="right"
+        align="center"
+        {...tooltip}
+        hidden={state !== "collapsed" || isMobile}
+      />
     </Tooltip>
   );
 }

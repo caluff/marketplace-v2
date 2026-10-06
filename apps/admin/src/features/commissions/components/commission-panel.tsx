@@ -2,6 +2,7 @@ import { FetchError } from "@medusajs/js-sdk";
 import { unstable_rethrow } from "next/navigation";
 import { FeedbackToast } from "@/components/feedback-toast";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -16,24 +17,23 @@ import {
   commissionErrorMessage,
 } from "../helpers";
 import { readDefaultCommission } from "../operations";
-import { CommissionForm, CommissionRefresh } from "./commission-form";
+import {
+  CommissionExplanation,
+  CommissionForm,
+  CommissionRefresh,
+} from "./commission-form";
 
 export function CommissionSkeleton() {
   return (
-    <Card
-      className="min-h-64 p-5"
+    <div
+      className="space-y-4"
       role="status"
       aria-label="Cargando comisión global"
       aria-busy="true"
     >
-      <div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse">
-        <div className="h-5 w-40 rounded bg-muted" />
-        <div className="h-10 w-48 rounded bg-muted" />
-        <div className="h-10 w-40 rounded bg-muted" />
-        <div className="h-5 w-36 rounded bg-muted" />
-      </div>
+      <Skeleton className="h-16 w-full" aria-hidden="true" />
       <span className="sr-only">Cargando comisión global…</span>
-    </Card>
+    </div>
   );
 }
 
@@ -77,41 +77,29 @@ export async function CommissionPanel() {
       </Card>
     );
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <CardTitle>Comisión global</CardTitle>
-          <Badge>{rate.is_enabled ? "Activa" : "Inactiva"}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {canEditCommission(rate) ? (
-          <CommissionForm
-            key={`${rate.id}:${rate.value}`}
-            rate={{ id: rate.id, value: rate.value }}
-          />
-        ) : (
+    <div className="space-y-4">
+      {canEditCommission(rate) ? (
+        <CommissionForm
+          key={rate.id}
+          rate={{ id: rate.id, value: rate.value, is_enabled: rate.is_enabled }}
+          baseDescription={commissionBaseDescription(rate)}
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex min-h-16 items-center justify-between gap-4 py-2 pr-14">
+            <CommissionExplanation
+              baseDescription={commissionBaseDescription(rate)}
+            />
+            <Badge variant={rate.is_enabled ? "success" : "secondary"}>
+              {rate.is_enabled ? "Activa" : "Inactiva"}
+            </Badge>
+          </div>
           <p role="status" className="text-sm text-muted-foreground">
             Esta comisión está inactiva o tiene condiciones específicas y no se
             puede editar aquí.
           </p>
-        )}
-        <details className="border-t border-border pt-4 text-sm">
-          <summary className="w-fit cursor-pointer font-medium outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring">
-            Cómo se calcula
-          </summary>
-          <div className="mt-3 space-y-3 leading-6 text-muted-foreground">
-            <p>
-              Se aplica cuando no hay una comisión más específica.{" "}
-              {commissionBaseDescription(rate)}
-            </p>
-            <p>
-              Si un pedido cambia después, su comisión puede recalcularse con el
-              porcentaje vigente, incluso para pedidos existentes.
-            </p>
-          </div>
-        </details>
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }

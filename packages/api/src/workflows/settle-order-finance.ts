@@ -24,6 +24,11 @@ import {
   AUTOMATIC_SETTLEMENT_AUTHORITY,
 } from "../lib/order-finance/settlement-authorization";
 import { withFinanceExecutionLock } from "../lib/order-finance/execution-lock";
+import { withPaymentSettingsLock } from "../lib/order-finance/payment-settings-lock";
+import {
+  DEFAULT_PAYMENT_RELEASE_DELAY_DAYS,
+  paymentReleaseDelayDaysSchema,
+} from "../lib/order-finance/contracts";
 import { financeStripeClient } from "../lib/order-finance/provider";
 import { readOrderFinance } from "../lib/order-finance/read";
 import { recordOrderFinanceProviderFacts } from "../lib/order-finance/record-provider-facts";
@@ -65,6 +70,9 @@ export const payoutOperationSchema = z.object({
       registration_token: z.uuid(),
       completed_at: z.iso.datetime({ offset: true }),
       eligible_at: z.iso.datetime({ offset: true }),
+      release_delay_days: paymentReleaseDelayDaysSchema.default(
+        DEFAULT_PAYMENT_RELEASE_DELAY_DAYS,
+      ),
       observed_order_updated_at: z.iso.datetime({ offset: true }),
     })
     .optional(),
@@ -84,32 +92,37 @@ export async function automaticallySettleOrderFinance(
   container: MedusaContainer,
   orderId: string,
 ) {
-  if (!automaticSettlementEnabled())
-    throw new MedusaError(
-      MedusaError.Types.NOT_ALLOWED,
-      "La liquidación automática no está habilitada.",
+  return withPaymentSettingsLock(container, async () => {
+    if (!(await automaticSettlementEnabled(container)))
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "La liquidación automática no está habilitada.",
+      );
+    const journal = container.resolve<CommerceAutomationService>(
+      COMMERCE_AUTOMATION_MODULE,
     );
-  const journal = container.resolve<CommerceAutomationService>(
-    COMMERCE_AUTOMATION_MODULE,
-  );
-  const completion = orderCompletionSchema.parse(
-    await journal.readOrderCompletion(orderId),
-  );
-  if (completion.id !== orderId)
-    throw new MedusaError(
-      MedusaError.Types.NOT_ALLOWED,
-      "El registro de finalización no corresponde al pedido.",
+    const completion = orderCompletionSchema.parse(
+      await journal.readOrderCompletion(orderId),
     );
-  return executeOrderSettlement(
-    container,
-    {
-      order_id: completion.id,
-      actor_id: AUTOMATIC_SETTLEMENT_ACTOR,
-      note: "Liquidación automática tras 72 horas desde la finalización del pedido.",
-      request_id: completion.registration_token,
-    },
-    completion,
-  );
+    if (completion.id !== orderId)
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "El registro de finalización no corresponde al pedido.",
+      );
+    return executeOrderSettlement(
+      container,
+      {
+        order_id: completion.id,
+        actor_id: AUTOMATIC_SETTLEMENT_ACTOR,
+        note:
+          completion.release_delay_days === 0
+            ? "Liquidación automática sin espera desde la finalización del pedido."
+            : `Liquidación automática tras ${completion.release_delay_days * 24} horas desde la finalización del pedido.`,
+        request_id: completion.registration_token,
+      },
+      completion,
+    );
+  });
 }
 
 async function executeOrderSettlement(
@@ -152,6 +165,7 @@ async function executeOrderSettlement(
           fresh.registration_token !== automatic.registration_token ||
           fresh.completed_at.getTime() !== automatic.completed_at.getTime() ||
           fresh.eligible_at.getTime() !== automatic.eligible_at.getTime() ||
+          fresh.release_delay_days !== automatic.release_delay_days ||
           fresh.observed_order_updated_at.getTime() !==
             automatic.observed_order_updated_at.getTime()
         )
@@ -216,7 +230,7 @@ async function executeOrderSettlement(
           token,
           automatic ? AUTOMATIC_SETTLEMENT_AUTHORITY : undefined,
         );
-        if (automatic && !automaticSettlementEnabled())
+        if (automatic && !(await automaticSettlementEnabled(container)))
           throw new MedusaError(
             MedusaError.Types.NOT_ALLOWED,
             "La liquidación automática no está habilitada.",
@@ -237,6 +251,7 @@ async function executeOrderSettlement(
                   registration_token: automatic.registration_token,
                   completed_at: automatic.completed_at.toISOString(),
                   eligible_at: automatic.eligible_at.toISOString(),
+                  release_delay_days: automatic.release_delay_days,
                   observed_order_updated_at:
                     automatic.observed_order_updated_at.toISOString(),
                 },

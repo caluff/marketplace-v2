@@ -1,7 +1,7 @@
 import type Medusa from "@medusajs/js-sdk";
 import { FetchError } from "@medusajs/js-sdk";
 import type { HttpTypes } from "@medusajs/types";
-import type { AdminCatalogProductManageInput } from "@marketplace-v2/api/catalog-management-contracts";
+import type { AdminCatalogProductManageInput } from "@usapeek/api/catalog-management-contracts";
 import type { ProductChangeDTO } from "@mercurjs/types";
 import type { ProductReviewState } from "./helpers";
 import {

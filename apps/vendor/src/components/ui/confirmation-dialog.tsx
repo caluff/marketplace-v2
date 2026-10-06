@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/confirmation-dialog";
+export * from "@usapeek/ui/confirmation-dialog";

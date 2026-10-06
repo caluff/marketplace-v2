@@ -13,8 +13,27 @@ export type VendorOrderNotificationsResponse = z.infer<
   typeof VendorOrderNotificationsResponseSchema
 >;
 
-export type AdminNotificationEvent = z.infer<typeof AdminNotificationEventSchema>;
-export type AdminOrderCountResponse = z.infer<typeof AdminOrderCountResponseSchema>;
+export const VendorOrderCompletionResponseSchema = z.strictObject({
+  can_complete: z.boolean(),
+  pickup_fulfillment_ids: z.array(z.string().min(1)),
+  preparation_groups: z.array(
+    z.strictObject({
+      shipping_option_id: z.string().min(1).nullable(),
+      is_pickup: z.boolean(),
+      item_ids: z.array(z.string().min(1)),
+    }),
+  ),
+});
+export type VendorOrderCompletionResponse = z.infer<
+  typeof VendorOrderCompletionResponseSchema
+>;
+
+export type AdminNotificationEvent = z.infer<
+  typeof AdminNotificationEventSchema
+>;
+export type AdminOrderCountResponse = z.infer<
+  typeof AdminOrderCountResponseSchema
+>;
 export type AdminNotificationsResponse = z.infer<
   typeof AdminNotificationsResponseSchema
 >;

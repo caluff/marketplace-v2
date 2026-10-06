@@ -1,4 +1,8 @@
 import type { StorefrontCatalogResult } from "@/lib/medusa"
+import {
+  parseSearchParameters,
+  searchHref,
+} from "@/features/search/parameters"
 
 export const CATALOG_PAGE_SIZE = 12
 
@@ -18,10 +22,9 @@ export function catalogHref({
   categoryId?: string
   page?: number
 }) {
-  const query = new URLSearchParams()
-  if (categoryId) query.set("category_id", categoryId)
-  if (page > 1) query.set("page", String(page))
-  return `/${query.size ? `?${query}` : ""}#catalog`
+  return searchHref(
+    parseSearchParameters({ category_id: categoryId, page: String(page) }),
+  )
 }
 
 export function getCatalogPagination(

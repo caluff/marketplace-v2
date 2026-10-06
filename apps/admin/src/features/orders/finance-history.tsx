@@ -1,4 +1,4 @@
-import type { OrderFinanceResponse } from "@marketplace-v2/api/finance-contracts";
+import type { OrderFinanceResponse } from "@usapeek/api/finance-contracts";
 import { money, orderDate } from "./helpers";
 
 export function OrderFinanceHistory({

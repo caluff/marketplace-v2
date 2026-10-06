@@ -1,16 +1,20 @@
 # Documentación del proyecto
 
-Revisión documental: **2026-10-03**. **F01–F12 / Phase 1–6 DONE** y
+Revisión documental: **2026-10-06**. **F01–F12 / Phase 1–6 DONE** y
 **Financial Readiness: PASS para Stripe TEST, USD y operación manual**, según
-la matriz de cierre y el progreso. La extensión automática de 72 horas está
-implementada y activa en TEST; su prueba integral con un pedido nuevo y 72 horas
+la matriz de cierre y el progreso. Pagos permite Manual/Automático y una espera
+de 0–365 días para futuras finalizaciones (valor inicial 3); los pedidos ya
+registrados conservan su plazo. La configuración y persistencia se verificaron
+en [pruebas aisladas](develpment/evidence/payment-release-delay-20261006.md).
+La prueba integral del pedido original con 72 horas
 reales permanece **NEEDS VERIFICATION**. LIVE y preparación de producción no
 están certificados. Actualizar documentación no equivale a repetir QA.
 
-La [verificación integral en curso](develpment/evidence/automatic-settlement-e2e-20261003.md)
+La [verificación integral pausada](develpment/evidence/automatic-settlement-e2e-20261003.md)
 registra el pedido nuevo TEST #16 completado y el vencimiento real del 6 de
 octubre, 12:51 de Uruguay. La comprobación previa al plazo pasó; la transferencia
-posterior y otro ciclo sin duplicados permanecen pendientes.
+posterior y otro ciclo sin duplicados permanecen pendientes tras el cambio de
+entorno. El selector no certifica esa transferencia ni habilita LIVE.
 
 ## Punto de entrada para implementar
 

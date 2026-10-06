@@ -3,6 +3,7 @@ import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
 import { DEFAULT_TABLE_PAGE_SIZE, parseTableOffset } from "@/lib/pagination";
+import { logisticsStatus } from "./logistics-status";
 
 export const ORDER_STATUSES = {
   pending: "Abierto",
@@ -105,35 +106,10 @@ export function canComplete(order: HttpTypes.AdminOrder) {
   );
 }
 export function logisticsLabel(order: HttpTypes.AdminOrder) {
-  if (order.status === "canceled") return "Cancelado";
-  if (!order.items?.length) return "Sin informar";
-  const counters = order.items.map((item) => item.detail);
-  if (
-    counters.some(
-      (detail) =>
-        !detail ||
-        !Number.isSafeInteger(detail.quantity) ||
-        detail.quantity <= 0 ||
-        [
-          detail.fulfilled_quantity,
-          detail.shipped_quantity,
-          detail.delivered_quantity,
-        ].some(
-          (value) =>
-            !Number.isSafeInteger(value) ||
-            value < 0 ||
-            value > detail.quantity,
-        ),
-    )
-  )
-    return "Sin informar";
-  if (counters.every((detail) => detail.delivered_quantity === detail.quantity))
-    return "Entregado";
-  if (counters.every((detail) => detail.shipped_quantity === detail.quantity))
-    return "Enviado";
-  if (counters.every((detail) => detail.fulfilled_quantity === detail.quantity))
-    return "Preparado";
-  return "Pendiente de preparación";
+  const status = logisticsStatus(order);
+  return status === "not_fulfilled"
+    ? "Pendiente de preparación"
+    : statusLabel(status);
 }
 export function orderDate(value: string | Date | null | undefined) {
   if (

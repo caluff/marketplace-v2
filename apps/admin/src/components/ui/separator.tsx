@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/separator";
+export * from "@usapeek/ui/separator";

@@ -71,7 +71,7 @@ async function CheckoutContent({ searchParams }: CheckoutPageProps) {
       <div className="py-14 text-center">
         <h2 className="text-2xl font-medium">Tu carrito está vacío</h2>
         <Button asChild className="mt-6">
-          <Link href="/#catalog">Explorar el catálogo</Link>
+          <Link href="/search">Explorar el catálogo</Link>
         </Button>
       </div>
     )

@@ -1,5 +1,5 @@
 import { listInput } from "../workspace/presentation";
-import { DEFAULT_TABLE_PAGE_SIZE } from "@marketplace-v2/ui/pagination-utils";
+import { DEFAULT_TABLE_PAGE_SIZE } from "@usapeek/ui/pagination-utils";
 
 export const ORDER_TABS = [
   { value: "all", label: "Todos", filters: {} },

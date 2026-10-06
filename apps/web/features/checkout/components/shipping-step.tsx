@@ -73,8 +73,12 @@ export function ShippingStep({
   )
 
   return (
-    <form action={action} className="space-y-6" aria-busy={pending}>
-      <h2 className="text-2xl font-medium tracking-tight">Método de entrega</h2>
+    <form
+      action={action}
+      className="space-y-6"
+      aria-busy={pending}
+      aria-label="Método de entrega"
+    >
       {hasCoverage ? (
         groups.map((group, index) => (
           <fieldset key={group.key} disabled={pending} className="space-y-3">

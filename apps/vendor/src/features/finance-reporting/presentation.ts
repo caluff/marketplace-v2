@@ -1,7 +1,7 @@
 import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
-import type { FinanceReportingSale } from "@marketplace-v2/api/finance-contracts";
+import type { FinanceReportingSale } from "@usapeek/api/finance-contracts";
 
 export function partitionReportSales(sales: FinanceReportingSale[]) {
   const verified: FinanceReportingSale[] = [];

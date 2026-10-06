@@ -24,7 +24,7 @@ export type ShippingInput = {
 };
 export const SHIPPING_PROVIDER_ID = "manual_manual";
 export const SHIPPING_PROFILE_ARCHIVED_KEY = "marketplace_v2_archived";
-export const SHIPPING_SET_NAME = "Marketplace V2 · Estados Unidos";
+export const SHIPPING_SET_NAME = "usapeek · Estados Unidos";
 export const shippingSetName = (sellerId: string) =>
   `${SHIPPING_SET_NAME} · ${sellerId}`;
 export const shippingProfileName = (sellerId: string, name: string) =>
@@ -269,7 +269,7 @@ export async function shippingInfrastructurePlan(
   const sets = location.fulfillment_sets ?? [];
   const name =
     type === "pickup"
-      ? `Marketplace V2 · Recogida · ${sellerId}`
+      ? `usapeek · Recogida · ${sellerId}`
       : shippingSetName(sellerId);
   const set =
     sets.find((value) => value?.type === type && value.name === name) ??

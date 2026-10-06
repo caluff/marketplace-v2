@@ -66,8 +66,8 @@ The new `backfillVendorWarehouseWorkflow` accepts one seller ID and an explicit
 `dry_run` boolean. Its script defaults to dry-run:
 
 ```sh
-pnpm --filter @marketplace-v2/api exec medusa exec ./src/scripts/backfill-vendor-warehouse.ts <seller-id> dry-run
-pnpm --filter @marketplace-v2/api exec medusa exec ./src/scripts/backfill-vendor-warehouse.ts <seller-id> apply
+pnpm --filter @usapeek/api exec medusa exec ./src/scripts/backfill-vendor-warehouse.ts <seller-id> dry-run
+pnpm --filter @usapeek/api exec medusa exec ./src/scripts/backfill-vendor-warehouse.ts <seller-id> apply
 ```
 
 Neither command was executed. Dry-run reads only and reports `would_create`,
@@ -107,7 +107,7 @@ Rollback drops warehouse audit data and is not a routine operational recovery.
 
 ## Evidence and limitations
 
-- Focused unit command: `pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/workflows/__tests__/vendor-application.unit.spec.ts src/workflows/__tests__/vendor-warehouse.unit.spec.ts`.
+- Focused unit command: `pnpm --filter @usapeek/api test:unit --runTestsByPath src/workflows/__tests__/vendor-application.unit.spec.ts src/workflows/__tests__/vendor-warehouse.unit.spec.ts`.
 - Both suites passed together: 28 tests; after the final guard refinement, the
   warehouse suite passed again with 12 tests (29 total across the two suites).
   Coverage includes approval replay, lost location/link

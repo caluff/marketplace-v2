@@ -1,4 +1,4 @@
-export const THEME_COOKIE = "marketplace-v2-theme";
+export const THEME_COOKIE = "usapeek-theme";
 export type ThemePreference = "light" | "dark" | "system";
 
 export function isThemePreference(value: unknown): value is ThemePreference {

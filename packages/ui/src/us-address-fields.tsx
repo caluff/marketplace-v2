@@ -18,6 +18,7 @@ type UsAddressFieldsProps = {
   disabled?: boolean;
   errors?: { province?: string; city?: string };
   autoCompletePrefix?: string;
+  showAttribution?: boolean;
 };
 
 export function UsAddressFields({
@@ -30,6 +31,7 @@ export function UsAddressFields({
   disabled,
   errors,
   autoCompletePrefix = "shipping",
+  showAttribution = true,
 }: UsAddressFieldsProps) {
   const stateCode = normalizeUsState(province);
   return (
@@ -74,6 +76,7 @@ export function UsAddressFields({
         onChange={(value) => onChange({ province: stateCode, city: value })}
         disabled={disabled}
         error={errors?.city}
+        showAttribution={showAttribution}
       />
     </>
   );
@@ -87,6 +90,7 @@ function CityField({
   onChange,
   disabled,
   error,
+  showAttribution,
 }: {
   id: string;
   name: string;
@@ -95,6 +99,7 @@ function CityField({
   onChange: (value: string) => void;
   disabled?: boolean;
   error?: string;
+  showAttribution: boolean;
 }) {
   const [cities, setCities] = useState<readonly string[] | null>(null);
   const [hasError, setHasError] = useState(false);
@@ -154,18 +159,20 @@ function CityField({
       <FieldDescription id={`${id}-status`} role="status">
         {status}
       </FieldDescription>
-      <p className="text-xs text-muted-foreground">
-        Localidades de{" "}
-        <a
-          href="https://www.geonames.org/"
-          target="_blank"
-          rel="noreferrer"
-          className="underline underline-offset-2"
-        >
-          GeoNames
-        </a>
-        .
-      </p>
+      {showAttribution ? (
+        <p className="text-xs text-muted-foreground">
+          Localidades de{" "}
+          <a
+            href="https://www.geonames.org/"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            GeoNames
+          </a>
+          .
+        </p>
+      ) : null}
       {hasError ? (
         <Button
           type="button"

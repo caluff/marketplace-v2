@@ -21,8 +21,9 @@ credentials in the ignored root environment.
 Use the existing pnpm/Medusa tooling in [package.json](../../package.json) with
 the script's declared arguments. Finance currently uses TEST Stripe and USD;
 keep general commerce jobs disabled. Automatic settlement has a separate opt-in
-and 72-hour contract documented under [jobs](../jobs/README.md); it is active in
-the local TEST environment, with the full new-order elapsed-time check still
+and configurable-delay contract documented under [jobs](../jobs/README.md); its
+default remains 3 days and existing clocks retain their original deadline.
+The full new-order elapsed-time check is still
 pending. Never copy fixture assumptions to arbitrary orders.
 
 General settlement and recovery completed F07/F08 in the TEST/USD/manual closure;

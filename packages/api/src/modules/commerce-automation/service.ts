@@ -67,6 +67,10 @@ import {
   originalSaleSchema,
   type OriginalSale,
 } from "../../lib/order-finance/snapshot";
+import {
+  DEFAULT_PAYMENT_RELEASE_DELAY_DAYS,
+  paymentReleaseDelayDaysSchema,
+} from "../../lib/order-finance/contracts";
 
 export type CommerceGroupRecord = InferTypeOf<typeof CommerceGroupState>;
 export type CommerceOperationRecord = InferTypeOf<typeof CommerceOperation>;
@@ -80,6 +84,7 @@ export const orderCompletionReceiptSchema = z
     observed_order_updated_at: z.iso.datetime({ offset: true }),
     completed_at: z.iso.datetime({ offset: true }),
     eligible_at: z.iso.datetime({ offset: true }),
+    release_delay_days: paymentReleaseDelayDaysSchema,
     registration_token: z.uuid(),
   })
   .strict();
@@ -925,7 +930,11 @@ class CommerceAutomationService extends MedusaService({
 
   @InjectManager()
   async recordOrderCompletions(
-    confirmedOrders: { id: string; observed_order_updated_at: string }[],
+    confirmedOrders: {
+      id: string;
+      observed_order_updated_at: string;
+      release_delay_days?: number;
+    }[],
     @MedusaContext() context?: Context<EntityManager>,
   ): Promise<OrderCompletionReceipt[]> {
     const orders = z
@@ -934,31 +943,36 @@ class CommerceAutomationService extends MedusaService({
           .object({
             id: z.string().startsWith("order_"),
             observed_order_updated_at: z.iso.datetime({ offset: true }),
+            release_delay_days: paymentReleaseDelayDaysSchema.default(
+              DEFAULT_PAYMENT_RELEASE_DELAY_DAYS,
+            ),
           })
           .strict(),
       )
       .parse(confirmedOrders);
-    const unique = new Map<string, string>();
+    const unique = new Map<string, (typeof orders)[number]>();
     for (const order of orders) {
+      const previous = unique.get(order.id);
       if (
-        unique.has(order.id) &&
-        unique.get(order.id) !== order.observed_order_updated_at
+        previous &&
+        (previous.observed_order_updated_at !== order.observed_order_updated_at ||
+          previous.release_delay_days !== order.release_delay_days)
       )
         throw new MedusaError(
           MedusaError.Types.CONFLICT,
           "Completion observations disagree about the order update proof.",
         );
-      unique.set(order.id, order.observed_order_updated_at);
+      unique.set(order.id, order);
     }
     if (!unique.size) return [];
     return this.committed(async (manager) => {
       const receipts: OrderCompletionReceipt[] = [];
       const completedAt = new Date();
-      const eligibleAt = addHours(completedAt, 72);
       const table = (name: string) =>
         manager.getKnex()(name).transacting(manager.getTransactionContext()!);
-      for (const [id, proof] of unique) {
-        const observedOrderUpdatedAt = parseISO(proof);
+      for (const [id, order] of unique) {
+        const observedOrderUpdatedAt = parseISO(order.observed_order_updated_at);
+        const eligibleAt = addHours(completedAt, order.release_delay_days * 24);
         const snapshot:
           | {
               id: string;
@@ -996,6 +1010,7 @@ class CommerceAutomationService extends MedusaService({
           observed_order_updated_at: observedOrderUpdatedAt.toISOString(),
           completed_at: completedAt.toISOString(),
           eligible_at: eligibleAt.toISOString(),
+          release_delay_days: order.release_delay_days,
           registration_token: randomUUID(),
         });
         const rows: { id: string }[] = await table("order_completion")
@@ -1028,7 +1043,10 @@ class CommerceAutomationService extends MedusaService({
           existing.observed_order_updated_at.getTime() !==
             observedOrderUpdatedAt.getTime() ||
           existing.eligible_at.getTime() !==
-            addHours(existing.completed_at, 72).getTime()
+            addHours(
+              existing.completed_at,
+              paymentReleaseDelayDaysSchema.parse(existing.release_delay_days) * 24,
+            ).getTime()
         ) {
           throw new MedusaError(
             MedusaError.Types.CONFLICT,

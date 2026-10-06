@@ -11,6 +11,9 @@ overrides:
   vite: 5.4.21
   fdir@6.1.1>picomatch: 3.0.1
 packageExtensions:
+  '@medusajs/cli@2.18.0':
+    dependencies:
+      tsconfig-paths: 4.2.0
   next@16.3.4:
     peerDependencies:
       '@types/react': '*'

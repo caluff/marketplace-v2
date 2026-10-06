@@ -1,4 +1,4 @@
-import { DEFAULT_TABLE_PAGE_SIZE } from "@marketplace-v2/ui/pagination-utils";
+import { DEFAULT_TABLE_PAGE_SIZE } from "@usapeek/ui/pagination-utils";
 import { listInput } from "../workspace/presentation";
 
 export const CATALOG_STATUS_LABELS = {

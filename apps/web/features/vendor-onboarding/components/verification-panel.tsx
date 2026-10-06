@@ -63,7 +63,7 @@ export function VerificationPanel({
         el borrador mientras tanto.{" "}
         {testMode
           ? "En este entorno de prueba puedes generar un código aquí y se completará automáticamente."
-          : "El envío de códigos depende de que Marketplace V2 tenga habilitado el servicio de correo."}
+          : "El envío de códigos depende de que usapeek tenga habilitado el servicio de correo."}
       </p>
       <div className="flex flex-wrap gap-3">
         <Button

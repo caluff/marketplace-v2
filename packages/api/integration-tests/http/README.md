@@ -1,16 +1,22 @@
 # HTTP integration tests
 
 Suites use installed `@medusajs/test-utils` 2.18.0 and real Medusa wiring.
-The API retains integration tests only. `pnpm test` and `pnpm test:api`
-run module integration followed by HTTP integration; both require isolated test
-infrastructure and the explicit opt-ins documented in each selected suite.
+`pnpm test` and `pnpm test:api` run unit tests, module integration, and HTTP
+integration. The integration suites require isolated test infrastructure and
+the explicit opt-ins documented in each selected suite. Payment-capture unit
+tests use local fixtures and mocked providers; run them independently with
+`pnpm --filter @usapeek/api test:unit`.
 
-| Suite                        | Coverage / opt-in                                                                                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `health.spec.ts`             | Health endpoint; protected by the global isolated-environment preflight.                                                                                     |
-| `catalog-permission.spec.ts` | Per-store moderation authority, native publication, revocation, image ownership and shared catalog concurrency; `CATALOG_PERMISSION_TESTS=disposable-local`. |
-| `google-auth.spec.ts`        | Google completion/account association with local fixtures; `GOOGLE_AUTH_TESTS=disposable-local`. No Google network calls.                                    |
-| `vendor-onboarding.spec.ts`  | Lifecycle, authorization and native onboarding; `VENDOR_ONBOARDING_TESTS=disposable-local`.                                                                  |
+| Suite                           | Coverage / opt-in                                                                                                                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `health.spec.ts`                | Health endpoint; protected by the global isolated-environment preflight.                                                                                                                        |
+| `vendor-order-completion.spec.ts` | Native vendor ownership, delivery-gated completion, partial shipments, automatic completion on the last delivery, retries, pickup exceptions and selected preparation groups; `VENDOR_COMPLETION_TESTS=disposable-local`. No external providers. |
+| `catalog-permission.spec.ts`    | Per-store moderation authority, native publication, revocation, image ownership and shared catalog concurrency; `CATALOG_PERMISSION_TESTS=disposable-local`.                                    |
+| `google-auth.spec.ts`           | Google completion/account association with local fixtures; `GOOGLE_AUTH_TESTS=disposable-local`. No Google network calls.                                                                       |
+| `account-email-verification.spec.ts` | Panel account verification, native token confirmation, code ownership and safe requests; `ACCOUNT_EMAIL_VERIFICATION_TESTS=disposable-local`. Notification events are captured without delivering email. |
+| `vendor-onboarding.spec.ts`     | Lifecycle, authorization and native onboarding; `VENDOR_ONBOARDING_TESTS=disposable-local`.                                                                                                     |
+| `search-product-images.spec.ts` | Native product gallery hydration with no thumbnail, empty galleries and exclusion of draft search hits; `SEARCH_IMAGE_TESTS=disposable-local`. Search/discovery fixtures make no Algolia calls. |
+| `payment-release-settings.spec.ts` | Saved release mode and 0–365-day delay, legacy/default3, validation/noop, native auth/RBAC, concurrent revisions, metadata protection and owner-only Redis lock without expiry; `PAYMENT_RELEASE_SETTINGS_TESTS=disposable-local`. No orders, Stripe calls or financial execution. |
 
 Read the selected file header first. Before any suite loads, the global setup
 requires `NODE_ENV=test`, PostgreSQL at `DB_HOST=localhost`, `DB_PORT=55432`,
@@ -34,8 +40,8 @@ before starting the process; no real actor credentials are needed.
 After configuring that environment, select the intended suite:
 
 ```sh
-pnpm --filter @marketplace-v2/api test:integration:http --runTestsByPath integration-tests/http/google-auth.spec.ts
-pnpm --filter @marketplace-v2/api test:integration:http --runTestsByPath integration-tests/http/vendor-onboarding.spec.ts
+pnpm --filter @usapeek/api test:integration:http --runTestsByPath integration-tests/http/google-auth.spec.ts
+pnpm --filter @usapeek/api test:integration:http --runTestsByPath integration-tests/http/vendor-onboarding.spec.ts
 ```
 
 A skipped suite is not successful verification. Existing suites do not cover

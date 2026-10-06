@@ -13,10 +13,11 @@ import Link from "next/link"
 import { useActionState, useRef } from "react"
 
 import { logoutCustomerAction } from "@/app/auth-actions"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { getCustomerIdentity } from "@/features/account/customer-identity"
 import type { ApplicationNavigation } from "@/features/vendor-onboarding/presentation"
+import type { GoogleCustomerProfile } from "@/lib/google-customer-profile"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,50 +37,59 @@ export function CustomerMenu({
   first_name,
   last_name,
   email,
+  googleProfile,
   vendorApplication,
 }: Pick<HttpTypes.StoreCustomer, "first_name" | "last_name" | "email"> & {
   vendorApplication?: ApplicationNavigation
+  googleProfile?: GoogleCustomerProfile | null
 }) {
   const formRef = useRef<HTMLFormElement>(null)
   const [, action, pending] = useActionState(logoutCustomerAction, undefined)
-  const { name, initials } = getCustomerIdentity({
-    first_name,
-    last_name,
-    email,
-  })
+  const { name, initials } = getCustomerIdentity(
+    {
+      first_name,
+      last_name,
+      email,
+    },
+    googleProfile?.name,
+  )
 
   return (
-    <form
-      ref={formRef}
-      action={action}
-      aria-busy={pending}
-      className="h-(--app-header-height)"
-    >
+    <form ref={formRef} action={action} aria-busy={pending} className="h-11">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="h-full w-11"
+            className="relative h-11 gap-2 px-2"
             aria-label={
               vendorApplication?.unreadCount
-                ? `Abrir menú de usuario, ${vendorApplication.unreadCount} novedades de tu solicitud`
-                : "Abrir menú de usuario"
+                ? `Abrir menú de usuario de ${name}, ${vendorApplication.unreadCount} novedades de tu solicitud`
+                : `Abrir menú de usuario de ${name}`
             }
             disabled={pending}
           >
-            <span className="relative">
-              <Avatar className="size-9 border border-border">
-                <AvatarFallback>{initials}</AvatarFallback>
+            {googleProfile ? (
+              <Avatar className="size-7" aria-hidden="true">
+                {googleProfile.picture ? (
+                  <AvatarImage
+                    src={googleProfile.picture}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                  />
+                ) : null}
+                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
-              {Boolean(vendorApplication?.unreadCount) ? (
-                <span
-                  className="absolute top-0 right-0 size-2.5 rounded-full border border-background bg-brand-accent"
-                  aria-hidden="true"
-                />
-              ) : null}
+            ) : null}
+            <span className="max-w-20 truncate sm:max-w-32 lg:max-w-40">
+              {name}
             </span>
+            {Boolean(vendorApplication?.unreadCount) ? (
+              <span
+                className="absolute top-1 right-1 size-2.5 rounded-full border border-background bg-brand-accent"
+                aria-hidden="true"
+              />
+            ) : null}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -97,6 +107,13 @@ export function CustomerMenu({
                 className="size-10 border border-border"
                 aria-hidden="true"
               >
+                {googleProfile?.picture ? (
+                  <AvatarImage
+                    src={googleProfile.picture}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                  />
+                ) : null}
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <span className="min-w-0">
@@ -113,7 +130,7 @@ export function CustomerMenu({
               ...links,
               {
                 href: "/account/sell",
-                label: vendorApplication?.label ?? "Vender en Marketplace V2",
+                label: vendorApplication?.label ?? "Vender en usapeek",
                 icon: Store,
               },
             ].map(({ href, label, icon: Icon }) => (

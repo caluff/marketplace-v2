@@ -109,7 +109,7 @@ overrides:
   vite: 5.4.21
   fdir@6.1.1>picomatch: 3.0.1
 
-packageExtensionsChecksum: sha256-cPiipYqLTc4cWAZkC/bRQXZZJaWHeJXbj5RDpSu7HE4=
+packageExtensionsChecksum: sha256-4ssOzlJrvpNPC5iYoozv4mTJI35dge40SY0hExvR0SU=
 
 patchedDependencies:
   '@medusajs/framework@2.18.0': e31099160dd9126dbf20308b1cec62ea411d55db73a06190ba8a0c685d27eeca
@@ -133,21 +133,21 @@ importers:
 
   apps/admin:
     dependencies:
-      '@marketplace-v2/order-reference':
-        specifier: workspace:*
-        version: link:../../packages/order-reference
-      '@marketplace-v2/theme-sync':
-        specifier: workspace:*
-        version: link:../../packages/theme-sync
-      '@marketplace-v2/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@medusajs/js-sdk':
         specifier: 2.18.0
         version: 2.18.0
       '@medusajs/types':
         specifier: 2.18.0
         version: 2.18.0(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+      '@usapeek/order-reference':
+        specifier: workspace:*
+        version: link:../../packages/order-reference
+      '@usapeek/theme-sync':
+        specifier: workspace:*
+        version: link:../../packages/theme-sync
+      '@usapeek/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -182,12 +182,6 @@ importers:
         specifier: 3.6.0
         version: 3.6.0
     devDependencies:
-      '@marketplace-v2/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@marketplace-v2/vendor-onboarding-contracts':
-        specifier: workspace:*
-        version: link:../../packages/vendor-onboarding-contracts
       '@mercurjs/types':
         specifier: 2.3.3
         version: 2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
@@ -203,6 +197,12 @@ importers:
       '@types/react-dom':
         specifier: 19.2.7
         version: 19.2.7(@types/react@19.2.18)
+      '@usapeek/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@usapeek/vendor-onboarding-contracts':
+        specifier: workspace:*
+        version: link:../../packages/vendor-onboarding-contracts
       eslint:
         specifier: 9.39.5
         version: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
@@ -221,15 +221,6 @@ importers:
 
   apps/vendor:
     dependencies:
-      '@marketplace-v2/order-reference':
-        specifier: workspace:*
-        version: link:../../packages/order-reference
-      '@marketplace-v2/theme-sync':
-        specifier: workspace:*
-        version: link:../../packages/theme-sync
-      '@marketplace-v2/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@medusajs/js-sdk':
         specifier: 2.18.0
         version: 2.18.0
@@ -239,6 +230,15 @@ importers:
       '@mercurjs/types':
         specifier: 2.3.3
         version: 2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
+      '@usapeek/order-reference':
+        specifier: workspace:*
+        version: link:../../packages/order-reference
+      '@usapeek/theme-sync':
+        specifier: workspace:*
+        version: link:../../packages/theme-sync
+      '@usapeek/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -273,12 +273,6 @@ importers:
         specifier: 3.6.0
         version: 3.6.0
     devDependencies:
-      '@marketplace-v2/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@marketplace-v2/vendor-onboarding-contracts':
-        specifier: workspace:*
-        version: link:../../packages/vendor-onboarding-contracts
       '@tailwindcss/postcss':
         specifier: 4.3.3
         version: 4.3.3
@@ -291,6 +285,12 @@ importers:
       '@types/react-dom':
         specifier: 19.2.5
         version: 19.2.5(@types/react@19.2.18)
+      '@usapeek/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@usapeek/vendor-onboarding-contracts':
+        specifier: workspace:*
+        version: link:../../packages/vendor-onboarding-contracts
       eslint:
         specifier: 9.39.5
         version: 9.39.5(supports-color@8.1.1)
@@ -309,15 +309,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@marketplace-v2/order-reference':
-        specifier: workspace:*
-        version: link:../../packages/order-reference
-      '@marketplace-v2/theme-sync':
-        specifier: workspace:*
-        version: link:../../packages/theme-sync
-      '@marketplace-v2/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@medusajs/js-sdk':
         specifier: 2.18.0
         version: 2.18.0
@@ -330,6 +321,15 @@ importers:
       '@stripe/stripe-js':
         specifier: ^9.15.0
         version: 9.15.0
+      '@usapeek/order-reference':
+        specifier: workspace:*
+        version: link:../../packages/order-reference
+      '@usapeek/theme-sync':
+        specifier: workspace:*
+        version: link:../../packages/theme-sync
+      '@usapeek/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -370,12 +370,6 @@ importers:
         specifier: ^3.4.0
         version: 3.6.0
     devDependencies:
-      '@marketplace-v2/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@marketplace-v2/vendor-onboarding-contracts':
-        specifier: workspace:*
-        version: link:../../packages/vendor-onboarding-contracts
       '@mercurjs/types':
         specifier: 2.3.3
         version: 2.3.3(ioredis@5.11.1)(vite@5.4.21(@types/node@24.13.3)(lightningcss@1.32.0))
@@ -391,6 +385,12 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.7(@types/react@19.2.18)
+      '@usapeek/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@usapeek/vendor-onboarding-contracts':
+        specifier: workspace:*
+        version: link:../../packages/vendor-onboarding-contracts
       eslint:
         specifier: ^9
         version: 9.39.5(supports-color@8.1.1)
@@ -577,6 +577,9 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
+      react-phone-number-input:
+        specifier: 3.4.18
+        version: 3.4.18(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       sonner:
         specifier: 2.0.8
         version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -10541,6 +10544,7 @@ snapshots:
       prompts: 2.4.2
       resolve-cwd: 3.0.0
       stack-trace: 0.0.10
+      tsconfig-paths: 4.2.0
       ulid: 2.4.0
       winston: 3.19.0
       yargs: 17.7.3

@@ -74,7 +74,10 @@ async function completeCustomerLogin(
     if (!authenticatedSdk) return configurationError()
 
     try {
-      await setCustomerSession(result, safeRedirectPath(next, "/account") === "/account/sell")
+      const destination = safeRedirectPath(next, "/account")
+      await setCustomerSession(result, destination === "/account/sell", {
+        preserveReceipt: destination === "/checkout/confirmation",
+      })
     } catch (error) {
       return customerLoginError(error, "profile")
     }
@@ -183,7 +186,9 @@ export async function verifyCustomerMfaAction(
     verifyChallenge: () =>
       sdk.auth.mfa.verifyChallenge(secret.challengeId, { method, code }),
     setSession: async (token) => {
-      await setCustomerSession(token)
+      await setCustomerSession(token, false, {
+        preserveReceipt: next === "/checkout/confirmation",
+      })
     },
     clearChallenge: clearMfaSecret,
   })

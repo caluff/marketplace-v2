@@ -1,8 +1,8 @@
 import type Medusa from "@medusajs/js-sdk";
 import type { HttpTypes as MedusaHttpTypes } from "@medusajs/types";
 import type { HttpTypes } from "@mercurjs/types";
-import type { AdminApplicationListResponse } from "@marketplace-v2/vendor-onboarding-contracts";
-import type { AdminOrderCountResponse } from "@marketplace-v2/api/order-notification-contracts";
+import type { AdminApplicationListResponse } from "@usapeek/vendor-onboarding-contracts";
+import type { AdminOrderCountResponse } from "@usapeek/api/order-notification-contracts";
 
 export const OVERVIEW_METRICS = [
   {

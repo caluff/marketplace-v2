@@ -1,5 +1,5 @@
 import { FetchError, type default as Medusa } from "@medusajs/js-sdk";
-import type { AdminApplicationView } from "@marketplace-v2/vendor-onboarding-contracts";
+import type { AdminApplicationView } from "@usapeek/vendor-onboarding-contracts";
 
 export type CategoryProposalState = {
   status: "idle" | "error" | "success";

@@ -1,9 +1,9 @@
 ---
 name: date-fns
-description: Implement and review date parsing, formatting, and calendar calculations in marketplace-v2 using date-fns. Load when changing date handling, not for unrelated forms or numeric formatting.
+description: Implement and review date parsing, formatting, and calendar calculations in usapeek using date-fns. Load when changing date handling, not for unrelated forms or numeric formatting.
 ---
 
-# Dates in marketplace-v2
+# Dates in usapeek
 
 This is a project-maintained skill, not an upstream date-fns skill.
 

@@ -1,14 +1,27 @@
 import type { AuthLoginResponse } from "@medusajs/js-sdk";
+import type { GooglePanelProfileResponse } from "@usapeek/api/auth-contracts";
 import { redirect } from "next/navigation";
+import { profileLoginDestination } from "@/features/account/profile-completion";
 import { createVendorSdk, setVendorSession, setVendorVerification, setVendorMfa, listVendorMemberships, clearVendorSeller, setVendorSeller, selectAndRetrieveVendor } from "@/lib/auth-sdk";
-import { type VendorAuthActionState, safeExternalAuthUrl, sellerChoice } from "@/lib/auth-utils";
+import { type VendorAuthActionState, safeExternalAuthUrl, safeRedirectPath, sellerChoice } from "@/lib/auth-utils";
 
 export async function finishVendorToken(token: string, next: string): Promise<VendorAuthActionState> {
+  next = safeRedirectPath(next, "/seller");
   let memberships;
   try {
     memberships = (await listVendorMemberships(token)).filter((entry) => entry.member?.is_active);
   } catch {
     return { status: "error", message: "No pudimos recuperar tus tiendas. Inténtalo nuevamente." };
+  }
+  if (memberships.some(({ member }) => !member.first_name?.trim() || !member.last_name?.trim())) {
+    try {
+      await createVendorSdk(token)?.client.fetch<GooglePanelProfileResponse>(
+        "/auth/account/profile/google",
+        { method: "POST", body: {} },
+      );
+    } catch {
+      // A missing provider profile can be completed after authentication.
+    }
   }
   await setVendorSession(token);
   await clearVendorSeller();
@@ -30,7 +43,7 @@ export async function finishVendorToken(token: string, next: string): Promise<Ve
   }
   if (!current.member?.is_active || current.seller.id !== membership.seller.id) redirect("/seller/no-access");
   await setVendorSeller(membership.seller.id);
-  redirect(next);
+  redirect(profileLoginDestination(current.member.first_name, next));
 }
 
 export async function completeVendorLogin(result: AuthLoginResponse, email: string, next: string): Promise<VendorAuthActionState> {

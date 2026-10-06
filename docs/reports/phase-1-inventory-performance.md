@@ -37,9 +37,9 @@ Both pages await the existing authentication gate before exposing protected cont
 
 ## Validation
 
-- `pnpm --filter @marketplace-v2/vendor exec tsx --test src/features/inventory/inventory.test.ts src/features/workspace/workspace.test.ts`: **26 passing tests**. Covers bounded request counts, authoritative seller headers/no-store reads, pagination/search, missing/conflicting canonical state, auth/service error propagation, malformed/foreign inventory levels, disabled free creation, and existing atomic adjustment conflicts without write retries.
-- `pnpm --filter @marketplace-v2/vendor typecheck`: passed.
-- `pnpm --filter @marketplace-v2/vendor lint`: passed without warnings.
+- `pnpm --filter @usapeek/vendor exec tsx --test src/features/inventory/inventory.test.ts src/features/workspace/workspace.test.ts`: **26 passing tests**. Covers bounded request counts, authoritative seller headers/no-store reads, pagination/search, missing/conflicting canonical state, auth/service error propagation, malformed/foreign inventory levels, disabled free creation, and existing atomic adjustment conflicts without write retries.
+- `pnpm --filter @usapeek/vendor typecheck`: passed.
+- `pnpm --filter @usapeek/vendor lint`: passed without warnings.
 - Scoped `git diff --check`: passed.
 
 This worker performed no server start, live mutation, Redis load loop, migration, commit, manifest, lockfile, root configuration, or backend warehouse edit. The coordinator confirmed registration of the new inventory test file in the vendor test script and separately applied the migrations. Root owns integrated QA; slow-response browser verification, live native response serialization, and end-to-end stock mutation verification remain for that authorized integrated pass.

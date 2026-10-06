@@ -1,8 +1,8 @@
 "use client"
 
 import type { HttpTypes } from "@medusajs/types"
-import { UsAddressFields } from "@marketplace-v2/ui/us-address-fields"
-import { normalizeUsState } from "@marketplace-v2/ui/us-states"
+import { UsAddressFields } from "@usapeek/ui/us-address-fields"
+import { normalizeUsState } from "@usapeek/ui/us-states"
 import { useActionState, useId, useState } from "react"
 
 import { Button } from "@/components/ui/button"

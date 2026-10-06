@@ -1,5 +1,9 @@
 import type { MedusaContainer } from "@medusajs/framework/types";
-import { MedusaError } from "@medusajs/framework/utils";
+import {
+  ContainerRegistrationKeys,
+  MathBN,
+  MedusaError,
+} from "@medusajs/framework/utils";
 import { COMMERCE_AUTOMATION_MODULE } from "../../modules/commerce-automation";
 import type CommerceAutomationService from "../../modules/commerce-automation/service";
 import {
@@ -36,6 +40,57 @@ function unavailableSource(groupId: string): FinanceReportingSources {
   };
 }
 
+export function groupPendingSettlements(
+  report: Pick<
+    AdminFinanceReportingResponse["report"],
+    "totals" | "sales" | "coverage"
+  >,
+  references: ReadonlyMap<string, AdminReportingSource["references"][number]>,
+): AdminFinanceReportingResponse["report"]["pending_settlements"] {
+  const total = report.totals.pending_settlement;
+  if (total === null || !Number.isFinite(total)) return null;
+  const amounts = new Map<string, ReturnType<typeof MathBN.convert>>();
+  const orders = new Set<string>();
+  let complete = report.coverage.complete;
+  for (const sale of report.sales) {
+    if (sale.pending_settlement === null) {
+      complete = false;
+      continue;
+    }
+    const sellerId = references.get(sale.order_id)?.seller_id;
+    if (
+      !sellerId ||
+      orders.has(sale.order_id) ||
+      !Number.isFinite(sale.pending_settlement)
+    )
+      return null;
+    orders.add(sale.order_id);
+    amounts.set(
+      sellerId,
+      MathBN.add(amounts.get(sellerId) ?? 0, sale.pending_settlement),
+    );
+  }
+  // A group-level transfer without an order attribution cannot be distributed
+  // by seller. Reconcile the complete balance before presenting any breakdown.
+  const sum = [...amounts.values()].reduce(
+    (amount, next) => MathBN.add(amount, next),
+    MathBN.convert(0),
+  );
+  if (!MathBN.eq(sum, total)) return null;
+  return {
+    stores: [...amounts]
+      .filter(([, amount]) => !MathBN.eq(amount, 0))
+      .map(([seller_id, amount]) => ({
+        seller_id,
+        seller_name: null,
+        amount: amount.toNumber(),
+      }))
+      .sort((left, right) => left.seller_id.localeCompare(right.seller_id)),
+    complete:
+      complete && report.sales.every((sale) => sale.coverage === "complete"),
+  };
+}
+
 /** Internal read after the HTTP caller proves current operator authority.
  * One private registry snapshot plus the existing financial arithmetic. */
 export async function readAdminReportingProjection(
@@ -60,6 +115,12 @@ export async function readAdminReportingProjection(
   const sources: FinanceReportingSources[] = [];
   let pendingGroups = 0;
   let principalIncomplete = false;
+  let attributionIncomplete = false;
+  let balancesIncomplete = false;
+  const verifiedReferences = new Map<
+    string,
+    AdminReportingSource["references"][number]
+  >();
   for (const row of registry.rows) {
     try {
       if (!row.is_fresh || row.unsafe)
@@ -96,6 +157,30 @@ export async function readAdminReportingProjection(
           ))
       )
         principalIncomplete = true;
+      for (const reference of row.references) {
+        if (verifiedReferences.has(reference.id)) attributionIncomplete = true;
+        verifiedReferences.set(reference.id, reference);
+      }
+      if (
+        row.references.some(
+          (reference) =>
+            !source.capture_allocations.some(
+              (allocation) => allocation.order_id === reference.id,
+            ),
+        )
+      )
+        balancesIncomplete = true;
+      if (
+        source.facts.some(
+          (fact) =>
+            fact.data_kind === input.query.data_kind &&
+            fact.mode === input.query.mode &&
+            fact.currency_code === input.query.currency_code &&
+            ["transfer", "reversal"].includes(fact.kind) &&
+            !fact.order_id,
+        )
+      )
+        attributionIncomplete = true;
       sources.push(source);
     } catch {
       pendingGroups++;
@@ -125,6 +210,7 @@ export async function readAdminReportingProjection(
   const response: AdminFinanceReportingResponse = {
     report: {
       ...result.report,
+      pending_settlements: null,
       freshness: {
         refreshed_at: null,
         pending_groups: pendingGroups,
@@ -164,5 +250,38 @@ export async function readAdminReportingProjection(
       .sort();
     response.report.freshness.refreshed_at = refreshed[0] ?? null;
   }
+  const pendingSettlements = attributionIncomplete
+    ? null
+    : groupPendingSettlements(response.report, verifiedReferences);
+  if (pendingSettlements && balancesIncomplete)
+    pendingSettlements.complete = false;
+  input.signal?.throwIfAborted();
+  if (pendingSettlements?.stores.length) {
+    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    try {
+      const { data: sellers } = await query.graph(
+        {
+          entity: "seller",
+          fields: ["id", "name"],
+          filters: {
+            id: pendingSettlements.stores.map((store) => store.seller_id),
+          },
+          pagination: { skip: 0, take: pendingSettlements.stores.length },
+        },
+        { cache: { enable: false } },
+      );
+      input.signal?.throwIfAborted();
+      const names = new Map(sellers.map((seller) => [seller.id, seller.name]));
+      pendingSettlements.stores = pendingSettlements.stores.map((store) => ({
+        ...store,
+        seller_name: names.get(store.seller_id) ?? null,
+      }));
+    } catch {
+      input.signal?.throwIfAborted();
+      pendingSettlements.complete = false;
+    }
+  }
+  response.report.pending_settlements = pendingSettlements;
+  input.signal?.throwIfAborted();
   return response;
 }

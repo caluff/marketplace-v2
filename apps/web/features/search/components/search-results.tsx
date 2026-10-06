@@ -149,7 +149,7 @@ async function ResolvedSearchResults({
             <a href={searchHref(parameters)}>Reintentar</a>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/#catalog">Explorar catálogo</Link>
+            <Link href="/search">Explorar catálogo</Link>
           </Button>
         </div>
       </section>

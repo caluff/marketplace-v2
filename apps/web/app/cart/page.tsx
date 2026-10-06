@@ -10,7 +10,7 @@ import { getCart } from "@/features/cart/data"
 import { CartItem } from "@/features/cart/components/cart-item"
 import { OrderSummary } from "@/features/cart/components/order-summary"
 
-export const metadata = { title: "Tu carrito | Marketplace V2" }
+export const metadata = { title: "Tu carrito | usapeek" }
 export const dynamic = "force-dynamic"
 
 async function CartContent() {
@@ -33,7 +33,7 @@ async function CartContent() {
         <ShoppingBag className="mx-auto size-10" aria-hidden="true" />
         <h2 className="mt-6 text-2xl">Tu carrito está vacío</h2>
         <Button asChild className="mt-6">
-          <Link href="/#catalog">Explorar el catálogo</Link>
+          <Link href="/search">Explorar el catálogo</Link>
         </Button>
       </div>
     )
@@ -78,7 +78,7 @@ export default function CartPage() {
     <>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6 lg:px-10">
         <Link
-          href="/#catalog"
+          href="/search"
           className="font-sans text-sm underline underline-offset-4"
         >
           Seguir comprando

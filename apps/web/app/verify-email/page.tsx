@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-  title: "Verificar correo | Marketplace V2",
+  title: "Verificar correo | usapeek",
   robots: { index: false, follow: false },
 }
 export default async function VerifyEmailPage({

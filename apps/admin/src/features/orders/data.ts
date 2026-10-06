@@ -1,7 +1,7 @@
 import type Medusa from "@medusajs/js-sdk";
 import type { FulfillmentDTO, HttpTypes } from "@medusajs/types";
 import type { SellerDTO } from "@mercurjs/types";
-import { orderSearchQuery } from "@marketplace-v2/order-reference";
+import { orderSearchQuery } from "@usapeek/order-reference";
 import type { parseOrderFilters } from "./helpers";
 import { safeUrl } from "./helpers";
 

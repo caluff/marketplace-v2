@@ -187,11 +187,12 @@ module.exports = withMercur({
     ...(googleAuthConfiguration
       ? [{
           resolve: "@medusajs/medusa/auth",
+          dependencies: ["logger", "cache", "locking"],
           options: {
             mfa: { encryption_key: process.env.AUTH_MFA_ENCRYPTION_KEY },
             providers: [
               { resolve: "@medusajs/medusa/auth-emailpass", id: "emailpass" },
-              { resolve: "@medusajs/medusa/auth-google", id: "google", options: googleAuthConfiguration },
+              { resolve: "./src/modules/google-one-tap", id: "google", options: { ...googleAuthConfiguration, oneTapSecret: jwtSecret } },
               { resolve: "@medusajs/medusa/auth-google", id: "google-admin", options: googleAuthConfiguration },
             ],
           },

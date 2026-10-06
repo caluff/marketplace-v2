@@ -13,7 +13,7 @@ import { productUpdatedAt } from "@/features/product-review/management";
 import { readManagedProduct } from "@/features/product-review/management-operations";
 import { ProductEditForm } from "@/features/product-review/components/product-edit-form";
 
-export const metadata: Metadata = { title: "Editar producto | Marketplace V2" };
+export const metadata: Metadata = { title: "Editar producto | usapeek" };
 
 async function ProductEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

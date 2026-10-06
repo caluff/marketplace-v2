@@ -1,4 +1,4 @@
-import type { FinanceReportingSale } from "@marketplace-v2/api/finance-contracts";
+import type { FinanceReportingSale } from "@usapeek/api/finance-contracts";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

@@ -12,7 +12,7 @@ import {
   googleNextPath,
 } from "@/lib/google-auth"
 
-export const metadata: Metadata = { title: "Iniciar sesión | Marketplace V2" }
+export const metadata: Metadata = { title: "Iniciar sesión | usapeek" }
 
 export default async function LoginPage({
   searchParams,

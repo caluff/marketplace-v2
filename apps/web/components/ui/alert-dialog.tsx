@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/alert-dialog";
+export * from "@usapeek/ui/alert-dialog";

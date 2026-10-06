@@ -1,8 +1,10 @@
 import type { AuthLoginResponse } from "@medusajs/js-sdk";
+import type { GooglePanelProfileResponse } from "@usapeek/api/auth-contracts";
 import { redirect } from "next/navigation";
+import { profileLoginDestination } from "@/features/account/profile-completion";
 import { adminLoginErrorMessage } from "@/lib/auth-service";
 import { createAdminSdk, setAdminSession, setAdminVerification, setAdminMfa } from "@/lib/auth-sdk";
-import { type AuthActionState, safeRedirectPath, safeExternalAuthUrl } from "@/lib/auth-utils";
+import { type AuthActionState, safeExternalAuthUrl } from "@/lib/auth-utils";
 const configurationError = (): AuthActionState => ({ status: "error", message: "El servicio de acceso no está disponible. Intenta más tarde." });
 
 export async function completeAdminLogin(
@@ -13,13 +15,25 @@ export async function completeAdminLogin(
   if (typeof result === "string") {
     const authenticated = createAdminSdk(result);
     if (!authenticated) return configurationError();
+    let user;
     try {
-      await authenticated.admin.user.me();
+      ({ user } = await authenticated.admin.user.me());
     } catch (error) {
       return { status: "error", message: adminLoginErrorMessage(error) };
     }
+    if (!user.first_name?.trim() || !user.last_name?.trim()) {
+      try {
+        const { updated } = await authenticated.client.fetch<GooglePanelProfileResponse>(
+          "/auth/account/profile/google",
+          { method: "POST", body: {} },
+        );
+        if (updated) ({ user } = await authenticated.admin.user.me());
+      } catch {
+        // A missing provider profile can be completed after authentication.
+      }
+    }
     await setAdminSession(result);
-    redirect(safeRedirectPath(next, "/dashboard"));
+    redirect(profileLoginDestination(user.first_name, next));
   }
 
   if ("verification_required" in result) {

@@ -1,4 +1,4 @@
-import type { AdminFinanceReportingResponse } from "@marketplace-v2/api/finance-contracts";
+import type { AdminFinanceReportingResponse } from "@usapeek/api/finance-contracts";
 
 export type FinanceReportState = {
   data?: AdminFinanceReportingResponse;

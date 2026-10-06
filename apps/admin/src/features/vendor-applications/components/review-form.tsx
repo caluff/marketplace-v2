@@ -3,7 +3,7 @@
 import type {
   AdminApplicationView,
   ReviewApplicationBody,
-} from "@marketplace-v2/vendor-onboarding-contracts";
+} from "@usapeek/vendor-onboarding-contracts";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, RefreshCw } from "lucide-react";

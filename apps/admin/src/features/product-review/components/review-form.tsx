@@ -10,11 +10,12 @@ import {
   NativeSelectOption,
 } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { withFeedbackToast } from "@/lib/feedback";
+import { notifyFeedback, withFeedbackToast } from "@/lib/feedback";
 import { reviewProductAction } from "../actions";
 import {
   parseProductReviewDecision,
   type ProductReviewDecision,
+  type ProductReviewState,
 } from "../helpers";
 
 const LABELS: Record<ProductReviewDecision, string> = {
@@ -29,17 +30,48 @@ export function ProductModerationForm({
   productId,
   updatedAt,
   changeId,
+  onPendingChange,
+  onSuccess,
+  onCancel,
 }: {
   productId: string;
   updatedAt: string;
   changeId?: string;
+  onPendingChange?: (isPending: boolean) => void;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [decision, setDecision] = useState<ProductReviewDecision>(
     changeId ? "confirm_change" : "publish",
   );
-  const [state, action, isPending] = useActionState(
-    withFeedbackToast(reviewProductAction.bind(null, productId)),
+  const [state, action, isPending] = useActionState<
+    ProductReviewState,
+    FormData
+  >(
+    async (previous, formData) => {
+      onPendingChange?.(true);
+      try {
+        const result = await withFeedbackToast(
+          reviewProductAction.bind(null, productId),
+        )(previous, formData);
+        if (result.status === "success") {
+          onSuccess?.();
+          router.refresh();
+        }
+        return result;
+      } catch {
+        const result: ProductReviewState = {
+          status: "error",
+          message:
+            "No se pudo confirmar la decisión. Actualiza el producto antes de reintentar.",
+        };
+        notifyFeedback(result);
+        return result;
+      } finally {
+        onPendingChange?.(false);
+      }
+    },
     { status: "idle" },
   );
   const isPublicReason =
@@ -115,11 +147,12 @@ export function ProductModerationForm({
           {isPending ? "Guardando…" : LABELS[decision]}
         </Button>
         <Button
+          type="button"
           variant="outline"
           disabled={isPending}
-          onClick={() => router.refresh()}
+          onClick={() => (onCancel ? onCancel() : router.refresh())}
         >
-          Actualizar estado
+          {onCancel ? "Cancelar" : "Actualizar estado"}
         </Button>
       </div>
       {state.message && (

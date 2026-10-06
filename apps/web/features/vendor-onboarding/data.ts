@@ -2,7 +2,7 @@ import type {
   ApplicationNotificationsResponse,
   ApplicationOptionsResponse,
   ApplicationResponse,
-} from "@marketplace-v2/vendor-onboarding-contracts"
+} from "@usapeek/vendor-onboarding-contracts"
 import { FetchError } from "@medusajs/js-sdk"
 import type { HttpTypes } from "@medusajs/types"
 import { redirect } from "next/navigation"

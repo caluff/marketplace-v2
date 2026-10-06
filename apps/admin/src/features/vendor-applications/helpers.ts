@@ -1,7 +1,7 @@
 import type {
   ApplicationStatus,
   ReviewApplicationBody,
-} from "@marketplace-v2/vendor-onboarding-contracts";
+} from "@usapeek/vendor-onboarding-contracts";
 import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";

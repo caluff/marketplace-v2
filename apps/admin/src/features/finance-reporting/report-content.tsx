@@ -1,15 +1,25 @@
 import type {
   FinanceReportingPeriod,
   AdminFinanceReportingResponse,
-} from "@marketplace-v2/api/finance-contracts";
+} from "@usapeek/api/finance-contracts";
 import { intlFormat } from "date-fns/intlFormat";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
 import { Fragment, type ReactNode } from "react";
-import { formatOrderNumber } from "@marketplace-v2/order-reference";
+import { formatOrderNumber } from "@usapeek/order-reference";
 import Link from "next/link";
+import { CircleCheck, TriangleAlert } from "lucide-react";
 import { TablePagination } from "@/components/table-pagination";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -20,6 +30,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { REPORT_PAGE_SIZE } from "./parameters";
+import { PendingSettlementsDialog } from "./pending-settlements-dialog";
+import { formatReportMoney as displayMoney } from "./presentation";
 
 export const primaryMetrics = {
   merchandise_gmv: "Ventas de mercancía",
@@ -63,15 +75,6 @@ const reasonLabels: Record<string, string> = {
     "Los datos cambiaron después de su conciliación.",
   stored_cost_missing: "Faltan tarifas almacenadas de Stripe.",
 };
-const money = new Intl.NumberFormat("es-UY", {
-  style: "currency",
-  currency: "USD",
-});
-
-function displayMoney(value: number | null) {
-  return value === null ? "—" : money.format(value);
-}
-
 function displayDate(value: string | null) {
   if (!value) return "—";
   const date = parseISO(value);
@@ -110,28 +113,6 @@ export function FinanceReportContent({
   );
   return (
     <div className="space-y-4">
-      {!report.coverage.complete ? (
-        <div
-          role="status"
-          className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
-        >
-          <p>
-            Informe parcial. El resultado después de tarifas requiere cobertura
-            completa.
-          </p>
-          {report.coverage.partial_reasons.length ? (
-            <ul className="mt-2 list-inside list-disc">
-              {report.coverage.partial_reasons.map(({ reason, count }) => (
-                <li key={reason}>
-                  {reasonLabels[reason] ??
-                    "Algunos datos no se pudieron verificar."}{" "}
-                  ({count})
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
       <div
         role="group"
         aria-label="Resumen financiero"
@@ -142,8 +123,13 @@ export function FinanceReportContent({
             [keyof typeof primaryMetrics, string]
           >
         ).map(([key, label]) => (
-          <Card key={key}>
-            <CardHeader className="pb-2">
+          <Card
+            key={key}
+            className={key === "pending_settlement" ? "relative" : undefined}
+          >
+            <CardHeader
+              className={key === "pending_settlement" ? "pb-2 pr-10" : "pb-2"}
+            >
               <CardTitle asChild className="text-sm font-medium">
                 <h3>{label}</h3>
               </CardTitle>
@@ -164,25 +150,79 @@ export function FinanceReportContent({
                       : "Saldo acumulado al corte."}
               </p>
             </CardContent>
+            {key === "pending_settlement" ? (
+              <PendingSettlementsDialog report={report} />
+            ) : null}
           </Card>
         ))}
       </div>
-      <dl className="flex flex-wrap gap-x-8 gap-y-3 border-y py-3 text-sm">
-        {(
-          Object.entries(activityMetrics) as Array<
-            [keyof typeof activityMetrics, string]
-          >
-        ).map(([key, label]) => (
-          <div key={key} className="flex items-baseline gap-2">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="font-medium tabular-nums">
-              {key === "paid_vendor_orders"
-                ? (report.totals[key]?.toLocaleString("es-UY") ?? "—")
-                : displayMoney(report.totals[key])}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b pb-3">
+        <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+          {(
+            Object.entries(activityMetrics) as Array<
+              [keyof typeof activityMetrics, string]
+            >
+          ).map(([key, label]) => (
+            <div key={key} className="flex items-baseline gap-2">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="font-medium tabular-nums">
+                {key === "paid_vendor_orders"
+                  ? (report.totals[key]?.toLocaleString("es-UY") ?? "—")
+                  : displayMoney(report.totals[key])}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              static
+              className={
+                report.coverage.complete
+                  ? "min-h-11 text-success-foreground hover:text-success-foreground"
+                  : "min-h-11 text-warning-foreground hover:text-warning-foreground"
+              }
+            >
+              {report.coverage.complete ? (
+                <CircleCheck aria-hidden="true" />
+              ) : (
+                <TriangleAlert aria-hidden="true" />
+              )}
+              {report.coverage.complete
+                ? "Informe completo"
+                : "Informe parcial"}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {report.coverage.complete
+                  ? "Informe completo"
+                  : "Informe parcial"}
+              </DialogTitle>
+              <DialogDescription>
+                {report.coverage.complete
+                  ? "Los datos del informe tienen cobertura completa."
+                  : "El resultado después de tarifas requiere cobertura completa."}
+              </DialogDescription>
+            </DialogHeader>
+            {!report.coverage.complete &&
+            report.coverage.partial_reasons.length ? (
+              <ul className="list-disc space-y-2 pl-5 text-sm leading-6">
+                {report.coverage.partial_reasons.map(({ reason, count }) => (
+                  <li key={reason}>
+                    {reasonLabels[reason] ??
+                      "Algunos datos no se pudieron verificar."}{" "}
+                    ({count})
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </DialogContent>
+        </Dialog>
+      </div>
       <details className="border-b pb-3">
         <summary className="w-fit cursor-pointer rounded-sm text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
           Desglose para conciliación
@@ -202,10 +242,6 @@ export function FinanceReportContent({
           ))}
         </dl>
       </details>
-      <p className="text-xs text-muted-foreground">
-        Pruebas · USD · {displayDate(report.window.start_at)} –{" "}
-        {displayDate(report.window.end_at)} · zona {report.window.time_zone}
-      </p>
       <Table>
         <TableCaption>
           Movimientos con fecha efectiva dentro del período; saldos acumulados
@@ -241,10 +277,10 @@ export function FinanceReportContent({
                     </Link>
                   </TableCell>
                   <TableCell className="tabular-nums">
-                    {money.format(sale.merchandise_collected_in_period)}
+                    {displayMoney(sale.merchandise_collected_in_period)}
                   </TableCell>
                   <TableCell className="tabular-nums">
-                    {money.format(sale.refunds_effective)}
+                    {displayMoney(sale.refunds_effective)}
                   </TableCell>
                   <TableCell className="tabular-nums">
                     {displayMoney(sale.net_commission)}
@@ -252,7 +288,7 @@ export function FinanceReportContent({
                   <TableCell className="tabular-nums">
                     {sale.pending_settlement === null
                       ? "—"
-                      : money.format(sale.pending_settlement)}
+                      : displayMoney(sale.pending_settlement)}
                   </TableCell>
                   <TableCell>
                     {sale.coverage === "complete" ? "Completa" : "Parcial"}
@@ -280,13 +316,13 @@ export function FinanceReportContent({
                           <dt className="text-muted-foreground">
                             Capturado en el período
                           </dt>
-                          <dd>{money.format(sale.captured_in_period)}</dd>
+                          <dd>{displayMoney(sale.captured_in_period)}</dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">
                             Transferencias netas del período
                           </dt>
-                          <dd>{money.format(sale.transferred_net)}</dd>
+                          <dd>{displayMoney(sale.transferred_net)}</dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">
@@ -295,7 +331,7 @@ export function FinanceReportContent({
                           <dd>
                             {sale.gross_commission === null
                               ? "—"
-                              : money.format(sale.gross_commission)}
+                              : displayMoney(sale.gross_commission)}
                           </dd>
                         </div>
                         <div>
@@ -303,33 +339,33 @@ export function FinanceReportContent({
                             Comisión reconocida período
                           </dt>
                           <dd>
-                            {money.format(sale.commission_recognized_in_period)}
+                            {displayMoney(sale.commission_recognized_in_period)}
                           </dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">
                             Comisión revertida período
                           </dt>
-                          <dd>{money.format(sale.commission_reversed)}</dd>
+                          <dd>{displayMoney(sale.commission_reversed)}</dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">
                             Transferencias brutas período
                           </dt>
-                          <dd>{money.format(sale.transfers_gross)}</dd>
+                          <dd>{displayMoney(sale.transfers_gross)}</dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">
                             Reversiones período
                           </dt>
-                          <dd>{money.format(sale.transfer_reversals)}</dd>
+                          <dd>{displayMoney(sale.transfer_reversals)}</dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">
                             Transferencias brutas al corte
                           </dt>
                           <dd>
-                            {money.format(sale.transfers_gross_to_cutoff)}
+                            {displayMoney(sale.transfers_gross_to_cutoff)}
                           </dd>
                         </div>
                         <div>
@@ -337,7 +373,7 @@ export function FinanceReportContent({
                             Reversiones al corte
                           </dt>
                           <dd>
-                            {money.format(sale.transfer_reversals_to_cutoff)}
+                            {displayMoney(sale.transfer_reversals_to_cutoff)}
                           </dd>
                         </div>
                         <div>
@@ -345,7 +381,7 @@ export function FinanceReportContent({
                             Transferencias netas al corte
                           </dt>
                           <dd>
-                            {money.format(sale.transferred_net_to_cutoff)}
+                            {displayMoney(sale.transferred_net_to_cutoff)}
                           </dd>
                         </div>
                         <div>

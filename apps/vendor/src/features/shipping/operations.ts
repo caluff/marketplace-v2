@@ -2,8 +2,8 @@ import type { PriceDTO, ShippingOptionDTO } from "@medusajs/types";
 import type {
   VendorShippingConfiguration,
   VendorShippingConfigurationResponse,
-} from "@marketplace-v2/api/shipping-contracts";
-import { normalizeUsState } from "@marketplace-v2/ui/us-states";
+} from "@usapeek/api/shipping-contracts";
+import { normalizeUsState } from "@usapeek/ui/us-states";
 import type { HttpTypes } from "@mercurjs/types";
 import { scopedClient, type AuthorizeVendor } from "../workspace/operations";
 import { resourceId, textField } from "../workspace/validation";

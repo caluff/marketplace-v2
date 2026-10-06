@@ -56,7 +56,7 @@ No se probaron cobros reales, reversión de transferencias a vendedores, captura
 
 ## Conciliación final — satisfactoria
 
-`pnpm --filter @marketplace-v2/api exec medusa exec ./src/scripts/verify-order-finance-qa.ts` terminó con código 0 después de la corrección del caso de autorización liberada.
+`pnpm --filter @usapeek/api exec medusa exec ./src/scripts/verify-order-finance-qa.ts` terminó con código 0 después de la corrección del caso de autorización liberada.
 
 | Pedido | Estado | Asignado | Dinero reembolsado | Operaciones completas |
 | --- | --- | ---: | ---: | ---: |

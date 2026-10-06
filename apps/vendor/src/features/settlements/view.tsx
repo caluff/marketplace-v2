@@ -1,8 +1,8 @@
 import type {
   VendorSettlementItem,
   VendorSettlementsResponse,
-} from "@marketplace-v2/api/finance-contracts";
-import { formatOrderNumber } from "@marketplace-v2/order-reference";
+} from "@usapeek/api/finance-contracts";
+import { formatOrderNumber } from "@usapeek/order-reference";
 import Link from "next/link";
 import { TablePagination } from "@/components/table-pagination";
 import { Badge } from "@/components/ui/badge";
@@ -84,8 +84,8 @@ export function SettlementView({
       </dl>
       <p className="text-sm text-muted-foreground">
         {settlements.automatic_enabled
-          ? "La espera es de 72 horas. Cada pedido sale de esta lista cuando se confirma la liberación."
-          : "La liberación automática está desactivada. Las fechas indican cuándo vence la espera de 72 horas."}
+          ? "Cada pedido conserva el plazo registrado al completarse y sale de esta lista cuando se confirma la liberación."
+          : "La liberación automática está desactivada. Las fechas muestran el vencimiento del plazo registrado en cada pedido."}
       </p>
       {settlements.items.length ? (
         <Table>

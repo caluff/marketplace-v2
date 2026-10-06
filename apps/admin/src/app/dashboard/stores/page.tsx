@@ -7,7 +7,7 @@ import {
 } from "@/features/stores/components";
 import { parseStoreFilters } from "@/features/stores/helpers";
 
-export const metadata: Metadata = { title: "Tiendas | Marketplace Admin" };
+export const metadata: Metadata = { title: "Tiendas | usapeek Admin" };
 
 export default async function StoresPage({
   searchParams,

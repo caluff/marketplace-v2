@@ -1,4 +1,4 @@
-import type { OrderFinanceResponse } from "@marketplace-v2/api/finance-contracts";
+import type { OrderFinanceResponse } from "@usapeek/api/finance-contracts";
 import {
   formatMoney as money,
   formatDate as orderDate,
@@ -10,15 +10,11 @@ export function OrderFinanceHistory({
   finance: OrderFinanceResponse["finance"];
 }) {
   return (
-    <section
-      className="space-y-3 border-t pt-5"
-      aria-label="Historial financiero"
-    >
-      <h3 className="text-sm font-semibold">Historial</h3>
+    <section className="space-y-3" aria-label="Historial financiero">
       {finance.history.length ? (
-        <ul className="divide-y">
+        <ul className="space-y-5">
           {finance.history.map((entry) => (
-            <li key={entry.id} className="space-y-1 py-3 text-sm">
+            <li key={entry.id} className="space-y-1 text-sm">
               <div className="flex flex-wrap justify-between gap-2">
                 <span className="font-medium">
                   {

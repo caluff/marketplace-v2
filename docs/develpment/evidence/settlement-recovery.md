@@ -65,8 +65,8 @@ Pendientes para cierre: circuito Stripe TEST efectivo con fixtures propios y com
 El CLI Medusa 2.18 usa argumentos variádicos y modo estricto. Para transportar opciones del script, pasar **todos** sus argumentos como `--args=<valor>`; un `--execute` suelto se rechaza y ponerlo detrás de `--` no lo entrega al script. Se comprobó el parser instalado sin cargar DB ni proveedores. Tras preparar el entorno aislado autorizado, el formato es:
 
 ```text
-pnpm --filter @marketplace-v2/api exec medusa exec ./integration-tests/helpers/verify-native-finance-fixture.ts --args=capture --args=order_1 --args=order_2 --args=--execute
-pnpm --filter @marketplace-v2/api exec medusa exec ./src/scripts/recover-order-finance.ts --args=order_1 --args=payout:order_1 --args=actor_id "--args=Motivo de conciliación" --args=--execute --args=--plan-hash=<hash> --args=--release-stopped-writer
+pnpm --filter @usapeek/api exec medusa exec ./integration-tests/helpers/verify-native-finance-fixture.ts --args=capture --args=order_1 --args=order_2 --args=--execute
+pnpm --filter @usapeek/api exec medusa exec ./src/scripts/recover-order-finance.ts --args=order_1 --args=payout:order_1 --args=actor_id "--args=Motivo de conciliación" --args=--execute --args=--plan-hash=<hash> --args=--release-stopped-writer
 ```
 
 Los identificadores son marcadores de formato, nunca fixtures precargados. Primero debe ejecutarse la inspección sin opciones de ejecución; el hash y la prueba de proceso detenido proceden de esa corrida real.

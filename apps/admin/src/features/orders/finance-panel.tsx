@@ -3,7 +3,7 @@
 import type {
   OrderFinanceInput,
   OrderFinanceResponse,
-} from "@marketplace-v2/api/finance-contracts";
+} from "@usapeek/api/finance-contracts";
 import { useActionState, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

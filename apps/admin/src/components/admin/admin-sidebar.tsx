@@ -14,7 +14,7 @@ import {
 
 export function AdminSidebar({ user }: { user: HttpTypes.AdminUser }) {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" expandOnHover>
       <SidebarHeader className="h-(--app-header-height) justify-center border-b border-sidebar-border py-0">
         <SidebarMenu>
           <SidebarMenuItem>

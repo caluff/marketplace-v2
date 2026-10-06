@@ -10,7 +10,7 @@ This directory orchestrates local mutations around native Medusa/Mercur flows.
 | Catalog permissions | `set-seller-catalog-permission.ts`, `catalog-permission-create-product.ts`, `catalog-permission-edit-product.ts`; native moderation with private per-store authority. |
 | Checkout/finance     | `validate-cart-sale-status.ts`, `guard-order-finance-writer.ts`, `operate-order-finance.ts`, `order-finance-native.ts`.                           |
 | Settlement/recovery  | `settle-order-finance.ts`, `settlement-native.ts`, `recover-order-finance.ts`, `recover-finance-execution-lock.ts`, `refresh-order-finance-provider-facts.ts`. |
-| Automatic settlement | `record-order-completions.ts`, `automatically-settle-orders.ts`; server-observed 72-hour clock and the guarded settlement executor.              |
+| Automatic settlement | `record-order-completions.ts`, `automatically-settle-orders.ts`; server-observed immutable clock with a frozen 0–365-day delay and the guarded settlement executor.              |
 | Shipping/Connect     | `configure-vendor-shipping.ts`, `shipment-notification.ts`, `refresh-vendor-stripe-account.ts`, `reconcile-stripe-account.ts`.                    |
 | Search/favorites     | `algolia/`, `update-customer-favorite.ts`.                                                                                                        |
 | Scheduled evaluation | `evaluate-commerce.ts`; separate general-commerce path remains gated and disabled.                                                                |

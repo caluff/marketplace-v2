@@ -1,4 +1,4 @@
-import type { ApplicationResponse } from "@marketplace-v2/vendor-onboarding-contracts"
+import type { ApplicationResponse } from "@usapeek/vendor-onboarding-contracts"
 
 export type ApplicationActionResult = {
   status: "success" | "error" | "conflict"

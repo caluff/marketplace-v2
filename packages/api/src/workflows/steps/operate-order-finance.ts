@@ -36,9 +36,10 @@ import {
 import { performFinalOrderCapture } from "./final-order-capture";
 import { withFinanceExecutionLock } from "../../lib/order-finance/execution-lock";
 import { recordOrderFinanceProviderFacts } from "../../lib/order-finance/record-provider-facts";
+import { assertAutomaticCaptureSettings } from "../../lib/order-finance/capture-settings";
 
 export type OperateOrderFinanceInput = OrderFinanceInput &
-  FinanceActor & { order_id: string };
+  FinanceActor & { order_id: string; automatic_capture_revision?: string };
 
 export async function operateOrderFinance(
   container: MedusaContainer,
@@ -64,6 +65,18 @@ async function operateLockedOrderFinance(
     request_id: input.request_id,
     confirm: input.confirm,
   });
+  if (input.automatic_capture_revision !== undefined) {
+    if (body.action !== "capture" || input.seller_id !== undefined)
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Operación automática no válida.",
+      );
+    await assertAutomaticCaptureSettings(
+      container,
+      input.automatic_capture_revision,
+      input.actor_id,
+    );
+  }
   const fingerprint = createHash("sha256")
     .update(
       JSON.stringify({
@@ -267,6 +280,13 @@ async function operateLockedOrderFinance(
               : [];
           }),
       });
+    }
+    if (input.automatic_capture_revision !== undefined) {
+      await assertAutomaticCaptureSettings(
+        container,
+        input.automatic_capture_revision,
+        input.actor_id,
+      );
     }
     const operation = await current.journal.claimOperation({
       groupId: claim.id,

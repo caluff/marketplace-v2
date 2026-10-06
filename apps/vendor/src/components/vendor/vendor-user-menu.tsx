@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { ChevronsUpDown, LogOut, Moon, Repeat2 } from "lucide-react";
+import { ChevronsUpDown, LogOut, Moon, Repeat2, Settings2 } from "lucide-react";
 import { logoutVendorAction } from "@/app/seller/auth-actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -103,6 +103,12 @@ export function VendorUserMenu({
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/seller/account" onNavigate={() => setOpenMobile(false)}>
+                <Settings2 aria-hidden="true" />
+                Configuración
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuCheckboxItem
               checked={resolvedTheme === "dark"}
               onCheckedChange={(isDark) => setTheme(isDark ? "dark" : "light")}

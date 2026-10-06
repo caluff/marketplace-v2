@@ -18,7 +18,7 @@ import { getAdminMfa } from "@/lib/auth-sdk";
 import { safeRedirectPath } from "@/lib/auth-utils";
 
 export const metadata: Metadata = {
-  title: "Acceso | Marketplace Admin",
+  title: "Acceso | usapeek Admin",
   description: "Acceso seguro para operadores del marketplace.",
 };
 
@@ -46,7 +46,7 @@ export default async function LoginPage({
             <Boxes className="size-5" aria-hidden="true" />
           </span>
           <p className="text-base font-semibold tracking-[-0.02em]">
-            Marketplace Admin
+            usapeek Admin
           </p>
           <p className="mt-1 text-xs text-sidebar-muted">
             Espacio de operaciones

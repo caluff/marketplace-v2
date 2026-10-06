@@ -13,7 +13,6 @@ import {
   getAdminReset,
   getAdminVerification,
   getAdminVerificationCode,
-  setAdminSession,
 } from "@/lib/auth-sdk";
 import {
   type AuthActionState,
@@ -68,14 +67,13 @@ export async function verifyAdminMfaAction(
   }
   const sdk = createAdminSdk(secret.token);
   if (!sdk) return configurationError();
+  let token;
   try {
-    const token = await sdk.auth.mfa.verifyChallenge(secret.challengeId, { method, code });
-    await createAdminSdk(token)?.admin.user.me();
-    await setAdminSession(token);
+    token = await sdk.auth.mfa.verifyChallenge(secret.challengeId, { method, code });
   } catch {
     return { status: "mfa_required", message: "No pudimos validar el código.", mfaMethods: secret.methods };
   }
-  redirect(next);
+  return completeAdminLogin(token, "", next);
 }
 
 export async function forgotAdminPasswordAction(

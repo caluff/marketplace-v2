@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { getPaymentProviders } from "@/features/cart/data"
+import { cn } from "@/lib/utils"
 
 export async function ProductPaymentMethods({
   regionId,
@@ -41,7 +42,10 @@ export async function ProductPaymentMethods({
                 title={name}
                 width={47}
                 height={30}
-                className="h-[30px] w-[47px] object-contain"
+                className={cn(
+                  "h-[30px] w-[47px] object-contain",
+                  icon === "visa" && "p-[5px]",
+                )}
                 unoptimized
               />
             ))}

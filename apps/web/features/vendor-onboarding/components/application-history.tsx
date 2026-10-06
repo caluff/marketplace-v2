@@ -1,6 +1,6 @@
 "use client"
 
-import type { ApplicationNotificationsResponse } from "@marketplace-v2/vendor-onboarding-contracts"
+import type { ApplicationNotificationsResponse } from "@usapeek/vendor-onboarding-contracts"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"

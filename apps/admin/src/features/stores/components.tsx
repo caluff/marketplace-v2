@@ -1,14 +1,10 @@
 import { TablePagination } from "@/components/table-pagination";
-import type { SellerDTO } from "@mercurjs/types";
-import type { CatalogPermissionListResponse } from "@marketplace-v2/api/catalog-permission-contracts";
 import { Suspense } from "react";
 import { FetchError } from "@medusajs/js-sdk";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -22,65 +18,19 @@ import {
 import { requireAdminSdk } from "@/lib/auth-sdk";
 import { AdminAutoRefresh } from "@/features/realtime/auto-refresh";
 import { cn } from "@/lib/utils";
-import { CatalogPermissionForm } from "./catalog-permission-form";
+import {
+  CatalogPermissionRegion,
+  CatalogPermissionSkeleton,
+} from "./catalog-permission-region";
+import { StoreDetails } from "./store-detail";
+import { StoreStatusBadge, storeStatusTabClassName } from "./status-badge";
 import { listCatalogPermissions, listStores, retrieveStore } from "./data";
 import {
   isStoreId,
   parseStoreFilters,
   STORE_STATUS_LABELS,
-  catalogReviewMode,
   storeListHref,
-  storeStatusLabel,
 } from "./helpers";
-
-type CatalogPermissionRead = Promise<CatalogPermissionListResponse | null>;
-
-async function CatalogPermissionRegion({
-  seller,
-  permissions,
-  href,
-}: {
-  seller: Pick<SellerDTO, "id" | "name">;
-  permissions: CatalogPermissionRead;
-  href: string;
-}) {
-  const result = await permissions;
-  const matches =
-    result && Array.isArray(result.catalog_permissions)
-      ? result.catalog_permissions.filter(
-          (permission) => permission?.seller_id === seller.id,
-        )
-      : null;
-  const mode =
-    matches && matches.length <= 1 ? catalogReviewMode(matches[0]) : null;
-  if (!mode)
-    return (
-      <div role="alert" className="min-w-64 space-y-2">
-        <p className="text-xs text-destructive">Permiso no disponible.</p>
-        <Button asChild variant="outline" size="sm">
-          <a href={href}>Actualizar estado</a>
-        </Button>
-      </div>
-    );
-
-  return (
-    <CatalogPermissionForm
-      key={seller.id}
-      sellerId={seller.id}
-      sellerName={seller.name}
-      mode={mode}
-    />
-  );
-}
-
-function CatalogPermissionSkeleton() {
-  return (
-    <Skeleton
-      aria-label="Cargando permiso de catálogo"
-      className="h-9 w-full min-w-48"
-    />
-  );
-}
 
 export function StoreRegionSkeleton() {
   return (
@@ -127,7 +77,7 @@ export function StoreFilters({
               className={cn(
                 "shrink-0 border-b-2 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                 filters.status === value
-                  ? "border-primary text-foreground"
+                  ? storeStatusTabClassName(value)
                   : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
               )}
             >
@@ -219,11 +169,7 @@ export async function StoreResults({
                   </TableCell>
                   <TableCell>{seller.email || "Sin email"}</TableCell>
                   <TableCell>
-                    <Badge
-                      variant={seller.status === "open" ? "success" : "neutral"}
-                    >
-                      {storeStatusLabel(seller.status)}
-                    </Badge>
+                    <StoreStatusBadge status={seller.status} />
                   </TableCell>
                   <TableCell className="uppercase">
                     {seller.currency_code}
@@ -261,147 +207,6 @@ export async function StoreResults({
   );
 }
 
-function DetailField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 break-words text-sm">{value || "Sin informar"}</dd>
-    </div>
-  );
-}
-
-function StoreDetails({
-  seller,
-  permissions,
-}: {
-  seller: SellerDTO;
-  permissions: CatalogPermissionRead;
-}) {
-  const address = seller.address;
-  const business = seller.professional_details;
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center gap-3">
-            <CardTitle>{seller.name}</CardTitle>
-            <Badge variant={seller.status === "open" ? "success" : "neutral"}>
-              {storeStatusLabel(seller.status)}
-            </Badge>
-            {seller.is_premium && <Badge variant="secondary">Destacada</Badge>}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-5 sm:grid-cols-2">
-            <DetailField label="Identificador" value={seller.id} />
-            <DetailField label="Handle" value={seller.handle} />
-            <DetailField label="Email" value={seller.email} />
-            <DetailField label="Teléfono" value={seller.phone} />
-            <DetailField label="Sitio web" value={seller.website_url} />
-            <DetailField
-              label="Moneda"
-              value={seller.currency_code.toUpperCase()}
-            />
-            <DetailField label="Descripción" value={seller.description} />
-            <DetailField
-              label="Motivo del estado"
-              value={seller.status_reason}
-            />
-          </dl>
-          <div className="mt-6 max-w-md space-y-2 border-t border-border pt-5">
-            <p className="text-sm font-medium">Permiso de catálogo</p>
-            <Suspense fallback={<CatalogPermissionSkeleton />}>
-              <CatalogPermissionRegion
-                seller={seller}
-                permissions={permissions}
-                href={`/dashboard/stores/${encodeURIComponent(seller.id)}`}
-              />
-            </Suspense>
-            <p className="text-xs text-muted-foreground">
-              Supervisado requiere revisión del administrador. Autorizado
-              permite añadir y editar productos sin aprobación.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Datos de la empresa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {business ? (
-              <dl className="space-y-5">
-                <DetailField
-                  label="Razón social"
-                  value={business.corporate_name}
-                />
-                <DetailField
-                  label="Número de registro"
-                  value={business.registration_number}
-                />
-                <DetailField
-                  label="Identificación fiscal"
-                  value={business.tax_id}
-                />
-              </dl>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                La tienda no tiene datos de empresa registrados.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Dirección registrada</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {address ? (
-              <dl className="grid gap-5 sm:grid-cols-2">
-                <DetailField label="Nombre" value={address.name} />
-                <DetailField
-                  label="Contacto"
-                  value={[address.first_name, address.last_name]
-                    .filter(Boolean)
-                    .join(" ")}
-                />
-                <DetailField
-                  label="Dirección"
-                  value={[address.address_1, address.address_2]
-                    .filter(Boolean)
-                    .join(", ")}
-                />
-                <DetailField label="Ciudad" value={address.city} />
-                <DetailField label="Estado" value={address.province} />
-                <DetailField
-                  label="Código postal"
-                  value={address.postal_code}
-                />
-                <DetailField
-                  label="País"
-                  value={address.country_code?.toUpperCase()}
-                />
-                <DetailField label="Teléfono" value={address.phone} />
-              </dl>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                La tienda no tiene una dirección registrada.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
 export async function StoreDetailRegion({ id }: { id: string }) {
   if (!isStoreId(id)) notFound();
   const sdk = await requireAdminSdk();
@@ -415,5 +220,9 @@ export async function StoreDetailRegion({ id }: { id: string }) {
       <StoreReadError href={`/dashboard/stores/${encodeURIComponent(id)}`} />
     );
   }
-  return <StoreDetails seller={result.seller} permissions={permissions} />;
+  return (
+    <AdminAutoRefresh eventName="stores-changed">
+      <StoreDetails seller={result.seller} permissions={permissions} />
+    </AdminAutoRefresh>
+  );
 }

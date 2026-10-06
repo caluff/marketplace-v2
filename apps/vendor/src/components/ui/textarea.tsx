@@ -1,1 +1,1 @@
-export * from "@marketplace-v2/ui/textarea";
+export * from "@usapeek/ui/textarea";

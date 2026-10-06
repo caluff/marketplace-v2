@@ -20,7 +20,7 @@ import {
 } from "@/features/account/order-format"
 
 export const metadata: Metadata = {
-  title: "Detalle de la orden | Marketplace V2",
+  title: "Detalle de la orden | usapeek",
 }
 type Props = { params: Promise<{ id: string }> }
 

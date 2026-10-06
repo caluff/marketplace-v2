@@ -1,5 +1,5 @@
 import { cache } from "react";
-import type { AdminNotificationsResponse } from "@marketplace-v2/api/order-notification-contracts";
+import type { AdminNotificationsResponse } from "@usapeek/api/order-notification-contracts";
 import { requireAdminReadSdk } from "@/lib/admin-read-sdk";
 
 export const getAdminNotificationStatus = cache(

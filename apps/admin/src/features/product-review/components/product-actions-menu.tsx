@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, type RefObject } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, MoreHorizontal, Pencil, Store } from "lucide-react";
@@ -25,15 +25,20 @@ export function ProductActionsMenu({
   status,
   updatedAt,
   hasPendingChange,
+  triggerRef: externalTriggerRef,
+  showDetailLink = true,
 }: {
   productId: string;
   title: string;
   status: string;
   updatedAt: string;
   hasPendingChange: boolean;
+  triggerRef?: RefObject<HTMLButtonElement | null>;
+  showDetailLink?: boolean;
 }) {
   const router = useRouter();
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const localTriggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = externalTriggerRef ?? localTriggerRef;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [requested, setRequested] = useState<ProductVisibilityAction | null>(
     null,
@@ -63,14 +68,16 @@ export function ProductActionsMenu({
           align="end"
           className="w-60 max-w-[calc(100vw-2rem)]"
         >
-          <DropdownMenuItem asChild className="min-h-10">
-            <Link href={detailHref}>
-              <Eye aria-hidden="true" />
-              {hasPendingChange || status === "proposed"
-                ? "Revisar producto"
-                : "Ver detalle"}
-            </Link>
-          </DropdownMenuItem>
+          {showDetailLink && (
+            <DropdownMenuItem asChild className="min-h-10">
+              <Link href={detailHref}>
+                <Eye aria-hidden="true" />
+                {hasPendingChange || status === "proposed"
+                  ? "Revisar producto"
+                  : "Ver detalle"}
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             asChild
             disabled={hasPendingChange}

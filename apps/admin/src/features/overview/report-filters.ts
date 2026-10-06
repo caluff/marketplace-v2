@@ -1,4 +1,4 @@
-import type { FinanceReportingPeriod, FinanceReportingQuery } from "@marketplace-v2/api/finance-contracts";
+import type { FinanceReportingPeriod, FinanceReportingQuery } from "@usapeek/api/finance-contracts";
 import { FINANCE_REPORT_PERIODS, financeReportQuery } from "@/features/finance-reporting/parameters";
 
 const PERIOD_LABELS: Record<FinanceReportingPeriod, string> = {

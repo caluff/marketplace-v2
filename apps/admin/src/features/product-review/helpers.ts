@@ -7,6 +7,23 @@ export const PRODUCT_STATUS_LABELS = {
   rejected: "Rechazado",
 };
 
+export function productImageUrl(value: string | null | undefined) {
+  try {
+    const url = new URL(value ?? "");
+    const isLocalDevelopment =
+      process.env.NODE_ENV === "development" &&
+      url.protocol === "http:" &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    return (url.protocol === "https:" || isLocalDevelopment) &&
+      !url.username &&
+      !url.password
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function parseProductReviewFilters(
   params: Record<string, string | string[] | undefined>,
 ) {

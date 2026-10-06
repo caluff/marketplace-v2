@@ -1,7 +1,8 @@
 "use client";
 
 import type { HttpTypes } from "@medusajs/types";
-import { ChevronsUpDown, LogOut, Moon } from "lucide-react";
+import { ChevronsUpDown, LogOut, Moon, Settings2 } from "lucide-react";
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useRef } from "react";
 import { logoutAdminAction } from "@/app/auth-actions";
@@ -24,7 +25,7 @@ import {
 
 export function AdminUserMenu({ user }: { user: HttpTypes.AdminUser }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const formRef = useRef<HTMLFormElement>(null);
   const name =
     [user.first_name, user.last_name].filter(Boolean).join(" ") || "Operador";
@@ -77,6 +78,12 @@ export function AdminUserMenu({ user }: { user: HttpTypes.AdminUser }) {
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings" onNavigate={() => setOpenMobile(false)}>
+                  <Settings2 aria-hidden="true" />
+                  Configuración
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuCheckboxItem
                 checked={resolvedTheme === "dark"}
                 onCheckedChange={(isDark) =>

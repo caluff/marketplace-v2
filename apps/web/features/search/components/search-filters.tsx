@@ -1,6 +1,6 @@
 "use client";
 
-import type { StoreSearchProductsResponse } from "@marketplace-v2/api/search-contracts";
+import type { StoreSearchProductsResponse } from "@usapeek/api/search-contracts";
 import { ChevronDown, LoaderCircle, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

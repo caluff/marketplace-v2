@@ -1,6 +1,6 @@
 # Cancelaciones y reembolsos por tienda
 
-Guía vigente actualizada el 2026-10-03. **F01–F12 / Phase 1–6 DONE**, con **Financial Readiness PASS para Stripe TEST, USD y operación manual**, según la [matriz final](develpment/evidence/development-closure-20261003.md). La [auditoría original](develpment/development-completion-audit.md) conserva sus hallazgos históricos; el [progreso](develpment/development-progress.md) registra su resolución y la extensión automática aún pendiente de prueba integral con un pedido nuevo y 72 horas reales.
+Guía vigente actualizada el 2026-10-06. **F01–F12 / Phase 1–6 DONE**, con **Financial Readiness PASS para Stripe TEST, USD y operación manual**, según la [matriz final](develpment/evidence/development-closure-20261003.md). La [auditoría original](develpment/development-completion-audit.md) conserva sus hallazgos históricos; el [progreso](develpment/development-progress.md) registra su resolución y la extensión automática aún pendiente de prueba integral con un pedido nuevo y 72 horas reales.
 
 Implementación para Mercur 2.3.3 / Medusa 2.18.0. El alcance habilitado es Stripe de prueba, USD, un pago compartido con autorización sin captura, captura completa o captura final ajustada registrada por este flujo. Incluye liquidación operativa y reembolsos anteriores/posteriores a transferencias atribuibles y verificadas. La extensión automática está activa localmente en TEST y conserva los controles de la vía manual. No habilita pagos reales; cambiar claves no implementa compatibilidad LIVE.
 
@@ -41,7 +41,9 @@ El saldo reembolsable se limita tanto por la asignación de esa tienda menos sus
 
 ### Captura final ajustada
 
-Solo el operador puede cobrar la compra compartida. Todos sus pedidos activos deben tener sus artículos completamente preparados; los cancelados quedan fuera del importe que calcula el servidor. El formulario muestra explícitamente que el cobro incluye otras tiendas, no solo el pedido abierto.
+La compra conserva un único pago compartido. En **Pagos → Cobros → Modo de cobro**, el operador elige entre **Manual** (confirma «Cobrar compra») y **Automático** (el sistema confirma el cobro cuando todos los pedidos activos tienen todos sus artículos preparados). Los cancelados quedan fuera del importe que calcula el servidor. El formulario manual muestra explícitamente que el cobro incluye otras tiendas, no solo el pedido abierto.
+
+El modo se guarda en los metadatos de la tienda nativa, mediante un workflow y una revisión de concurrencia; sin configuración guardada se conserva el modo manual. Los eventos nativos de preparación/cancelación disparan la revisión automática y un job recorre hasta 25 compras por minuto con un cursor persistido para recuperar eventos perdidos. Activar Automático incluye compras ya preparadas pendientes de cobro. Ambas entradas reutilizan el workflow financiero, su exclusión por compra, comprobaciones de preparación, reparto original, journal e idempotencia. El modo se vuelve a comprobar dentro de la operación antes de reservar el cobro. Una captura ambigua queda bloqueada para conciliación, sin repetirla automáticamente. Esta opción no modifica la liquidación a las tiendas ni habilita Stripe LIVE.
 
 El proveedor Stripe instalado no recibe un importe en `capturePayment`, por lo que no basta con pasar una cantidad al workflow nativo: capturaría toda la autorización. La adaptación captura en Stripe con `amount_to_capture` e idempotencia estable; el cobro manual ordinario libera automáticamente el resto. No envía `final_capture`, que Stripe rechaza sin soporte de multicaptura. Verifica el resultado y registra esa captura mediante el paso público de Medusa con `is_captured: true`. Después registra una transacción por cada pedido incluido y conserva una asignación final inmutable. No altera artificialmente el importe autorizado ni `captured_at`; Medusa puede seguir etiquetando la colección como parcialmente capturada, mientras el panel financiero indica lo realmente cobrado a cada tienda.
 
@@ -61,7 +63,7 @@ Antes de mover dinero se guarda el plan. Se revierte la parte correspondiente de
 - Exclusión mutua por carrito y registro duradero de operaciones. Si hay incertidumbre, no se libera automáticamente el bloqueo ni se crea otro reembolso.
 - Las rutas nativas de captura, cancelación y reembolso sin asignación, y escrituras de la colección compartida, quedan bloqueadas. Se normalizan los identificadores y las rutas antes de comprobarlas. Los escritores de pedidos, devoluciones, cambios y reclamaciones incluidos en F04, también `order-edits`, respetan la exclusión por carrito y una reserva duradera. Esto no protege SQL externo ni escritores nuevos añadidos posteriormente. Una desconexión HTTP conserva la reserva y exige revisión: desconectar el navegador no cancela un workflow nativo.
 - Se rechazan importes negativos, fracciones de centavo, exceso de saldo, estados no verificados, cambios/devoluciones pendientes, reembolsos históricos sin asignación, capturas parciales ajenas al flujo y liquidaciones que no puedan conciliarse.
-- No hay botón para «forzar» o borrar una operación incierta. Hay un diagnóstico de solo lectura: `pnpm --filter @marketplace-v2/api exec medusa exec ./src/scripts/inspect-order-finance.ts order_ID`.
+- No hay botón para «forzar» o borrar una operación incierta. Hay un diagnóstico de solo lectura: `pnpm --filter @usapeek/api exec medusa exec ./src/scripts/inspect-order-finance.ts order_ID`.
 
 ## Liquidación y recuperación operativas
 
@@ -84,13 +86,39 @@ en `America/Montevideo`. Separan cobros, refunds, comisiones y transferencias;
 costes pendientes o fechas desconocidas no se sustituyen por cero. El resultado
 después de tarifas permanece desconocido con cobertura incompleta.
 
-## Liberación automática a las 72 horas
+## Liberación automática con tiempo de espera configurable
 
-El job independiente, cada minuto, requiere
-`STRIPE_AUTOMATIC_SETTLEMENT_ENABLED=true`, las migraciones financieras y un
-worker/shared operativo; el flag general `STRIPE_AUTOMATIC_JOBS_ENABLED` permanece
-falso. El subscriber registra una vez el reloj servidor al observar la
-finalización nativa. Espera 72 horas transcurridas, incluidos fines de semana;
+En **Pagos → Liberaciones → Modo de liberación**, el operador elige **Manual**
+(inicia cada liberación con el flujo operativo existente) o **Automático** (el job libera los pedidos elegibles).
+La elección se guarda en los metadatos de la tienda nativa con actor y revisión;
+requiere los permisos `store.update` y `payment.update`. La revisión impide
+sobrescribir un cambio de otro operador. Cancelar descarta el borrador.
+`STRIPE_AUTOMATIC_SETTLEMENT_ENABLED` solo define el modo inicial cuando aún no
+hay una elección guardada; después manda el valor persistido, compartido por API
+y worker. El modo de cobro es independiente.
+
+Al elegir Automático se puede guardar el modo y el plazo juntos. La opción
+**Tiempo de espera** permite elegir **Inmediato (0)**, **3 días** o **Una semana (7)**,
+o introducir un entero entre 0 y 365 en el campo contiguo. Un separador vertical
+separa las opciones del campo. Cada día equivale a 24 horas transcurridas,
+incluidos fines de semana y feriados. Inmediato deja el pedido elegible desde su
+finalización verificada; el siguiente ciclo normal del job ejecuta la liberación
+si se cumplen todos los controles. El valor inicial es 3 días y se conserva al
+volver a Manual.
+
+Por decisión del operador, cambiar el plazo solo afecta a **nuevas finalizaciones**.
+La primera observación persistida guarda `release_delay_days` y la fecha límite
+inmutable del pedido; un evento tardío utiliza el ajuste vigente al registrar esa
+observación. Los pedidos con reloj existente mantienen su plazo, token y fecha,
+incluso si el evento se reintenta después de cambiar la configuración.
+
+El job independiente, cada minuto, requiere Automático, las migraciones
+financieras y un worker/shared operativo. Stripe debe conservar una configuración
+TEST válida y `STRIPE_AUTOMATIC_JOBS_ENABLED=false`; el selector no habilita LIVE.
+El subscriber registra una vez el reloj servidor al observar la finalización
+nativa con esa integración disponible, también en Manual. Cambiar de modo no
+reinicia el reloj. Activar Automático incluye pedidos anteriores con reloj
+registrado; no reconstruye los que carecen de él. Espera el plazo guardado en cada pedido;
 eventos tardíos o backlog prolongan la espera. No usa `updated_at` como inicio ni
 reconstruye relojes para órdenes históricas.
 
@@ -101,6 +129,21 @@ ejecutor es el mismo de la vía manual, con locks, journal e idempotencia; una
 transferencia ya registrada no se repite. El destino es el saldo Stripe TEST
 Connect, separado del calendario bancario. El contrato detallado está en
 [jobs](../packages/api/src/jobs/README.md).
+
+Los editores de pagos, el registro del reloj y cada ejecución automática comparten un bloqueo por
+propietario sin vencimiento. Si hay una operación en curso, cambiar de modo o plazo
+devuelve conflicto; el operador debe reintentar al terminar. La escritura nativa
+HTTP de metadatos de Store queda bloqueada porque podría borrar estas opciones.
+Un proceso interrumpido puede conservar el bloqueo: exige revisión de operaciones
+y prueba de que todos sus escritores están detenidos antes de una recuperación
+explícita; nunca se libera automáticamente por antigüedad.
+
+La migración `Migration20261006171340` añade el plazo del pedido con valor 3
+para los relojes existentes, sin modificarlos. PostgreSQL exige un entero entre
+0 y 365 y una diferencia exacta de `release_delay_days × 86400` segundos, junto
+con instantes finitos. El trigger de inmutabilidad y los permisos privados se
+conservan. La reversión se rechaza si existe algún reloj con plazo distinto de
+3 días; nunca adapta ni elimina esos relojes para permitir un rollback.
 
 La activación local está verificada; la venta nueva con 72 horas reales y
 conciliación del resultado continúa **NEEDS VERIFICATION** hasta que el progreso

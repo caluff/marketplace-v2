@@ -1,6 +1,6 @@
 "use client";
 
-import type { FinanceReportingPeriod } from "@marketplace-v2/api/finance-contracts";
+import type { FinanceReportingPeriod } from "@usapeek/api/finance-contracts";
 import { useId, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {

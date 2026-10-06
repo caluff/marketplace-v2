@@ -1,4 +1,4 @@
-import type { ApplicationStatus } from "@marketplace-v2/vendor-onboarding-contracts";
+import type { ApplicationStatus } from "@usapeek/vendor-onboarding-contracts";
 
 import { Badge } from "@/components/ui/badge";
 import { APPLICATION_STATUS_LABELS } from "../helpers";

@@ -1,4 +1,5 @@
 import type { HttpTypes, MedusaContainer } from "@medusajs/framework/types";
+import { prepareRetrieveQuery } from "@medusajs/framework/http";
 import {
   ContainerRegistrationKeys,
   MedusaError,
@@ -81,9 +82,10 @@ export async function searchProducts(
   container: MedusaContainer,
 ): Promise<StoreSearchProductsResponse> {
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
-  const [region, visibleSellerIds] = await Promise.all([
+  const [region, visibleSellerIds, { remoteQueryConfig }] = await Promise.all([
     searchRegion(container),
     resolveVisibleSellerIds(container),
+    prepareRetrieveQuery({}, { defaults: defaultStoreProductFields }),
   ]);
   if (input.region_id !== region.id)
     throw new MedusaError(
@@ -142,7 +144,7 @@ export async function searchProducts(
     await Promise.all([
       query.graph({
         entity: "product",
-        fields: [...defaultStoreProductFields, "sales_channels.id"],
+        fields: [...remoteQueryConfig.fields, "sales_channels.id"],
         filters: { id: productIds, status: "published" },
       }),
       query.graph({

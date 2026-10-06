@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { formatOrderNumber } from "@marketplace-v2/order-reference";
+import { formatOrderNumber } from "@usapeek/order-reference";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -15,12 +15,9 @@ import {
   PageHeading,
   StatusBadge,
 } from "@/features/workspace/components";
-import {
-  ORDER_FIELDS,
-  resultOf,
-  workspace,
-  type VendorOrderDetailResponse,
-} from "@/features/workspace/data";
+import { resultOf } from "@/features/workspace/data";
+import { readOrderDetail } from "@/features/orders/detail-read";
+import { readOrderCompletion } from "@/features/orders/completion-read";
 import { formatDate, formatMoney } from "@/features/workspace/presentation";
 import { resourceId } from "@/features/workspace/validation";
 import { OrderManagement } from "@/features/orders/order-management";
@@ -42,7 +39,6 @@ export default async function OrderPage({
   params: Promise<{ id: string }>;
 }) {
   const id = resourceId((await params).id);
-  await workspace();
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Detalle del pedido</h1>
@@ -61,12 +57,8 @@ export default async function OrderPage({
 }
 
 async function OrderDetail({ id }: { id: string }) {
-  const { client } = await workspace();
-  const result = await resultOf(
-    client.get<VendorOrderDetailResponse>(`/vendor/orders/${id}`, {
-      fields: ORDER_FIELDS,
-    }),
-  );
+  const completion = readOrderCompletion(id);
+  const result = await resultOf(readOrderDetail(id));
   if (!result.data) return <DataError message={result.error} />;
   const { order } = result.data;
   const address = order.shipping_address;
@@ -128,7 +120,6 @@ async function OrderDetail({ id }: { id: string }) {
           </CardContent>
         </Card>
         <div className="space-y-6">
-          <OrderManagement order={order} products={products} />
           <Card>
             <CardHeader>
               <CardTitle>Dirección de entrega</CardTitle>
@@ -163,6 +154,11 @@ async function OrderDetail({ id }: { id: string }) {
           </Card>
         </div>
       </div>
+      <OrderManagement
+        order={order}
+        products={products}
+        completion={completion}
+      />
     </div>
   );
 }

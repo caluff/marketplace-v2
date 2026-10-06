@@ -330,7 +330,7 @@ Never reveal which unrelated identity owns a conflicting email/member.
 ### Contract publication without backend imports in frontends
 
 Create the narrowly scoped **type-only** workspace package
-`@marketplace-v2/vendor-onboarding-contracts` at
+`@usapeek/vendor-onboarding-contracts` at
 `packages/vendor-onboarding-contracts`. It is reused by web and admin; vendor
 also uses it if consuming `/vendor/onboarding`, while native-only vendor features
 need only their existing native types. API owns its generator and lockfile. Export only
@@ -669,7 +669,7 @@ tests. Run the contract generator in check mode from a clean checkout.
 
 Coordinator-reported baseline (not re-run by this planning worker): web 26 tests
 pass; admin 9/10 pass, with a preexisting Railway service-name regex expecting
-`@marketplace-v2/admin` while current IaC calls it `UI Admin`. Preserve unrelated
+`@usapeek/admin` while current IaC calls it `UI Admin`. Preserve unrelated
 IaC; report that baseline failure separately unless the coordinator assigns it.
 Planning itself requires no application build and makes no runtime-test claim.
 

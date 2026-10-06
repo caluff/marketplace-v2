@@ -9,13 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   formatOrderNumber,
   getOrderStatusLabel,
-  getPaymentStatusLabel,
   getShippingStatusLabel,
 } from "@/features/account/order-format"
 import { getOrderItemThumbnail } from "@/features/account/order-item-image"
 import { getReceiptOrders } from "@/features/cart/data"
 import { OrderReceiptTotals } from "@/features/cart/components/order-receipt-totals"
 import { formatMoney } from "@/features/cart/presentation"
+import { OrderFollowUp } from "@/features/checkout/components/order-follow-up"
 
 export default function ConfirmationPage() {
   return (
@@ -37,9 +37,21 @@ export default function ConfirmationPage() {
       >
         <Receipt />
       </Suspense>
-      <Button asChild className="mt-8">
-        <Link href="/#catalog">Seguir explorando</Link>
-      </Button>
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <Button asChild>
+          <Link href="/search">Seguir comprando</Link>
+        </Button>
+        <Suspense
+          fallback={
+            <Skeleton
+              className="h-10 w-36"
+              aria-label="Cargando acceso a tus pedidos"
+            />
+          }
+        >
+          <OrderFollowUp />
+        </Suspense>
+      </div>
     </div>
   )
 }
@@ -91,17 +103,11 @@ function OrderReceipt({ order }: { order: HttpTypes.StoreOrder }) {
         <h2 className="mt-2 break-all text-xl font-semibold">
           {formatOrderNumber(order)}
         </h2>
-        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted-foreground">Pedido</dt>
             <dd className="mt-1 font-medium">
               {getOrderStatusLabel(order.status)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Pago</dt>
-            <dd className="mt-1 font-medium">
-              {getPaymentStatusLabel(order.payment_status)}
             </dd>
           </div>
           <div>
@@ -111,11 +117,6 @@ function OrderReceipt({ order }: { order: HttpTypes.StoreOrder }) {
             </dd>
           </div>
         </dl>
-        {order.payment_status === "authorized" ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            El pago está autorizado; el cobro queda pendiente de confirmación.
-          </p>
-        ) : null}
       </div>
       <ul className="divide-y divide-border px-5 sm:px-6">
         {order.items?.map((item) => (

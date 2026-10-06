@@ -11,8 +11,12 @@ export { CART_COOKIE, RECEIPT_COOKIE } from "./session"
 export const CART_FIELDS =
   "*items,*items.variant,*items.variant.options,*items.variant.product,*items.variant.product.images,*items.offer,*items.offer.seller,*region,*region.countries,*shipping_address,*billing_address,*shipping_methods,*payment_collection,*payment_collection.payment_sessions"
 
-export async function cartSdk() {
-  const sdk = createCustomerSdk(await getCustomerSessionToken())
+export async function cartSdk({
+  anonymous = false,
+}: { anonymous?: boolean } = {}) {
+  const sdk = createCustomerSdk(
+    anonymous ? undefined : await getCustomerSessionToken(),
+  )
   if (!sdk) throw new Error("La tienda no está disponible en este momento.")
   const transport = sdk.client.fetch_
   sdk.client.fetch_ = async (input, init) => {
@@ -94,5 +98,12 @@ export async function getReceiptOrders(): Promise<HttpTypes.StoreOrder[]> {
   const value = (await cookies()).get(RECEIPT_COOKIE)?.value
   if (!readReceipt(value)) return []
   const sdk = await cartSdk()
-  return retrieveReceiptOrders(sdk.store.order, value)
+  const hasSession = Boolean(await getCustomerSessionToken())
+  return retrieveReceiptOrders(
+    sdk.store.order,
+    value,
+    hasSession
+      ? async () => (await cartSdk({ anonymous: true })).store.order
+      : undefined,
+  )
 }

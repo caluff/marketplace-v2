@@ -5,6 +5,7 @@ import type { AuthIdentityDTO, ConfigModule, IAuthModuleService, ILockingModule,
 import { ContainerRegistrationKeys, generateJwtToken, MedusaError, Modules } from "@medusajs/framework/utils";
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 import type { CompleteGoogleAuthInput, CompleteGoogleAuthResponse } from "../../api/auth/google/complete/contracts";
+import { fillGooglePanelProfile } from "./fill-google-panel-profile";
 
 export type CompleteGoogleAuthWorkflowInput = CompleteGoogleAuthInput & { auth_context: AuthContext };
 
@@ -44,7 +45,7 @@ function partialToken(container: MedusaContainer, identityId: string, actorType:
   });
 }
 
-async function attachGoogleProvider(container: MedusaContainer, auth: IAuthModuleService, identity: AuthIdentityDTO, original: AuthIdentityDTO, provider: ProviderIdentityDTO, actorType: string): Promise<CompleteGoogleAuthResponse> {
+async function attachGoogleProvider(container: MedusaContainer, auth: IAuthModuleService, identity: AuthIdentityDTO, original: AuthIdentityDTO, provider: ProviderIdentityDTO, actorType: CompleteGoogleAuthInput["actor_type"]): Promise<CompleteGoogleAuthResponse> {
   if (Object.entries(identity.app_metadata ?? {}).some(([key, value]) => key.endsWith("_id") && value)) throw conflict();
   if (original.provider_identities?.some(entry => entry.provider === googleProvider(actorType) && entry.id !== provider.id)) throw conflict();
   const token = partialToken(container, original.id, actorType);
@@ -52,6 +53,8 @@ async function attachGoogleProvider(container: MedusaContainer, auth: IAuthModul
   // update DTO omits it. Keep the original identity (MFA, verification and all roles).
   const update: UpdateProviderIdentityDTO & Pick<ProviderIdentityDTO, "auth_identity_id"> = { id: provider.id, auth_identity_id: original.id };
   await auth.updateProviderIdentities(update);
+  const actorId = original.app_metadata?.[`${actorType}_id`];
+  if (typeof actorId === "string") await fillGooglePanelProfile(container, actorType, actorId, provider);
   return { status: "complete", token };
 }
 
@@ -87,6 +90,7 @@ export async function completeGoogleAuth(container: MedusaContainer, input: Comp
       if (typeof actorId !== "string") throw unauthorized();
       const actor = await readActor(container, input.actor_type, actorId);
       if (normalizeEmail(actor.email) !== email) throw unauthorized();
+      await fillGooglePanelProfile(container, input.actor_type, actorId, provider);
       return { status: "complete", token: partialToken(container, identity.id, input.actor_type) };
     }
 
@@ -104,16 +108,16 @@ export async function completeGoogleAuth(container: MedusaContainer, input: Comp
       // Google is authoritative for Gmail ownership. External addresses need another
       // proof: the native provider does not retain the Workspace hd claim.
       // https://developers.google.com/identity/gsi/web/guides/verify-google-id-token
-      if (input.actor_type !== "customer" || !email.endsWith("@gmail.com")) return { status: "link_required" };
+      if (!email.endsWith("@gmail.com")) return { status: "link_required" };
       if (existingActors.length !== 1) throw conflict();
       const originals = await auth.listAuthIdentities({ provider_identities: { provider: "emailpass", entity_id: email } }, { relations: ["provider_identities"], take: 2 });
       if (originals.length !== 1) throw conflict();
       const candidate = originals[0];
       const passwordProviders = candidate.provider_identities?.filter(entry => entry.provider === "emailpass") ?? [];
-      if (candidate.id === identity.id || candidate.app_metadata?.customer_id !== existingActors[0].id || passwordProviders.length !== 1 || normalizeEmail(passwordProviders[0].entity_id) !== email) throw conflict();
-      const customer = await readActor(container, "customer", existingActors[0].id);
-      if (normalizeEmail(customer.email) !== email) throw unauthorized();
-      return attachGoogleProvider(container, auth, identity, candidate, provider, "customer");
+      if (candidate.id === identity.id || candidate.app_metadata?.[actorKey] !== existingActors[0].id || passwordProviders.length !== 1 || normalizeEmail(passwordProviders[0].entity_id) !== email) throw conflict();
+      const actor = await readActor(container, input.actor_type, existingActors[0].id);
+      if (normalizeEmail(actor.email) !== email) throw unauthorized();
+      return attachGoogleProvider(container, auth, identity, candidate, provider, input.actor_type);
     }
     // Google authentication never provisions panel actors or grants roles.
     if (input.actor_type !== "customer") throw new MedusaError(MedusaError.Types.NOT_ALLOWED, "No account has access to this panel. Sign in with an existing account.");
@@ -131,6 +135,17 @@ export async function completeGoogleAuth(container: MedusaContainer, input: Comp
 }
 
 export const completeGoogleAuthStep = createStep("complete-google-auth", async (input: CompleteGoogleAuthWorkflowInput, { container }) => {
-  // The final operation is one atomic provider update or the native compensated account workflow.
+  // Linking is atomic; optional profile enrichment reuses native compensated workflows.
   return new StepResponse(await completeGoogleAuth(container, input));
+});
+
+export const fillAuthenticatedGooglePanelProfileStep = createStep("fill-authenticated-google-panel-profile", async (context: AuthContext, { container }) => {
+  if (!context.actor_id || (context.actor_type !== "user" && context.actor_type !== "member")) throw unauthorized();
+  const identity = await container.resolve<IAuthModuleService>(Modules.AUTH).retrieveAuthIdentity(context.auth_identity_id, { relations: ["provider_identities"] });
+  if (identity.app_metadata?.[`${context.actor_type}_id`] !== context.actor_id) throw unauthorized();
+  const actor = await readActor(container, context.actor_type, context.actor_id);
+  if (!identity.provider_identities?.some(provider => provider.provider === googleProvider(context.actor_type))) return new StepResponse({ updated: false });
+  const { provider, email } = googleProfile(identity, context.actor_type);
+  if (normalizeEmail(actor.email) !== email) throw unauthorized();
+  return new StepResponse({ updated: await fillGooglePanelProfile(container, context.actor_type, context.actor_id, provider) });
 });

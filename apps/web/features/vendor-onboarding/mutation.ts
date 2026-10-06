@@ -1,5 +1,5 @@
 import { FetchError } from "@medusajs/js-sdk"
-import type { ApplicationResponse } from "@marketplace-v2/vendor-onboarding-contracts"
+import type { ApplicationResponse } from "@usapeek/vendor-onboarding-contracts"
 import type { ApplicationActionResult } from "./types"
 
 export async function performApplicationMutation<Context>(dependencies: {

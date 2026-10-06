@@ -1,4 +1,4 @@
-import type { VendorFinanceReportingResponse } from "@marketplace-v2/api/finance-contracts";
+import type { VendorFinanceReportingResponse } from "@usapeek/api/finance-contracts";
 import { financePeriodInput } from "@/features/finance-reporting/periods";
 import {
   DASHBOARD_HEADERS,

@@ -1,34 +1,35 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import {
-  StoreDetailRegion,
-  StoreRegionSkeleton,
-} from "@/features/stores/components";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { StoreDetailRegion } from "@/features/stores/components";
+import { StoreDetailSkeleton } from "@/features/stores/store-detail";
 
 export const metadata: Metadata = {
-  title: "Detalle de tienda | Marketplace Admin",
+  title: "Detalle de tienda | usapeek Admin",
 };
 
-export default async function StorePage({
+async function StoreContent({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <StoreDetailRegion id={id} />;
+}
+
+export default function StorePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
   return (
     <div className="space-y-6">
-      <Link
-        href="/dashboard/stores"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Tiendas
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-        Detalle de tienda
-      </h1>
-      <Suspense key={id} fallback={<StoreRegionSkeleton />}>
-        <StoreDetailRegion id={id} />
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/dashboard/stores">
+          <ArrowLeft aria-hidden="true" />
+          Volver a tiendas
+        </Link>
+      </Button>
+      <Suspense fallback={<StoreDetailSkeleton />}>
+        <StoreContent params={params} />
       </Suspense>
     </div>
   );

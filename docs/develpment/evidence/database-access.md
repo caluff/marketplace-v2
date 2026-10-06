@@ -24,7 +24,7 @@ Comando, después de cargar la configuración desechable en el mismo proceso:
 
 ```powershell
 $env:DATABASE_ACCESS_TESTS = 'disposable-local'
-pnpm --filter @marketplace-v2/api test:integration:modules --runTestsByPath src/modules/commerce-automation/__tests__/database-access.integration.spec.ts
+pnpm --filter @usapeek/api test:integration:modules --runTestsByPath src/modules/commerce-automation/__tests__/database-access.integration.spec.ts
 ```
 
 Resultado: **6 PASS**, incluyendo lectura/escritura denegadas, vistas/rutinas/secuencias, objetos futuros, CRUD propietario, consumidor backend explícito, conservación de otro esquema, propietario desconocido, consumidor sin política, fallo tardío con rollback y negativa a rollback inseguro. Se ejecuta el SQL de la clase de migración; no es una simulación del motor SQL.
@@ -33,7 +33,7 @@ Suite `integration-tests/http/database-hardening.spec.ts`: runner completo de Me
 
 ```powershell
 $env:DATABASE_ACCESS_TESTS = 'disposable-local'
-pnpm --filter @marketplace-v2/api test:integration:http --runTestsByPath integration-tests/http/database-hardening.spec.ts
+pnpm --filter @usapeek/api test:integration:http --runTestsByPath integration-tests/http/database-hardening.spec.ts
 ```
 
 Gates API: lint PASS (51 advertencias, ninguna falla), typecheck PASS, build PASS; 68 suites / 883 pruebas unitarias PASS y 3 pruebas de scripts de deployment PASS. La primera ejecución de la suite HTTP detectó una firma incorrecta de `updateCustomers` en el fixture, corregida contra la implementación instalada antes del resultado PASS.

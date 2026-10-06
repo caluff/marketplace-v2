@@ -1,5 +1,5 @@
 {
-  "name": "@marketplace-v2/vendor",
+  "name": "@usapeek/vendor",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,9 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@marketplace-v2/order-reference": "workspace:*",
-    "@marketplace-v2/theme-sync": "workspace:*",
-    "@marketplace-v2/ui": "workspace:*",
+    "@usapeek/order-reference": "workspace:*",
+    "@usapeek/theme-sync": "workspace:*",
+    "@usapeek/ui": "workspace:*",
     "@medusajs/js-sdk": "2.18.0",
     "@medusajs/types": "2.18.0",
     "@mercurjs/types": "2.3.3",
@@ -29,8 +29,8 @@
     "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
-    "@marketplace-v2/api": "workspace:*",
-    "@marketplace-v2/vendor-onboarding-contracts": "workspace:*",
+    "@usapeek/api": "workspace:*",
+    "@usapeek/vendor-onboarding-contracts": "workspace:*",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",

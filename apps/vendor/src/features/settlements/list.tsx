@@ -1,4 +1,4 @@
-import type { VendorSettlementsResponse } from "@marketplace-v2/api/finance-contracts";
+import type { VendorSettlementsResponse } from "@usapeek/api/finance-contracts";
 import { DataError } from "@/features/workspace/components";
 import { resultOf, workspace } from "@/features/workspace/data";
 import { settlementListInput } from "./parameters";

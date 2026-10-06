@@ -1,7 +1,7 @@
 import type {
   OrderFinanceInput,
   OrderFinanceResponse,
-} from "@marketplace-v2/api/finance-contracts";
+} from "@usapeek/api/finance-contracts";
 
 export type FinanceActionState = {
   status: "idle" | "success" | "error";

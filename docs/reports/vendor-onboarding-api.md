@@ -61,7 +61,7 @@ pnpm lint:api
 pnpm typecheck:api
 pnpm test:api
 pnpm build:api
-pnpm --filter @marketplace-v2/api contracts:check
+pnpm --filter @usapeek/api contracts:check
 pnpm peers check
 ```
 

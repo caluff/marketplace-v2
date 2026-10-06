@@ -1,6 +1,6 @@
 "use server";
 
-import type { OrderFinanceResponse } from "@marketplace-v2/api/finance-contracts";
+import type { OrderFinanceResponse } from "@usapeek/api/finance-contracts";
 import { FetchError } from "@medusajs/js-sdk";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";

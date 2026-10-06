@@ -3,7 +3,7 @@ import { intlFormat } from "date-fns/intlFormat"
 import { isValid } from "date-fns/isValid"
 import { parseISO } from "date-fns/parseISO"
 
-export { formatOrderNumber } from "@marketplace-v2/order-reference"
+export { formatOrderNumber } from "@usapeek/order-reference"
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: "En proceso",

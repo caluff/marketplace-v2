@@ -7,7 +7,7 @@ export default async function automaticallySettleOrders(
   container: MedusaContainer,
 ) {
   try {
-    if (!automaticSettlementEnabled()) return;
+    if (!(await automaticSettlementEnabled(container))) return;
     await automaticallySettleOrdersWorkflow(container).run({ input: {} });
   } catch {
     container

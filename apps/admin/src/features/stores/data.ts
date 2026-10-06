@@ -1,5 +1,5 @@
 import type Medusa from "@medusajs/js-sdk";
-import type { CatalogPermissionListResponse } from "@marketplace-v2/api/catalog-permission-contracts";
+import type { CatalogPermissionListResponse } from "@usapeek/api/catalog-permission-contracts";
 import type { HttpTypes } from "@mercurjs/types";
 import type { parseStoreFilters } from "./helpers";
 

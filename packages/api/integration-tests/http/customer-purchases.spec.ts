@@ -561,6 +561,7 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
             has_account: true,
             first_name: "Account",
             last_name: "Buyer",
+            phone: "+13035550110",
           },
           { email, has_account: false },
           {
@@ -601,6 +602,7 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
               first_name: "Account",
               last_name: "Buyer",
               email,
+              phone: "+13035550110",
               has_account: true,
               purchase_count: 2,
               spent_totals: [],
@@ -611,6 +613,7 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
               first_name: null,
               last_name: null,
               email,
+              phone: null,
               has_account: false,
               purchase_count: 1,
               spent_totals: [],
@@ -821,6 +824,7 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
             has_account: true,
             first_name: "Removed",
             last_name: "Personal data",
+            phone: "+13035550111",
           },
           {
             email: `unused-${namespace.toLowerCase()}@example.invalid`,
@@ -851,6 +855,7 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
               first_name: null,
               last_name: null,
               email: guest.email,
+              phone: null,
               has_account: false,
               purchase_count: 1,
               spent_totals: [],
@@ -861,6 +866,7 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
               first_name: null,
               last_name: null,
               email: null,
+              phone: null,
               has_account: null,
               purchase_count: 1,
               spent_totals: [],
@@ -871,6 +877,7 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
               first_name: null,
               last_name: null,
               email: null,
+              phone: null,
               has_account: null,
               purchase_count: 1,
               spent_totals: [],
@@ -1075,6 +1082,12 @@ if (process.env.CUSTOMER_PURCHASES_TESTS !== "disposable-local") {
           },
         ]);
         const savedDetail = await detail(saved.id);
+        const list = await request();
+        expect(list.status).toBe(200);
+        expect(list.data.customers).toHaveLength(3);
+        expect(
+          list.data.customers.every((customer) => customer.phone === null),
+        ).toBe(true);
         expect(savedDetail.status).toBe(200);
         expect(savedDetail.data.customer.phone).toBe("+13035550120");
         const guestDetail = await detail(guest.id);

@@ -20,7 +20,7 @@ export function AccountEmptyState({
         {children}
       </p>
       <Button asChild variant="outline" className="mt-6">
-        <Link href="/#catalog">
+        <Link href="/search">
           Explorar el catálogo
           <ArrowUpRight className="size-4" aria-hidden="true" />
         </Link>

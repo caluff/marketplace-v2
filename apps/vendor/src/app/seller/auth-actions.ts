@@ -3,6 +3,7 @@
 import { FetchError } from "@medusajs/js-sdk";
 import { redirect } from "next/navigation";
 import { completeVendorLogin, finishVendorToken } from "@/lib/auth-login";
+import { profileLoginDestination } from "@/features/account/profile-completion";
 
 import {
   clearVendorReset,
@@ -70,6 +71,7 @@ export async function selectVendorSellerAction(_previous: VendorAuthActionState,
   const token = await getVendorToken();
   const sellerId = String(formData.get("sellerId") ?? "");
   const next = safeRedirectPath(formData.get("next"), "/seller");
+  let destination = next;
   if (!token) redirect(`/seller/login?next=${encodeURIComponent(next)}`);
   try {
     const memberships = await listVendorMemberships(token);
@@ -78,15 +80,17 @@ export async function selectVendorSellerAction(_previous: VendorAuthActionState,
     if (!selected.member?.is_active) return { status: "error", message: "Tu membresía está inactiva." };
     if (selected.seller.status !== "open") {
       await setVendorSeller(sellerId);
+      destination = "/seller/status";
     } else {
       const current = await selectAndRetrieveVendor(token, sellerId);
       if (!current.member?.is_active || current.seller.id !== sellerId) return { status: "error", message: "No tienes acceso a esa tienda." };
       await setVendorSeller(sellerId);
+      destination = profileLoginDestination(current.member.first_name, next);
     }
   } catch {
     return { status: "error", message: "No pudimos seleccionar la tienda. Tu acceso puede haber cambiado." };
   }
-  redirect(next);
+  redirect(destination);
 }
 
 export async function forgotVendorPasswordAction(_previous: VendorAuthActionState, formData: FormData): Promise<VendorAuthActionState> {

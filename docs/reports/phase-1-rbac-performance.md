@@ -53,13 +53,13 @@ Worker-owned files:
 
 ## Validation
 
-Focused command: `pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/lib/__tests__/seller-rbac-readiness.unit.spec.ts`.
+Focused command: `pnpm --filter @usapeek/api test:unit --runTestsByPath src/lib/__tests__/seller-rbac-readiness.unit.spec.ts`.
 
 Executed results:
 
 - Focused suite: **9 passed**, 1 suite, final run 2.282 seconds reported by Jest.
-- `pnpm --filter @marketplace-v2/api exec eslint --no-ignore src/lib/__tests__/seller-rbac-readiness.unit.spec.ts`: passed, no warnings. The default lint invocation ignores unit-test files, so the explicit flag was used.
-- `pnpm --filter @marketplace-v2/api typecheck`: failed in concurrently edited files outside this worker's ownership, with no remaining diagnostics in the new RBAC test. Errors were nullable/incorrect inventory properties in `src/lib/catalog/offer-validation.ts:46,77`, nullable values in `src/lib/catalog/product-validation.ts:55,56,81,84,85,90`, and missing warehouse fields/nullable mutation in `src/workflows/__tests__/vendor-application.unit.spec.ts:52–54`. The coordinator must rerun after those owners finish.
+- `pnpm --filter @usapeek/api exec eslint --no-ignore src/lib/__tests__/seller-rbac-readiness.unit.spec.ts`: passed, no warnings. The default lint invocation ignores unit-test files, so the explicit flag was used.
+- `pnpm --filter @usapeek/api typecheck`: failed in concurrently edited files outside this worker's ownership, with no remaining diagnostics in the new RBAC test. Errors were nullable/incorrect inventory properties in `src/lib/catalog/offer-validation.ts:46,77`, nullable values in `src/lib/catalog/product-validation.ts:55,56,81,84,85,90`, and missing warehouse fields/nullable mutation in `src/workflows/__tests__/vendor-application.unit.spec.ts:52–54`. The coordinator must rerun after those owners finish.
 - Full API lint/tests/build and installed-patch integration were not run by this worker, per dispatch ownership.
 
 Nine offline tests cover original/patched output and grants, projected read fields, overlapping reads before mutation, separate policy/binding read failures, binding-write failure after role creation, concurrent requests with initialized roles, a separate service container, simultaneous empty-store initialization failure/retry, original and patched default-binding revocation behavior, and policy changes on subsequent calls.

@@ -1,4 +1,4 @@
-import type { VendorOrderNotificationsResponse } from "@marketplace-v2/api/order-notification-contracts";
+import type { VendorOrderNotificationsResponse } from "@usapeek/api/order-notification-contracts";
 import { FetchError } from "@medusajs/js-sdk";
 import {
   createVendorSdk,

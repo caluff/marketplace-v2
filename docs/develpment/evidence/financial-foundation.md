@@ -4,7 +4,7 @@ Fecha: 2026-09-19. Rama: `codex/financial-foundation`, base `516c4dc60cef6e25bee
 
 ## 1A — Defectos reproducidos
 
-`pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/lib/order-finance/__tests__/commission-native-defects.unit.spec.ts`: **14 PASS** contra el algoritmo, validadores y workflows instalados de Mercur 2.3.3. Repositorios/proveedor simulados; sin PostgreSQL ni llamadas Stripe.
+`pnpm --filter @usapeek/api test:unit --runTestsByPath src/lib/order-finance/__tests__/commission-native-defects.unit.spec.ts`: **14 PASS** contra el algoritmo, validadores y workflows instalados de Mercur 2.3.3. Repositorios/proveedor simulados; sin PostgreSQL ni llamadas Stripe.
 
 - USD 19,99 al 8% produce comisión nativa 1,5992 y entrada de payout 18,3908.
 - Un refresh posterior al cambio 8→12 elimina la línea original y crea otra de 2,3988.
@@ -33,14 +33,14 @@ La extensión local de comisión reutiliza modelos, migraciones y resolución na
 ## Verificación
 
 - `pnpm install --frozen-lockfile`: PASS. Overlay de 102 archivos copiado y verificado antes de trabajar.
-- `pnpm --filter @marketplace-v2/api exec medusa db:generate commerceAutomation`: PASS; `Migration20260919221631.ts` y snapshot de esquema.
-- `pnpm --filter @marketplace-v2/api db:migrate`: PASS en `closure_sandbox`, PostgreSQL local TLS aislado preparado por coordinador. Ninguna migración remota.
+- `pnpm --filter @usapeek/api exec medusa db:generate commerceAutomation`: PASS; `Migration20260919221631.ts` y snapshot de esquema.
+- `pnpm --filter @usapeek/api db:migrate`: PASS en `closure_sandbox`, PostgreSQL local TLS aislado preparado por coordinador. Ninguna migración remota.
 - Regresión extensión: 9 fallos esperados contra el sujeto nativo antes de corregir; 30 pruebas enfocadas PASS con la extensión.
 - `pnpm test:api`: **943 unitarios PASS, 72 suites; 3 pruebas de empaquetado PASS**. Incluye fixtures financieros, validación y conservación de líneas, carga conjunta de hooks Mercur/locales, orden del hook antes de autorizar, compensación tras fallo de autorización y guard de payout antes del proveedor. Son workflows nativos reales con I/O simulado.
 - Snapshot/lectura/hooks enfocados: **49 PASS**, incluidos total cero, líneas pequeñas con reparto positivo y sesión de pago equivocada.
 - `pnpm lint:api`: PASS; el build final vuelve a ejecutar lint con **0 errores y 50 warnings existentes**. Se corrigió el warning añadido en lectura financiera.
 - `pnpm build:api`: PASS con configuración efímera del importer local y proveedores externos deshabilitados. Un primer intento sin importer falló por `DATABASE_URL` ausente; no se omitió la validación de configuración.
-- La primera integración obtuvo 5 PASS / 4 FAIL por aserciones de errores serializados y una expectativa desactualizada de límite por componente; corregidas. Segunda ejecución: **9 PASS**, 38 segundos, en PostgreSQL/Redis locales TLS, mediante `FINANCIAL_FOUNDATION_TESTS=disposable-local pnpm --filter @marketplace-v2/api test:integration:http --runTestsByPath integration-tests/http/financial-foundation.spec.ts` después del importer. El runner crea/migra/restaura/elimina sus propias bases aleatorias; Redis DB15 se reservó sin otras suites simultáneas.
+- La primera integración obtuvo 5 PASS / 4 FAIL por aserciones de errores serializados y una expectativa desactualizada de límite por componente; corregidas. Segunda ejecución: **9 PASS**, 38 segundos, en PostgreSQL/Redis locales TLS, mediante `FINANCIAL_FOUNDATION_TESTS=disposable-local pnpm --filter @usapeek/api test:integration:http --runTestsByPath integration-tests/http/financial-foundation.spec.ts` después del importer. El runner crea/migra/restaura/elimina sus propias bases aleatorias; Redis DB15 se reservó sin otras suites simultáneas.
 - La integración usa autenticación y RBAC reales para POST admin de creación/actualización de comisiones. También comprueba SQL inmutable/idempotente, refresh nativo 8→12, reparto multivendor y workflow de congelación/reintento con Query graph y links reales. Sus pedidos/colecciones/sesiones son fixtures nativos; **no es checkout HTTP completo**. Los refunds acumulativos comprueban la política contra el original persistido; no ejecutan refunds del proveedor.
 - `pnpm typecheck:api`: PASS después del build/codegen. La proyección de los fixtures HTTP se valida con un esquema derivado del contrato existente para resolver la nulabilidad de Query graph sin casts ni defaults.
 
@@ -59,4 +59,4 @@ La validación ahora acumula los IDs efectivos resueltos dentro de la transacci�
 - Extensión: 35 pruebas enfocadas PASS, con las cuatro regresiones y un lote válido disjunto.
 - Integración PostgreSQL/HTTP: **10 PASS**, 30 segundos, con guardas del entorno aislado y reserva exclusiva de Redis DB15. La nueva prueba comprueba rechazo y persistencia intacta mediante módulo real y workflow nativo, además del lote disjunto exitoso. Esta ejecución también verifica la proyección de fixtures añadida tras el codegen anterior.
 - `pnpm typecheck:api`, `pnpm lint:api` y `pnpm build:api`: PASS; 0 errores y los mismos 50 warnings de lint. Empaquetado: 3 PASS.
-- En este worktree Windows, `pnpm test:api` después de un build descubrió también copias JS bajo `.medusa/server`; se interrumpió tras fallos de esas copias al resolver rutas relativas de parches. La verificación de fuentes se ejecutó con `pnpm --filter @marketplace-v2/api test:unit --testPathIgnorePatterns '\.medusa'`: **948 PASS en 72 suites**, sin modificar la configuración compartida de Jest ni contar los duplicados.
+- En este worktree Windows, `pnpm test:api` después de un build descubrió también copias JS bajo `.medusa/server`; se interrumpió tras fallos de esas copias al resolver rutas relativas de parches. La verificación de fuentes se ejecutó con `pnpm --filter @usapeek/api test:unit --testPathIgnorePatterns '\.medusa'`: **948 PASS en 72 suites**, sin modificar la configuración compartida de Jest ni contar los duplicados.

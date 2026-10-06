@@ -32,7 +32,7 @@ export function AuthShell({
             <Store className="size-5" aria-hidden="true" />
           </span>
           <span>
-            <span className="block text-xl">Marketplace V2</span>
+            <span className="block text-xl">usapeek</span>
             <span className="block text-xs font-semibold tracking-[0.18em] uppercase text-(--auth-sidebar-foreground)/65">Cuenta de cliente</span>
           </span>
         </Link>
@@ -60,7 +60,7 @@ export function AuthShell({
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground">
                 <Store className="size-5" aria-hidden="true" />
               </span>
-              <span className="text-xl">Marketplace V2</span>
+              <span className="text-xl">usapeek</span>
             </Link>
             <p className="sr-only">{eyebrow}</p>
             <CardTitle className="pt-2 text-3xl leading-normal font-normal tracking-tight">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId } from "react";
+import { UsPhoneInput } from "@usapeek/ui/us-phone-input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ export type FormField = {
   label: string;
   value?: string;
   required?: boolean;
-  type?: "text" | "email" | "url" | "number" | "textarea";
+  type?: "text" | "email" | "url" | "number" | "textarea" | "tel";
   maxLength?: number;
   min?: number;
   help?: string;
@@ -65,6 +66,17 @@ export function MutationForm({
                 maxLength={field.maxLength ?? 5000}
                 rows={5}
                 aria-describedby={
+                  field.help ? `${prefix}-${field.name}-help` : undefined
+                }
+              />
+            ) : field.type === "tel" ? (
+              <UsPhoneInput
+                id={`${prefix}-${field.name}`}
+                name={field.name}
+                defaultValue={field.value ?? ""}
+                required={field.required}
+                disabled={isPending}
+                describedBy={
                   field.help ? `${prefix}-${field.name}-help` : undefined
                 }
               />

@@ -24,7 +24,7 @@ import {
   getShippingStatusLabel,
 } from "@/features/account/order-format"
 
-export const metadata: Metadata = { title: "Mis órdenes | Marketplace V2" }
+export const metadata: Metadata = { title: "Mis órdenes | usapeek" }
 type Props = { searchParams: Promise<{ page?: string | string[] }> }
 
 async function OrderList({ searchParams }: Props) {

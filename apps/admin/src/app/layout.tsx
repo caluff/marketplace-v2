@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Marketplace Admin",
-  description: "Panel visual de operaciones para marketplace-v2.",
+  title: "usapeek Admin",
+  description: "Panel visual de operaciones para usapeek.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-          storageKey="marketplace-v2-theme"
+          storageKey="usapeek-theme"
         >
           {children}
           <Toaster />

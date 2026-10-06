@@ -2,7 +2,7 @@ import type Medusa from "@medusajs/js-sdk";
 import type {
   AdminCustomerPurchasesResponse,
   AdminCustomerPurchasesDetailResponse,
-} from "@marketplace-v2/api/customer-contracts";
+} from "@usapeek/api/customer-contracts";
 import type { parseCustomerPagination } from "./helpers";
 
 export function listPurchasingCustomers(

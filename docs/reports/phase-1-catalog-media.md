@@ -139,7 +139,7 @@ After registering the module, the coordinator must generate its schema migration
 and snapshot on disposable infrastructure:
 
 ```sh
-pnpm --filter @marketplace-v2/api exec medusa db:generate catalogMedia
+pnpm --filter @usapeek/api exec medusa db:generate catalogMedia
 ```
 
 The schema must include `catalog_image` and its DML timestamps, a unique native
@@ -186,7 +186,7 @@ then passed all 17 tests through the direct local Jest binary, bringing covered
 cases to 43 across these four suites:
 
 ```sh
-pnpm --filter @marketplace-v2/api test:unit --runTestsByPath src/lib/catalog-media/__tests__/catalog-media.unit.spec.ts src/lib/catalog-media/__tests__/upload-catalog-images.unit.spec.ts src/lib/catalog-media/__tests__/product-media-file.unit.spec.ts src/workflows/__tests__/vendor-warehouse.unit.spec.ts
+pnpm --filter @usapeek/api test:unit --runTestsByPath src/lib/catalog-media/__tests__/catalog-media.unit.spec.ts src/lib/catalog-media/__tests__/upload-catalog-images.unit.spec.ts src/lib/catalog-media/__tests__/product-media-file.unit.spec.ts src/workflows/__tests__/vendor-warehouse.unit.spec.ts
 ```
 
 Targeted ESLint exits successfully with one warning for the explicitly approved

@@ -94,7 +94,7 @@ export async function readVendorSettlements(
       offset: query.offset,
       now,
     });
-  const automaticEnabled = automaticSettlementEnabled();
+  const automaticEnabled = await automaticSettlementEnabled(container);
   return {
     settlements: {
       mode: query.mode,

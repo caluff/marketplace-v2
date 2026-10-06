@@ -99,6 +99,7 @@ async function SellerSettingsContent({
                 {
                   name: "phone",
                   label: "Teléfono",
+                  type: "tel",
                   value: seller.phone ?? "",
                   maxLength: 50,
                 },

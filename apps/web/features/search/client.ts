@@ -1,7 +1,7 @@
 import type {
   StoreSearchProductsInput,
   StoreSearchProductsResponse,
-} from "@marketplace-v2/api/search-contracts";
+} from "@usapeek/api/search-contracts";
 
 import { createCatalogSdk } from "@/lib/catalog-sdk";
 import { validateStorefrontEnvironment } from "@/lib/storefront-config";

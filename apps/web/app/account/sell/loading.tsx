@@ -5,7 +5,7 @@ export default function SellLoading() {
   return (
     <div className="max-w-4xl">
       <AccountHeading
-        title="Vender en Marketplace V2"
+        title="Vender en usapeek"
         description="Un nuevo espacio para tu negocio, con la cuenta que ya tienes."
       />
       <div role="status" aria-label="Cargando tu solicitud" className="space-y-6">

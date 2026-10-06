@@ -2,16 +2,55 @@
 
 ## Estado vigente
 
-**IN_PROGRESS — venta nueva completada; espera de 72 horas reales pendiente.** El usuario solicita
+**NEEDS VERIFICATION — comprobación bloqueada el 2026-10-06; seguimiento pausado.** El usuario solicita
 actualizar documentación vigente y verificar el circuito automático completo.
 Se conserva el plazo de 72 horas transcurridas desde la observación servidor
 del evento nativo de finalización; no se adelantan relojes ni se reutilizan
 pedidos históricos para simular el vencimiento.
 
+El plazo ya venció, pero no se pudo consultar el entorno original. La configuración
+actual desactiva la liberación automática y apunta a PostgreSQL de loopback; los
+verificadores autorizados están restringidos al proyecto Supabase original.
+La liberación del pedido #16 y el funcionamiento actual del cron no están certificados.
+
 El alcance es Stripe TEST/USD: transferencia al saldo Connect, no retiro bancario
 ni operación LIVE. Captura, preparación, envío y finalización mantienen sus
 flujos nativos. La transferencia deberá ejecutarla el job habitual; no se
 sustituirá por el ejecutor manual para acreditar automatización.
+
+## Comprobación al vencimiento — 2026-10-06
+
+Heartbeat recibido a las `2026-10-06T15:58:37.194Z`, después del vencimiento
+original `2026-10-06T15:51:00.416Z`. Se ejecutaron exclusivamente los dos
+verificadores externos autorizados, sin alterar su fuente ni sus guardas:
+
+- `verify-habitual-automatic-order.cjs --order-id order_01M416TPRT4Q0BVR20YDN7EAH8
+  --run-id oct6-normal-after-72h-1`: exit 1 en `argument_validation`, antes de
+  crear el directorio de corrida o iniciar el hijo. La configuración actual
+  contiene `STRIPE_AUTOMATIC_SETTLEMENT_ENABLED=false`; el driver exige true.
+- `inspect-habitual-automatic-settlement-direct.cjs --run-id
+  oct6-automatic-readiness-1`: exit 1. El preloader rechazó la configuración
+  antes de conectar: `Verified Supabase TLS preload configuration is required`.
+  La URL de base actual corresponde a loopback, fuera del destino Supabase
+  fijado por ese verificador. `STRIPE_AUTOMATIC_JOBS_ENABLED` sigue false.
+
+No se ejecutaron consultas PostgreSQL/Redis ni GET Stripe en estas corridas,
+porque ambas se detuvieron antes de conectar. No se comprobó la presencia de la
+API, el cron, transferencias, informes o duplicados; estos fallos de preflight no
+demuestran que el dinero se haya liberado ni que siga pendiente. No se cambiaron
+configuración, relojes, jobs ni operaciones financieras; el inspector confirmó
+`root_env_unchanged:true`. No se relajó TLS ni se consultó otra base como sustituto.
+
+Evidencia privada: `C:/Users/dcalu/.codex/tmp/marketplace-closure-20261002/private/
+habitual-api-inspections/oct6-automatic-readiness-1/`, con `finished.json`,
+`stderr.log`, `stdout.log` y copias de los dos documentos previas a esta actualización.
+El verificador de pedido sólo produjo su error de preflight en la salida del
+comando; no generó `proof.json` ni un directorio de corrida.
+
+Se pausó el heartbeat `verificar-liberaci-n-autom-tica-del-pedido-test-16`,
+conservando prompt, intervalo y chat de destino. Para continuar se necesita
+confirmar dónde reside ahora el pedido TEST #16 y qué entorno debe verificarse.
+No se certifica el cierre integral; LIVE y retiro bancario siguen fuera de alcance.
 
 ## Preflight ejecutado
 
@@ -117,8 +156,9 @@ una causa ni se acredita recepción sin diagnóstico y evidencia independientes.
 
 ## Seguimiento y cierre pendiente
 
-Heartbeat local activo `verificar-liberaci-n-autom-tica-del-pedido-test-16`, cada
-24 horas. Antes del vencimiento termina sin consultas de red ni mutaciones.
+Heartbeat local `verificar-liberaci-n-autom-tica-del-pedido-test-16`, cada
+24 horas, pausado el 2026-10-06 por el bloqueo documentado arriba. Antes del
+vencimiento terminó sin consultas de red ni mutaciones.
 Después ejecuta sólo los verificadores externos revisados
 `infrastructure/verify-habitual-automatic-order.cjs --order-id order_01M416TPRT4Q0BVR20YDN7EAH8 --run-id <nuevo>`
 y `infrastructure/inspect-habitual-automatic-settlement-direct.cjs`, bajo

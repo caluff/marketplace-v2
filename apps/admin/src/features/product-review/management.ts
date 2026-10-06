@@ -1,4 +1,4 @@
-import type { AdminCatalogProductManageInput } from "@marketplace-v2/api/catalog-management-contracts";
+import type { AdminCatalogProductManageInput } from "@usapeek/api/catalog-management-contracts";
 import { isValid } from "date-fns/isValid";
 import { parseISO } from "date-fns/parseISO";
 

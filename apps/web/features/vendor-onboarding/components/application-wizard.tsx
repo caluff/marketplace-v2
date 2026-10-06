@@ -5,9 +5,9 @@ import type {
   ApplicationResponse,
   SaveApplicationBody,
   WizardStep,
-} from "@marketplace-v2/vendor-onboarding-contracts"
+} from "@usapeek/vendor-onboarding-contracts"
 import type { HttpTypes } from "@medusajs/types"
-import { normalizeUsState } from "@marketplace-v2/ui/us-states"
+import { normalizeUsState } from "@usapeek/ui/us-states"
 import { ArrowLeft, ArrowRight, Check, LoaderCircle, Save } from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
@@ -369,7 +369,7 @@ export function ApplicationWizard({
                       className="font-normal leading-6"
                     >
                       Confirmo que los datos son correctos y autorizo a
-                      Marketplace V2 a revisar esta solicitud y contactarme
+                      usapeek a revisar esta solicitud y contactarme
                       sobre su resultado. Entiendo que enviarla no habilita
                       automáticamente mi tienda.
                     </FieldLabel>

@@ -1,38 +1,53 @@
 import Image from "next/image";
+import { ImageOff } from "lucide-react";
+import { productImageUrl } from "../helpers";
 
 function imageUrl(value: unknown) {
   if (typeof value !== "object" || value === null || !("url" in value))
     return null;
   if (typeof value.url !== "string") return null;
-  try {
-    const url = new URL(value.url);
-    return url.protocol === "https:" && !url.username && !url.password
-      ? url.href
-      : null;
-  } catch {
-    return null;
-  }
+  return productImageUrl(value.url);
 }
 
 export function ProductReviewImages({
   value,
   label,
+  prominent = false,
+  showLabel = true,
 }: {
   value: unknown;
   label: string;
+  prominent?: boolean;
+  showLabel?: boolean;
 }) {
   const images = Array.isArray(value) ? value : [];
   return (
     <div className="min-w-0 space-y-3">
-      <h4 className="text-sm font-medium">{label}</h4>
+      {showLabel && <h4 className="text-sm font-medium">{label}</h4>}
       {images.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin imágenes</p>
+        prominent ? (
+          <div className="flex aspect-square flex-col items-center justify-center gap-3 bg-muted/40 text-muted-foreground">
+            <ImageOff aria-hidden="true" className="size-8" strokeWidth={1.5} />
+            <p className="text-sm">Sin imágenes</p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Sin imágenes</p>
+        )
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <ul
+          className={
+            prominent
+              ? "grid grid-cols-3 gap-3"
+              : "grid grid-cols-2 gap-3 sm:grid-cols-3"
+          }
+        >
           {images.map((image: unknown, index: number) => {
             const url = imageUrl(image);
             return (
-              <li key={index} className="min-w-0">
+              <li
+                key={index}
+                className={`min-w-0 ${prominent && index === 0 ? "col-span-3" : ""}`}
+              >
                 {url ? (
                   <a
                     href={url}
