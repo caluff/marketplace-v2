@@ -317,10 +317,16 @@ const applyCompleteVariantAxisWorkflow = createWorkflow(
   },
 );
 
-export const confirmCompleteCatalogProductChangeWorkflow = createWorkflow(
-  "confirm-complete-catalog-product-change",
-  function (input: Input) {
-    const prepared = prepareCompleteCatalogConfirmationStep(input);
+type PreparedConfirmation = Pick<
+  ReturnType<typeof prepareCompleteCatalogConfirmationStep>,
+  "product_id" | "attributes" | "offer" | "mediaActionUpdates"
+>;
+
+const applyCompleteCatalogConfirmationWorkflow = createWorkflow(
+  "apply-complete-catalog-confirmation",
+  function (context: { input: Input; prepared: PreparedConfirmation }) {
+    const input = context.input;
+    const prepared = context.prepared;
     const gallery = prepareProductGalleryChangeStep(
       transform(input, (input) => ({ change_id: input.id })),
     );
@@ -440,6 +446,19 @@ export const confirmCompleteCatalogProductChangeWorkflow = createWorkflow(
     when({ initial }, ({ initial }) => initial.offers.length > 0).then(() =>
       createOffersWorkflow.runAsStep({ input: { offers: initial.offers } }),
     );
+    return new WorkflowResponse({ id: input.id });
+  },
+);
+
+export const confirmCompleteCatalogProductChangeWorkflow = createWorkflow(
+  "confirm-complete-catalog-product-change",
+  function (input: Input) {
+    const prepared = prepareCompleteCatalogConfirmationStep(input);
+    // Complete native cancellation before restoring collections; skipped
+    // conditional steps must not let restoration race with their rollback.
+    applyCompleteCatalogConfirmationWorkflow.runAsStep({
+      input: { input, prepared },
+    });
     return new WorkflowResponse({ id: input.id });
   },
 );

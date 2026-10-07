@@ -32,7 +32,7 @@ Frontends reference public configuration only. Credentials belong in the
 deployment environment, never in docs or Git.
 
 This file does not declare every optional integration supported by
-[medusa-config.ts](../packages/api/medusa-config.ts). Email/Resend, Algolia,
+[medusa-config.ts](../packages/api/medusa-config.ts). Email/Resend,
 onboarding options and the public theme-cookie domain are
 not all mapped here. Review feature configuration alongside this definition
 before later deployment work.
@@ -41,6 +41,13 @@ API and worker preserve the five Supabase Storage variables, and Storefront
 preserves `NEXT_PUBLIC_PRODUCT_IMAGE_URL`. Their values are managed in Railway;
 `preserve()` does not provision credentials. Changing the storefront's public
 image origin requires a new Next.js build.
+
+API and worker also preserve `ALGOLIA_APP_ID`, `ALGOLIA_API_KEY` and
+`ALGOLIA_PRODUCT_INDEX`. Railway uses the existing remote index
+`marketplace_v2_dev_products`; local development uses the separate
+`marketplace_v2_dev_products_local_dcalu` index. Configure the three variables
+on both backend services and run the existing `src/scripts/reindex-search`
+script inside the deployed API to initialize or refresh the remote projection.
 
 `NODE_ENV=production` does not enable live Stripe: the application accepts TEST
 keys only and financial operations are scoped to USD. General commerce jobs stay
