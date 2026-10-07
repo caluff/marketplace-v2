@@ -28,18 +28,19 @@ export async function assertSellerCatalogImages(container: MedusaContainer, sell
   const input = bodySchema.parse(body);
   if (input.images === undefined && input.thumbnail === undefined && !input.variants?.some(variant => variant.thumbnail !== undefined)) return;
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
-  let currentImages: { id: string; url: string }[] = [];
+  let currentImages: { id: string; url: string; hasVariants?: boolean }[] = [];
   let currentThumbnail: string | null = null;
   let currentVariants: { id: string; thumbnail: string | null }[] = [];
   if (input.product_id) {
-    const [{ data: products }, { data: proposals }, { data: restrictions }] = await Promise.all([
-      query.graph({ entity: "product", fields: ["id", "status", "images.id", "images.url", "thumbnail", "variants.id", "variants.thumbnail"], filters: { id: input.product_id } }, { cache: { enable: false } }),
+    const [{ data: products }, { data: proposals }, { data: restrictions }, { data: gallery }] = await Promise.all([
+      query.graph({ entity: "product", fields: ["id", "status", "images.id", "images.url", "images.variants.id", "thumbnail", "variants.id", "variants.thumbnail"], filters: { id: input.product_id } }, { cache: { enable: false } }),
       query.graph({ entity: "product_change_action", fields: ["id"], filters: { product_id: input.product_id, action: "PRODUCT_ADD", product_change: { created_by: sellerId } } }, { cache: { enable: false } }),
       query.graph({ entity: "product_seller", fields: ["seller_id"], filters: { product_id: input.product_id } }, { cache: { enable: false } }),
+      query.graph({ entity: "product_image", fields: ["id", "url", "variants.id"], filters: { product_id: input.product_id } }, { cache: { enable: false } }),
     ]);
     const product = products[0];
     if (!product || (!proposals.length && (product.status !== "published" || (restrictions.length && !restrictions.some(row => row.seller_id === sellerId))))) forbidden();
-    currentImages = (product.images ?? []).flatMap(image => image ? [{ id: image.id, url: image.url }] : []);
+    currentImages = gallery.map(image => ({ id: image.id, url: image.url, hasVariants: Boolean(image.variants?.length) }));
     currentThumbnail = product.thumbnail ?? null;
     currentVariants = (product.variants ?? []).flatMap(variant => variant ? [{ id: variant.id, thumbnail: variant.thumbnail ?? null }] : []);
     if (input.variant_context) {
@@ -51,9 +52,12 @@ export async function assertSellerCatalogImages(container: MedusaContainer, sell
   const currentUrls = new Set(currentImages.map(image => image.url));
   if (currentThumbnail) currentUrls.add(currentThumbnail);
   const nextUrls = input.images?.map(image => image.url);
+  if (input.product_id && !input.variant_context && nextUrls?.length === 0)
+    throw new MedusaError(MedusaError.Types.INVALID_DATA, "El producto necesita al menos una imagen.");
   if (nextUrls && new Set(nextUrls).size !== nextUrls.length) forbidden();
   // Existing shared galleries may predate this upload limit; allow preservation/removal.
-  if (nextUrls && nextUrls.length > MAX_CATALOG_IMAGES && nextUrls.some(url => !currentImages.some(image => image.url === url))) forbidden();
+  const generalUrls = nextUrls?.filter(url => !currentImages.some(image => image.url === url && image.hasVariants));
+  if (generalUrls && generalUrls.length > MAX_CATALOG_IMAGES && generalUrls.some(url => !currentImages.some(image => image.url === url))) forbidden();
   for (const image of input.images ?? []) {
     if (image.id && !currentImages.some(current => current.id === image.id && current.url === image.url)) forbidden();
   }

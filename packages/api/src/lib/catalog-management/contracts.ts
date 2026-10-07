@@ -35,3 +35,28 @@ export type AdminCatalogProductManageInput = z.infer<
 export type AdminCatalogManagementConflictCode = z.infer<
   typeof AdminCatalogManagementConflictCodeSchema
 >;
+
+export const ProductLifecycleOperationSchema = z.enum([
+  "archive",
+  "deactivate",
+  "activate",
+]);
+export const ProductLifecycleStateSchema = z.strictObject({
+  can_manage: z.boolean(),
+  can_activate: z.boolean(),
+  status: z.string(),
+  requires_review: z.boolean(),
+  reason: z.string().nullable(),
+});
+export const ProductLifecycleResultSchema = z.strictObject({
+  operation: ProductLifecycleOperationSchema,
+  applied: z.boolean(),
+  product_change_id: z.string(),
+});
+export type ProductLifecycleOperation = z.infer<
+  typeof ProductLifecycleOperationSchema
+>;
+export type ProductLifecycleState = z.infer<typeof ProductLifecycleStateSchema>;
+export type ProductLifecycleResult = z.infer<
+  typeof ProductLifecycleResultSchema
+>;

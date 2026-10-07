@@ -41,7 +41,7 @@ export async function vendorLiveGuard(req: MedusaRequest, res: MedusaResponse, n
 }
 
 export async function guardProductVisibility(req: MedusaRequest, sellerId: string) {
-  const match = path(req).match(/^\/vendor\/products\/([^/]+)(?:\/.*)?$/);
+  const match = path(req).match(/^\/vendor\/(?:products|product-lifecycle)\/([^/]+)(?:\/.*)?$/);
   if (!match || req.method === "OPTIONS") return;
   const productId = decodeURIComponent(match[1]);
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);

@@ -8,8 +8,33 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getProductImage } from "@/features/catalog/image"
 import { ProductImageZoom } from "@/features/catalog/product-image-zoom"
 import { cn } from "@/lib/utils"
+import { getVariantImageSources } from "./variant-images"
+import { useProductVariantSelection } from "./product-variant-selection"
 
 export function ProductGallery({
+  title,
+  sources,
+}: {
+  title: string
+  sources: string[]
+}) {
+  const { variants, variantId } = useProductVariantSelection()
+  const variant = variants.find((entry) => entry.id === variantId)
+  const selectedSources = getVariantImageSources(
+    sources,
+    variant,
+    variants.length,
+  )
+  return (
+    <ProductImageGallery
+      key={JSON.stringify(selectedSources)}
+      title={title}
+      sources={selectedSources}
+    />
+  )
+}
+
+function ProductImageGallery({
   title,
   sources,
 }: {
@@ -50,10 +75,9 @@ export function ProductGallery({
         >
           {active ? (
             <ProductImageZoom
-              key={active.source}
               title={title}
-              source={active.source}
-              unoptimized={active.unoptimized}
+              images={images}
+              selectedIndex={selectedIndex}
             />
           ) : (
             <div className="grid h-full place-items-center text-muted-foreground">
@@ -78,6 +102,15 @@ export function ProductGallery({
                 type="button"
                 aria-label={`Ver imagen ${index + 1} de ${title}`}
                 aria-pressed={selectedIndex === index}
+                onPointerEnter={(event) => {
+                  if (
+                    event.pointerType === "mouse" &&
+                    window.matchMedia("(hover: hover) and (pointer: fine)")
+                      .matches
+                  ) {
+                    setActiveIndex(index)
+                  }
+                }}
                 onClick={() => setActiveIndex(index)}
                 className={cn(
                   "relative size-14 shrink-0 border bg-background outline-none transition-colors hover:border-foreground focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40",

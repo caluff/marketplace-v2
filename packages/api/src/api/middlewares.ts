@@ -16,6 +16,7 @@ import { vendorPaymentProtectionMiddlewares } from "./vendor/payments/middleware
 import { vendorShippingConfigurationMiddlewares } from "./vendor/shipping-configuration/middlewares";
 import { vendorWarehouseMiddlewares } from "./vendor/warehouse/middlewares";
 import { productSaleStatusMiddlewares } from "./vendor/product-sale-status/middlewares";
+import { productLifecycleMiddlewares } from "./vendor/product-lifecycle/middlewares";
 import { storeProductSaleStatusMiddlewares } from "./store/product-sale-status/middlewares";
 import { performanceTrace } from "../lib/performance/http-trace";
 import { nativeStripePayoutWebhookGuard } from "../lib/stripe-connect/native-guards";
@@ -99,6 +100,7 @@ export default defineMiddlewares({
     ...adminNotificationsMiddlewares,
     ...adminOverviewMiddlewares,
     ...productSaleStatusMiddlewares,
+    ...productLifecycleMiddlewares,
     ...storeProductSaleStatusMiddlewares,
     ...customerAccountMiddlewares,
     ...favoriteMiddlewares,

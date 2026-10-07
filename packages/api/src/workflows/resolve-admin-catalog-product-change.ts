@@ -13,10 +13,10 @@ import {
 } from "@medusajs/framework/utils";
 import {
   cancelProductChangeWorkflow,
-  confirmProductChangeWorkflow,
 } from "@mercurjs/core/workflows";
 import type { AdditionalData } from "@medusajs/framework/types";
 import { catalogProductEditLock } from "../lib/catalog/product-edit-lock";
+import { confirmCompleteCatalogProductChangeWorkflow } from "./confirm-complete-catalog-product-change";
 
 type Input = AdditionalData & {
   change_id: string;
@@ -56,9 +56,9 @@ export const resolveAdminCatalogProductChangeWorkflow = createWorkflow(
     );
     acquireLockStep(lock);
     when(input, ({ mode }) => mode === "confirm").then(() =>
-      confirmProductChangeWorkflow.runAsStep({
+      confirmCompleteCatalogProductChangeWorkflow.runAsStep({
         input: transform(input, (input) => ({
-          ids: [input.change_id],
+          id: input.change_id,
           confirmed_by: input.actor_id,
           internal_note: input.internal_note,
           additional_data: input.additional_data,

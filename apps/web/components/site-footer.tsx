@@ -56,8 +56,30 @@ export function SiteFooter({ categories }: SiteFooterProps) {
         </nav>
       </div>
       <div className="border-t border-border">
-        <div className="mx-auto flex min-h-14 w-full max-w-[90rem] items-center px-4 font-sans text-xs opacity-70 sm:px-6 lg:px-10">
-          © {new Date().getFullYear()} usapeek
+        <div className="mx-auto flex min-h-14 w-full max-w-[90rem] flex-col items-start justify-between gap-2 px-4 py-3 font-sans text-xs sm:flex-row sm:items-center sm:px-6 lg:px-10">
+          <p className="text-muted-foreground">
+            © {new Date().getFullYear()} usapeek
+          </p>
+          <nav aria-label="Información legal">
+            <ul className="flex flex-wrap gap-x-6">
+              <li>
+                <Link
+                  href="/terms"
+                  className="inline-flex min-h-11 items-center text-muted-foreground outline-none hover:text-brand-accent focus-visible:ring-3 focus-visible:ring-brand-accent/60"
+                >
+                  Términos y condiciones
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/privacy"
+                  className="inline-flex min-h-11 items-center text-muted-foreground outline-none hover:text-brand-accent focus-visible:ring-3 focus-visible:ring-brand-accent/60"
+                >
+                  Política de privacidad
+                </Link>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     </footer>

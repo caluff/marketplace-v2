@@ -1,6 +1,6 @@
 # Notificaciones de formularios — admin y vendor
 
-Guía revisada el 2026-09-15. La verificación fechada al final conserva los
+Guía revisada el 2026-10-06. La verificación fechada al final conserva los
 resultados de la entrega inicial de 2026-09-05; no certifica los formularios
 incorporados después ni representa una nueva ejecución.
 
@@ -44,7 +44,12 @@ iniciado fases ni certificado Financial Readiness con esta revisión documental.
 
 Los avisos no consultan Redis ni ejecutan polling. Los indicadores de carga no anuncian éxito. Una redirección de autenticación sigue siendo una navegación, no un guardado ficticio.
 
-La auditoría de navegación de aquella entrega se conserva en
-[el informe histórico de rendimiento](reports/vendor-navigation-performance.md).
+El indicador de revisiones pendientes se comparte en la navegación admin y
+se actualiza mediante los eventos SSE de solicitudes/catálogo, al recuperar
+visibilidad y después de una decisión local. Un fallo de lectura conserva el
+último resultado o muestra estado sin confirmar; no inventa un recuento cero.
+
+Para investigar navegación lenta, usar la
+[guía de diagnóstico de peticiones](reports/performance-request-tracing.md).
 Los pendientes vigentes se centralizan en la
 [auditoría de cierre](develpment/development-completion-audit.md).

@@ -83,12 +83,12 @@ del mismo día incorpora el plazo configurable y repite los checks sobre el árb
 actual: los tipos globales de API ya pasan. Consultar la
 [evidencia posterior](payment-release-delay-20261006.md) para ese estado y su migración.
 
-La última repetición de `pnpm typecheck:api` falló después de incorporarse código
+En aquel checkpoint, una repetición de `pnpm typecheck:api` falló después de incorporarse código
 ajeno de Google One Tap en paralelo: exportación/importación de `GoogleAuthService`,
 miembros `config_`/`getSigningKey_`, opciones de locking y tipos de pruebas/input.
 Los checks de tipos/build anteriores y las integraciones registradas pasaron
-antes de esas nuevas ediciones. No se modifica ese trabajo para cerrar Pagos;
-el estado global actual de tipos de API permanece bloqueado por esos archivos.
+antes de esas nuevas ediciones. No se modificó ese trabajo para cerrar el selector
+de Pagos; aquel bloqueo quedó superado en la ampliación posterior enlazada arriba.
 
 Estos resultados validan el selector, su autorización y la persistencia; no
 certifican una transferencia Stripe nueva después de 72 horas reales. La

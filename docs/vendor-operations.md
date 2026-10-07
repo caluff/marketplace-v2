@@ -1,6 +1,6 @@
 # Alta y operación de vendedores
 
-Guía vigente de las superficies conectadas, actualizada el 2026-10-03. El diseño
+Guía vigente de las superficies conectadas, actualizada el 2026-10-06. El diseño
 inicial para Mercur 2.3.3 y Medusa 2.18.0 está en
 [el plan histórico](plans/vendor-onboarding.md); los resultados de QA al final
 conservan su fecha y no representan una nueva verificación.
@@ -9,8 +9,10 @@ La [auditoría de cierre](develpment/development-completion-audit.md) es la base
 los requisitos originales de desarrollo. **F01–F12 / Phase 1–6 DONE** y
 **Financial Readiness PASS para Stripe TEST, USD y operación manual**, incluidos
 comisión, liquidación, recuperación y reporting. La liberación automática está
-implementada y activa localmente en TEST, con su circuito nuevo de 72 horas
-reales aún **NEEDS VERIFICATION**. LIVE y producción no están certificados. Seguir las
+implementada con plazo configurable en TEST. Inmediato pasó una QA integral
+aislada; el pedido original a 72 horas reales permanece **NEEDS VERIFICATION**
+y su seguimiento está pausado por el cambio de entorno. LIVE y producción no
+están certificados. Seguir las
 [fases de implementación](develpment/development-implementation-plan.md) y el
 [handoff de progreso](develpment/development-progress.md).
 
@@ -71,8 +73,9 @@ ubicación no es la solución del flujo actual. Los contratos y evidencia de esa
 entrega están en [el informe de almacén](reports/phase-1-warehouse.md).
 
 Una cuenta Connect habilitada, una oferta activa y stock disponible tampoco
-demuestran una venta cobrada: el checkout autoriza con captura manual y separa
-pedidos por vendedor. Ver [pedidos](orders-flow.md) y
+demuestran una venta cobrada: el checkout autoriza y separa pedidos por vendedor.
+El cobro puede ser Manual o Automático según la configuración; Automático espera
+la preparación de todas las cantidades activas. Ver [pedidos](orders-flow.md) y
 [operaciones financieras](order-finance.md). Los dashboards muestran conteos
 operativos y reporting backend conciliado. La sección Finanzas del detalle de
 pedido muestra asignado/capturado/reembolsado, saldo e historial de operaciones,
@@ -107,8 +110,10 @@ verificadas conservan su estado. Activa esta opción solo en el entorno de prueb
   escritores de pedidos; F07–F09 completaron liquidación, recuperación y reporting.
   No repetir transferencias ni liberar journals por SQL para resolver un resultado
   incierto. La extensión automática usa un reloj durable observado por servidor,
-  espera 72 horas y revalida elegibilidad. Órdenes sin reloj o con revisión/resultado
-  incierto no se pagan automáticamente. La prueba integral nueva sigue pendiente.
+  conserva el plazo configurado al finalizar (0–365 días, inicialmente 3) y
+  revalida elegibilidad. Órdenes sin reloj o con revisión/resultado incierto no
+  se pagan automáticamente. El pedido original TEST #16 conserva 72 horas y su
+  comprobación posterior sigue pausada; la QA inmediata aislada no lo certifica.
 - **Autorización:** F05 cerró el aislamiento de carrito/identidad y F06 la
   corrección de permisos incluida en el cierre. Medusa no protege consultas SQL
   externas; verificar migraciones y permisos al preparar cada destino. La evidencia
@@ -122,8 +127,17 @@ verificadas conservan su estado. Activa esta opción solo en el entorno de prueb
   Consultar [el contrato de concurrencia](../packages/api/src/modules/inventory/README.md).
 - **Configuración comercial:** el backend debe suministrar categorías, monedas,
   regiones, variantes, ofertas, inventario y envíos. No fabricar datos en el
-  frontend. Productos propuestos necesitan moderación; borradores preexistentes
-  necesitan progresión por el operador cuando el esquema vendor no lo admite.
+  frontend. En modo Supervisado, productos propuestos necesitan moderación;
+  borradores preexistentes necesitan progresión por el operador cuando el esquema
+  vendor no lo admite. El modo Autorizado se rige por la guía de permisos de catálogo.
+- **Variantes e imágenes:** hasta tres ejes y 100 combinaciones. En modo
+  Supervisado, ampliar un valor de opción y crear una variante que lo use puede
+  requerir dos solicitudes sucesivas: aprobar primero la ampliación. La edición
+  de USD conserva los precios preexistentes de otras monedas. Las imágenes
+  admiten PNG/JPEG/WebP, hasta seis por producto y 5 MiB de contenido por solicitud
+  de carga. Se registra su propiedad; quitar una imagen del borrador o del
+  producto no borra el archivo almacenado. Una carga interrumpida o una respuesta
+  perdida puede dejar objetos huérfanos; no hay limpieza automática verificada.
 
 ## Integraciones y comprobaciones externas
 
@@ -134,6 +148,16 @@ incluyen `RESEND_API_KEY`, `AUTH_EMAIL_ENABLED`, `RESEND_FROM_EMAIL`,
 `STOREFRONT_URL`, `ADMIN_URL` y `VENDOR_URL`; `AUTH_EMAIL_FROM` conserva compatibilidad
 si no existe `RESEND_FROM_EMAIL`. El remitente de pruebas de Resend tiene límites
 propios y no acredita entrega a compradores reales.
+
+Una creación Connect con respuesta o persistencia incierta necesita revisión
+antes de intentar crear otra cuenta; el flujo nativo no garantiza creación única
+entre solicitudes nuevas. La reconciliación de estado usa el lock
+`payout-account-status/<id>` con propietario UUID y sin expiración. Una caída
+puede dejarlo retenido: detener y revisar el escritor original, confirmar que no
+puede reanudarse y liberar únicamente ese propietario mediante el módulo de
+locking antes de reintentar. No usar `releaseAll`, propietarios comodín ni
+eliminar bloqueos por antigüedad. Fuente:
+`packages/api/src/lib/stripe-connect/account-reconciliation.ts`.
 
 Redis sostiene eventos, workflows y bloqueos. La cuota agotada registrada el
 2026-09-05 es evidencia histórica, no una consulta al estado actual del servicio.

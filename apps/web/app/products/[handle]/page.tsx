@@ -12,6 +12,8 @@ import { ProductGallery } from "@/features/catalog/product-gallery"
 import { ProductOffers } from "@/features/catalog/product-offers"
 import { ProductDetails } from "@/features/catalog/product-details"
 import { ProductSummary } from "@/features/catalog/product-summary"
+import { ProductVariantSelection } from "@/features/catalog/product-variant-selection"
+import { getProductImageSources } from "@/features/catalog/variant-images"
 import { RelatedProducts } from "@/features/catalog/related-products"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
 import {
@@ -148,17 +150,10 @@ async function ProductContent({
   }
   const { product } = result
   if (!product) notFound()
-  const images = [
-    ...new Set(
-      [
-        product.thumbnail,
-        ...(product.images?.map((image) => image.url) ?? []),
-      ].filter((image): image is string => Boolean(image)),
-    ),
-  ]
+  const images = getProductImageSources(product)
   const summary = <ProductSummary product={product} />
   const overview = product.description ? (
-    <p className="line-clamp-4 whitespace-pre-line break-words font-sans text-sm leading-6 text-muted-foreground">
+    <p className="whitespace-pre-line break-words font-sans text-sm leading-6 text-muted-foreground">
       {product.description}
     </p>
   ) : null
@@ -203,22 +198,27 @@ async function ProductContent({
           <ProductFavorite productId={product.id} />
         </Suspense>
       </div>
-      <article className={PRODUCT_GRID}>
-        <ProductGallery title={product.title} sources={images} />
-        <Suspense
-          fallback={<OfferSkeleton summary={summary} overview={overview} />}
-        >
-          <ProductOffers
-            product={product}
-            regionPromise={regionPromise}
-            summary={summary}
-            overview={overview}
-          />
-        </Suspense>
-        <div className="min-w-0 md:col-span-2">
-          <ProductDetails product={product} />
-        </div>
-      </article>
+      <ProductVariantSelection
+        key={product.id}
+        variants={product.variants ?? []}
+      >
+        <article className={PRODUCT_GRID}>
+          <ProductGallery title={product.title} sources={images} />
+          <Suspense
+            fallback={<OfferSkeleton summary={summary} overview={overview} />}
+          >
+            <ProductOffers
+              product={product}
+              regionPromise={regionPromise}
+              summary={summary}
+              overview={overview}
+            />
+          </Suspense>
+          <div className="min-w-0 md:col-span-2">
+            <ProductDetails product={product} />
+          </div>
+        </article>
+      </ProductVariantSelection>
       <Suspense
         fallback={
           <div

@@ -1,63 +1,99 @@
 "use client";
 
-import { useActionState, useId, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
+import {
+  startTransition,
+  useActionState,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import type { ProductDTO } from "@mercurjs/types";
+import type { ProductImageDTO } from "@medusajs/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { notifyFeedback } from "@/lib/feedback";
 import type { MutationState } from "../workspace/presentation";
 import { useFormUnsavedChanges } from "../workspace/unsaved-changes";
-import {
-  variantCombinations,
-  type CatalogAxis,
-  type CatalogVariant,
-} from "./validation";
+import type { CatalogAxis, CatalogVariant } from "./validation";
 import { ProductImages, type ProductImagesHandle } from "./product-images";
-import { PRODUCT_MEASUREMENTS } from "./product-specifications";
+import { CATALOG_IMAGE_COUNT } from "./media-validation";
+import { specificationDraft } from "./product-specifications";
+import { ProductAttributesFields } from "./product-attributes-fields";
+import { ProductDetailsFields } from "./product-details-fields";
+import { ProductOptionsFields } from "./product-options-fields";
+import { ProductCreateVariants } from "./product-create-variants";
+import {
+  createVariantDrafts,
+  parseCatalogOptions,
+  singleVariantDraft,
+  type CatalogOptionDraft,
+} from "./product-create-draft";
 
-export function ProductForm({
+const CREATE_STEPS = ["Detalles", "Organización", "Variantes"];
+export type ProductEditSectionName =
+  "details" | "organization" | "attributes" | "media";
+type Props = {
+  action: (previous: MutationState, form: FormData) => Promise<MutationState>;
+  categories?: ReactNode;
+  organization?: ReactNode;
+  commercialConfiguration?: ReactNode;
+  product?: ProductDTO;
+  section?: ProductEditSectionName;
+  disabled?: boolean;
+  onSaved?: () => void;
+  onBusyChange?: (busy: boolean) => void;
+  onCancel?: () => void;
+};
+
+export function ProductForm(props: Props) {
+  return props.product ? (
+    <ProductEditForm {...props} product={props.product} />
+  ) : (
+    <ProductCreateForm {...props} />
+  );
+}
+
+function CategoryGroup({ children }: { children: ReactNode }) {
+  return (
+    <fieldset className="space-y-3">
+      <legend className="mb-2 text-sm font-medium">
+        Categorías del catálogo
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
+function ProductCreateForm({
   action,
   categories,
-  product,
+  organization,
+  commercialConfiguration,
   disabled = false,
-}: {
-  action: (previous: MutationState, form: FormData) => Promise<MutationState>;
-  categories: ReactNode;
-  product?: ProductDTO;
-  disabled?: boolean;
-}) {
-  const prefix = useId();
+}: Props) {
   const router = useRouter();
-  const imagePicker = useRef<ProductImagesHandle>(null);
-  const [isUploadingImages, setIsUploadingImages] = useState(false);
-  const [axes, setAxes] = useState<{ title: string; values: string }[]>([]);
-  const [variants, setVariants] = useState<CatalogVariant[]>([
-    { title: "Variante única", sku: "", options: {} },
-  ]);
-  const [axisError, setAxisError] = useState("");
-  const [generatedAxes, setGeneratedAxes] = useState<CatalogAxis[]>([]);
-  const [imageIds, setImageIds] = useState(() =>
-    (product?.images ?? []).map((image) => image.id),
-  );
   const formRef = useRef<HTMLFormElement>(null);
+  const imagePicker = useRef<ProductImagesHandle>(null);
+  const sections = useRef<(HTMLDivElement | null)[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [axes, setAxes] = useState<CatalogOptionDraft[]>([]);
+  const [generatedAxes, setGeneratedAxes] = useState<CatalogAxis[]>([]);
+  const [variantDrafts, setVariantDrafts] = useState<CatalogVariant[]>([]);
+  const [singleVariant, setSingleVariant] = useState(() =>
+    singleVariantDraft(),
+  );
+  const [images, setImages] = useState<Pick<ProductImageDTO, "id" | "url">[]>(
+    [],
+  );
+  const [step, setStep] = useState(0);
+  const [furthestStep, setFurthestStep] = useState(0);
+  const [stepError, setStepError] = useState("");
+  const variants = hasVariants ? variantDrafts : [singleVariant];
   const unsaved = useFormUnsavedChanges(
     formRef,
-    JSON.stringify({ axes, variants, imageIds }),
+    JSON.stringify({ hasVariants, axes, variantDrafts, singleVariant, images }),
   );
-  const hasUngeneratedChanges =
-    JSON.stringify(
-      axes.map((axis) => ({
-        title: axis.title.trim(),
-        values: axis.values
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
-      })),
-    ) !== JSON.stringify(generatedAxes);
   const [state, formAction, isPending] = useActionState(
     async (previous: MutationState, form: FormData) => {
       try {
@@ -66,9 +102,9 @@ export function ProductForm({
         form.set("images", JSON.stringify(await imagePicker.current.prepare()));
         const result = await action(previous, form);
         notifyFeedback(result);
-        if (result.status === "success") unsaved.markSaved();
-        if (!product && result.status === "success" && result.href) {
-          router.replace(result.href);
+        if (result.status === "success") {
+          unsaved.markSaved();
+          if (result.href) router.replace(result.href);
         }
         return result;
       } catch (error) {
@@ -77,7 +113,7 @@ export function ProductForm({
           message:
             error instanceof Error
               ? error.message
-              : "No se pudo guardar el producto. Inténtalo nuevamente.",
+              : "No se pudo guardar el producto.",
         };
         notifyFeedback(result);
         return result;
@@ -85,339 +121,451 @@ export function ProductForm({
     },
     { status: "idle" },
   );
-  function generate() {
-    try {
-      const parsed = axes.map((axis) => ({
-        title: axis.title.trim(),
-        values: axis.values
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
-      }));
-      const combinations = variantCombinations(parsed);
-      setVariants(
-        combinations.map((options) => {
-          const existing = variants.find(
-            (variant) =>
-              JSON.stringify(variant.options) === JSON.stringify(options),
+  function goToStep(next: number) {
+    setStep(next);
+    setStepError("");
+    requestAnimationFrame(() =>
+      sections.current[next]?.querySelector<HTMLElement>("h2")?.focus(),
+    );
+  }
+  function failStep(index: number, message: string) {
+    goToStep(index);
+    setStepError(message);
+    return false;
+  }
+  function validateStep(index: number) {
+    const fields = sections.current[index]?.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >("input, textarea, select");
+    const invalid = Array.from(fields ?? []).find(
+      (field) => field.willValidate && !field.validity.valid,
+    );
+    if (invalid) {
+      goToStep(index);
+      requestAnimationFrame(() => {
+        let parent = invalid.parentElement;
+        while (parent) {
+          if (parent instanceof HTMLDetailsElement) parent.open = true;
+          parent = parent.parentElement;
+        }
+        invalid.reportValidity();
+      });
+      return false;
+    }
+    if (index === 0) {
+      if (
+        !formRef.current ||
+        !new FormData(formRef.current).get("title")?.toString().trim()
+      )
+        return failStep(0, "Escribe el nombre del producto.");
+      if (!images.length)
+        return failStep(
+          0,
+          "Añade al menos una imagen del producto para continuar.",
+        );
+      if (hasVariants)
+        try {
+          createVariantDrafts(parseCatalogOptions(axes), variantDrafts);
+        } catch (error) {
+          return failStep(
+            0,
+            error instanceof Error ? error.message : "Revisa las opciones.",
           );
-          return (
-            existing ?? {
-              title: Object.values(options).join(" / ") || "Variante única",
-              sku: "",
-              options,
-            }
-          );
-        }),
+        }
+    }
+    if (
+      index === 1 &&
+      !formRef.current?.querySelector('[name="categories_present"]')
+    )
+      return failStep(
+        1,
+        "Espera a que carguen las categorías. Si aparece un error, vuelve a intentarlo.",
       );
+    if (
+      index === 2 &&
+      !formRef.current?.querySelector('[name="initial_offers_present"]')
+    )
+      return failStep(
+        2,
+        "Espera a que cargue la configuración de venta o completa el almacén y los envíos de tu tienda.",
+      );
+    return true;
+  }
+  function navigateStep(next: number) {
+    if (next > step) {
+      if (
+        !Array.from({ length: next }, (_, index) => index).every(validateStep)
+      )
+        return;
+      const parsed = hasVariants ? parseCatalogOptions(axes) : [];
+      if (hasVariants)
+        setVariantDrafts(createVariantDrafts(parsed, variantDrafts));
+      else if (formRef.current) {
+        const title = new FormData(formRef.current)
+          .get("title")
+          ?.toString()
+          .trim();
+        setSingleVariant((current) => ({
+          ...current,
+          title: title ?? "",
+        }));
+      }
       setGeneratedAxes(parsed);
-      setAxisError("");
-    } catch (error) {
-      setAxisError(
-        error instanceof Error ? error.message : "Revisa las opciones.",
-      );
     }
+    setFurthestStep((current) => Math.max(current, next));
+    goToStep(next);
   }
-  function removeAxis(index: number) {
-    const remaining = axes.filter((_, at) => at !== index);
-    setAxes(remaining);
-    setAxisError("");
-    if (remaining.length === 0) {
-      setGeneratedAxes([]);
-      setVariants([{ title: "Variante única", sku: "", options: {} }]);
-    }
+  function nextStep() {
+    navigateStep(step + 1);
   }
+  return (
+    <form
+      ref={formRef}
+      noValidate
+      onChangeCapture={unsaved.onChange}
+      onReset={(event) => event.preventDefault()}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (
+          disabled ||
+          isPending ||
+          isUploadingImages ||
+          state.status === "success"
+        ) {
+          return;
+        }
+        if (step < 2) {
+          nextStep();
+          return;
+        }
+        if (![0, 1, 2].every(validateStep)) return;
+        const form = new FormData(event.currentTarget);
+        // A returned error also resolves a form action and resets Radix controls.
+        // Dispatch explicitly so failed submissions preserve the entire draft.
+        startTransition(() => formAction(form));
+      }}
+      className="min-w-0"
+    >
+      <input type="hidden" name="status" value="proposed" />
+      <input
+        type="hidden"
+        name="axes"
+        value={JSON.stringify(hasVariants ? generatedAxes : [])}
+      />
+      <input
+        type="hidden"
+        name="variants"
+        value={JSON.stringify(
+          variants.map((variant) => ({
+            title: variant.title,
+            options: variant.options,
+            specifications: variant.specifications,
+            amount: variant.amount,
+            stockedQuantity: variant.stockedQuantity,
+            imageIndexes: hasVariants ? variant.imageIndexes : undefined,
+          })),
+        )}
+      />
+      <fieldset
+        disabled={disabled || isPending || state.status === "success"}
+        className="min-w-0"
+      >
+        <nav
+          aria-label="Pasos para crear un producto"
+          className="border-b px-4 sm:px-6"
+        >
+          <ol className="flex gap-4 sm:gap-8">
+            {CREATE_STEPS.map((label, index) => (
+              <li key={label}>
+                <button
+                  type="button"
+                  aria-current={step === index ? "step" : undefined}
+                  disabled={isUploadingImages || index > furthestStep}
+                  onClick={() => navigateStep(index)}
+                  className={`flex min-h-14 items-center gap-2 border-b-2 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring ${step === index ? "border-brand-accent text-foreground" : "border-transparent text-muted-foreground"}`}
+                >
+                  <span aria-hidden="true">{index + 1}</span>
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <div className="px-4 py-6 sm:px-8 sm:py-8">
+          <div
+            ref={(element) => {
+              sections.current[0] = element;
+            }}
+            hidden={step !== 0}
+            className="mx-auto max-w-3xl space-y-6"
+          >
+            <h2 tabIndex={-1} className="text-lg font-semibold outline-none">
+              Detalles del producto
+            </h2>
+            <ProductDetailsFields
+              onTitleChange={(title) =>
+                setSingleVariant((current) => ({
+                  ...current,
+                  title: title.trim(),
+                }))
+              }
+            />
+            <ProductImages
+              ref={imagePicker}
+              disabled={disabled || isPending}
+              onBusyChange={setIsUploadingImages}
+              onMediaChange={(next) => {
+                const remap = (variant: CatalogVariant) => ({
+                  ...variant,
+                  imageIndexes: (variant.imageIndexes ?? [])
+                    .map((at) =>
+                      next.findIndex((image) => image.id === images[at]?.id),
+                    )
+                    .filter((at) => at >= 0),
+                });
+                setVariantDrafts((current) => current.map(remap));
+                setSingleVariant((current) => remap(current));
+                setImages(next);
+                setStepError("");
+              }}
+            />
+            <ProductOptionsFields
+              hasVariants={hasVariants}
+              options={axes}
+              onModeChange={(value) => {
+                setHasVariants(value);
+                if (value && !axes.length) setAxes([{ title: "", values: "" }]);
+                setStepError("");
+              }}
+              onOptionsChange={(value) => {
+                setAxes(value);
+                setStepError("");
+              }}
+            />
+          </div>
+          <div
+            ref={(element) => {
+              sections.current[1] = element;
+            }}
+            hidden={step !== 1}
+            className="mx-auto max-w-3xl space-y-6"
+          >
+            <h2 tabIndex={-1} className="text-lg font-semibold outline-none">
+              Organización
+            </h2>
+            {organization}
+            <CategoryGroup>{categories}</CategoryGroup>
+          </div>
+          <div
+            ref={(element) => {
+              sections.current[2] = element;
+            }}
+            hidden={step !== 2}
+            className="space-y-5"
+          >
+            <h2
+              tabIndex={-1}
+              className={
+                hasVariants
+                  ? "text-lg font-semibold outline-none"
+                  : "sr-only outline-none"
+              }
+            >
+              {hasVariants ? `Variantes (${variants.length})` : "Variantes"}
+            </h2>
+            {commercialConfiguration}
+            <ProductCreateVariants
+              isSingleVariant={!hasVariants}
+              variants={variants}
+              images={images}
+              onChange={(next) => {
+                if (hasVariants) setVariantDrafts(next);
+                else setSingleVariant(next[0]);
+              }}
+            />
+            <p className="text-sm text-muted-foreground">
+              El precio y las existencias se guardan con el producto. Mientras
+              esté pendiente de aprobación, no estará disponible para comprar.
+            </p>
+          </div>
+          {stepError ? (
+            <p role="alert" className="mt-5 text-sm text-destructive">
+              {stepError}
+            </p>
+          ) : null}
+        </div>
+        <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t bg-card px-4 py-4 sm:px-6">
+          <span className="text-xs text-muted-foreground">
+            Paso {step + 1} de {CREATE_STEPS.length}
+          </span>
+          <div className="flex gap-2">
+            {step > 0 ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isUploadingImages}
+                onClick={() => goToStep(step - 1)}
+              >
+                Anterior
+              </Button>
+            ) : null}
+            {step < 2 ? (
+              <Button
+                key="continue"
+                type="button"
+                disabled={isUploadingImages}
+                onClick={(event) => {
+                  event.preventDefault();
+                  nextStep();
+                }}
+              >
+                Continuar
+              </Button>
+            ) : (
+              <Button key="save" type="submit" disabled={isUploadingImages}>
+                {isPending ? "Guardando…" : "Guardar producto"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </fieldset>
+      {state.status === "error" && state.message ? (
+        <p role="alert" className="p-4 text-sm text-destructive">
+          {state.message}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+function ProductEditForm({
+  product,
+  section = "details",
+  action,
+  categories,
+  organization,
+  disabled = false,
+  onSaved,
+  onCancel,
+  onBusyChange,
+}: Props & { product: ProductDTO }) {
+  const images = product.images ?? [];
+  const assignedImageIds = new Set(
+    (product.variants ?? []).flatMap((variant) =>
+      (variant.images ?? []).map(({ id }) => id),
+    ),
+  );
+  const maxImages = Math.min(
+    100,
+    Math.max(images.length, CATALOG_IMAGE_COUNT + assignedImageIds.size),
+  );
+  const formRef = useRef<HTMLFormElement>(null);
+  const imagePicker = useRef<ProductImagesHandle>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [specifications, setSpecifications] = useState(() =>
+    specificationDraft(product),
+  );
+  const [imageIds, setImageIds] = useState(() => images.map(({ id }) => id));
+  const unsaved = useFormUnsavedChanges(
+    formRef,
+    JSON.stringify({ specifications, imageIds }),
+  );
+  const [state, formAction, isPending] = useActionState(
+    async (previous: MutationState, form: FormData) => {
+      onBusyChange?.(true);
+      try {
+        if (section === "media") {
+          if (!imagePicker.current)
+            throw new Error("Espera a que carguen las imágenes.");
+          const images = await imagePicker.current.prepare();
+          if (!images.length)
+            throw new Error("El producto necesita al menos una imagen.");
+          form.set("images", JSON.stringify(images));
+        }
+        const result = await action(previous, form);
+        notifyFeedback(result);
+        if (result.status === "success") {
+          unsaved.markSaved();
+          onSaved?.();
+        }
+        return result;
+      } catch (error) {
+        const result: MutationState = {
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "No se pudieron guardar los cambios.",
+        };
+        notifyFeedback(result);
+        return result;
+      } finally {
+        onBusyChange?.(false);
+      }
+    },
+    { status: "idle" },
+  );
   return (
     <form
       ref={formRef}
       action={formAction}
       onChangeCapture={unsaved.onChange}
-      onInvalidCapture={(event) => {
-        if (event.target instanceof HTMLElement) {
-          const section = event.target.closest("details");
-          if (section) section.open = true;
-        }
-      }}
       onSubmit={(event) => {
-        if (isPending || isUploadingImages || hasUngeneratedChanges)
-          event.preventDefault();
+        if (disabled || isPending || isUploading) event.preventDefault();
       }}
-      onReset={(event) => event.preventDefault()}
       className="space-y-6"
     >
-      {product ? (
-        <input type="hidden" name="id" value={product.id} />
-      ) : (
-        <>
-          <input type="hidden" name="status" value="proposed" />
-          <input
-            type="hidden"
-            name="axes"
-            value={JSON.stringify(generatedAxes)}
-          />
-          <input
-            type="hidden"
-            name="variants"
-            value={JSON.stringify(variants)}
-          />
-        </>
-      )}
+      <input type="hidden" name="id" value={product.id} />
       <fieldset
-        disabled={disabled || isPending || state.status === "success"}
+        disabled={disabled || isPending || isUploading}
         className="space-y-6"
       >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor={`${prefix}-title`}>Nombre *</FieldLabel>
-            <Input
-              id={`${prefix}-title`}
-              name="title"
-              required
-              maxLength={200}
-              defaultValue={product?.title}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor={`${prefix}-subtitle`}>
-              Resumen breve
-            </FieldLabel>
-            <Input
-              id={`${prefix}-subtitle`}
-              name="subtitle"
-              aria-describedby={`${prefix}-subtitle-help`}
-              maxLength={200}
-              defaultValue={product?.subtitle ?? ""}
-            />
-            <FieldDescription id={`${prefix}-subtitle-help`}>
-              Se muestra junto al nombre del producto. Hasta 200 caracteres.
-            </FieldDescription>
-          </Field>
-          <Field className="sm:col-span-2">
-            <FieldLabel htmlFor={`${prefix}-description`}>
-              Descripción detallada
-            </FieldLabel>
-            <Textarea
-              id={`${prefix}-description`}
-              name="description"
-              aria-describedby={`${prefix}-description-help`}
-              rows={5}
-              maxLength={10000}
-              defaultValue={product?.description ?? ""}
-            />
-            <FieldDescription id={`${prefix}-description-help`}>
-              Describe sus características, uso y contenido. Separa las ideas en
-              párrafos; se conservarán los saltos de línea. Hasta 10.000
-              caracteres.
-            </FieldDescription>
-          </Field>
-        </div>
-        <details className="space-y-4 border-t pt-5">
-          <summary className="w-fit cursor-pointer text-sm font-semibold focus-visible:outline-2">
-            Ficha técnica (opcional)
-          </summary>
-          <FieldDescription>
-            Opcionales. Completa solo los datos que conozcas: aparecerán en la
-            ficha técnica.
-          </FieldDescription>
-          <Field>
-            <FieldLabel htmlFor={`${prefix}-material`}>Material</FieldLabel>
-            <Input
-              id={`${prefix}-material`}
-              name="material"
-              maxLength={200}
-              defaultValue={product?.material ?? ""}
-            />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PRODUCT_MEASUREMENTS.map(({ name, label }) => (
-              <Field key={name}>
-                <FieldLabel htmlFor={`${prefix}-${name}`}>{label}</FieldLabel>
-                <Input
-                  id={`${prefix}-${name}`}
-                  name={name}
-                  type="number"
-                  inputMode="decimal"
-                  min="0.001"
-                  step="any"
-                  defaultValue={product?.[name] ?? ""}
-                />
-              </Field>
-            ))}
-          </div>
-        </details>
-        <fieldset className="space-y-3">
-          <legend className="mb-2 text-sm font-medium">
-            Categorías del catálogo
-          </legend>
-          {categories}
-          <p className="text-xs text-muted-foreground">
-            Si falta una categoría, solicita su incorporación al operador.
-          </p>
-        </fieldset>
-        {!product ? (
-          <details className="space-y-4 border-t pt-5">
-            <summary className="w-fit cursor-pointer text-sm font-semibold focus-visible:outline-2">
-              Tallas, colores u otras opciones (opcional)
-            </summary>
-            <FieldDescription>
-              Añade opciones solo si el producto tiene distintas presentaciones.
-            </FieldDescription>
-            {axes.map((axis, index) => (
-              <div
-                key={index}
-                className="grid gap-3 rounded-lg border p-4 sm:grid-cols-[1fr_2fr_auto]"
-              >
-                <Field>
-                  <FieldLabel htmlFor={`${prefix}-axis-${index}`}>
-                    Opción {index + 1}
-                  </FieldLabel>
-                  <Input
-                    id={`${prefix}-axis-${index}`}
-                    value={axis.title}
-                    placeholder="Por ejemplo, Talla"
-                    maxLength={100}
-                    onChange={(event) =>
-                      setAxes((current) =>
-                        current.map((entry, at) =>
-                          at === index
-                            ? { ...entry, title: event.target.value }
-                            : entry,
-                        ),
-                      )
-                    }
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor={`${prefix}-values-${index}`}>
-                    Valores
-                  </FieldLabel>
-                  <Input
-                    id={`${prefix}-values-${index}`}
-                    aria-describedby={`${prefix}-values-help-${index}`}
-                    value={axis.values}
-                    maxLength={3000}
-                    placeholder="S, M, L"
-                    onChange={(event) =>
-                      setAxes((current) =>
-                        current.map((entry, at) =>
-                          at === index
-                            ? { ...entry, values: event.target.value }
-                            : entry,
-                        ),
-                      )
-                    }
-                  />
-                </Field>
-                <FieldDescription
-                  id={`${prefix}-values-help-${index}`}
-                  className="sm:col-start-2 sm:row-start-2"
-                >
-                  Separa cada valor con una coma.
-                </FieldDescription>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="justify-self-start sm:col-start-3 sm:row-start-1 sm:self-end"
-                  onClick={() => removeAxis(index)}
-                >
-                  Quitar
-                </Button>
-              </div>
-            ))}
-            <div className="flex flex-wrap gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={axes.length >= 3}
-                onClick={() =>
-                  setAxes((current) => [...current, { title: "", values: "" }])
-                }
-              >
-                Añadir opción
-              </Button>
-              {axes.length > 0 ? (
-                <Button type="button" variant="secondary" onClick={generate}>
-                  {generatedAxes.length > 0
-                    ? "Actualizar presentaciones"
-                    : "Crear presentaciones"}
-                </Button>
-              ) : null}
-            </div>
-            {axisError ? (
-              <p role="alert" className="text-sm text-destructive">
-                {axisError}
-              </p>
-            ) : null}
-            {generatedAxes.length > 0 && !hasUngeneratedChanges ? (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">
-                  Nombres de las presentaciones
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {variants.map((variant, index) => (
-                    <Field key={JSON.stringify(variant.options)}>
-                      <FieldLabel htmlFor={`${prefix}-variant-${index}`}>
-                        {Object.values(variant.options).join(" / ")}
-                      </FieldLabel>
-                      <Input
-                        id={`${prefix}-variant-${index}`}
-                        aria-label={`Nombre de presentación ${index + 1}`}
-                        required
-                        maxLength={200}
-                        value={variant.title}
-                        onChange={(event) =>
-                          setVariants((current) =>
-                            current.map((entry, at) =>
-                              at === index
-                                ? { ...entry, title: event.target.value }
-                                : entry,
-                            ),
-                          )
-                        }
-                      />
-                    </Field>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </details>
+        {section === "details" ? (
+          <ProductDetailsFields product={product} />
         ) : null}
-        <ProductImages
-          ref={imagePicker}
-          initialImages={product?.images}
-          disabled={disabled || isPending || state.status === "success"}
-          onBusyChange={setIsUploadingImages}
-          onImagesChange={setImageIds}
-        />
-        {hasUngeneratedChanges ? (
-          <p role="status" className="text-sm text-muted-foreground">
-            {generatedAxes.length > 0
-              ? "Actualiza las presentaciones en la sección de opciones antes de guardar."
-              : "Crea las presentaciones en la sección de opciones antes de guardar."}
-          </p>
+        {section === "organization" ? (
+          <>
+            {organization}
+            <CategoryGroup>{categories}</CategoryGroup>
+          </>
         ) : null}
-        <Button
-          type="submit"
-          disabled={hasUngeneratedChanges || isUploadingImages}
-        >
-          {isPending
-            ? "Guardando…"
-            : product
-              ? "Guardar datos del producto"
-              : "Guardar producto"}
-        </Button>
-      </fieldset>
-      {state.message ? (
-        <p
-          role={state.status === "error" ? "alert" : "status"}
-          className="rounded-lg border p-3 text-sm"
-        >
-          {state.message}{" "}
-          {state.href ? (
-            <Link href={state.href} className="font-medium underline">
-              Ver producto
-            </Link>
+        {section === "attributes" ? (
+          <ProductAttributesFields
+            value={specifications}
+            onChange={setSpecifications}
+            scope="product"
+          />
+        ) : null}
+        {section === "media" ? (
+          <ProductImages
+            ref={imagePicker}
+            initialImages={images}
+            scope="gallery"
+            maxImages={maxImages}
+            disabled={disabled || isPending}
+            onBusyChange={setIsUploading}
+            onImagesChange={setImageIds}
+          />
+        ) : null}
+        <div className="flex justify-end gap-2">
+          {onCancel ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isUploading}
+              onClick={onCancel}
+            >
+              Cancelar
+            </Button>
           ) : null}
+          <Button type="submit" disabled={isUploading}>
+            {isPending ? "Guardando…" : "Guardar cambios"}
+          </Button>
+        </div>
+      </fieldset>
+      {state.status === "error" && state.message ? (
+        <p role="alert" className="text-sm text-destructive">
+          {state.message}
         </p>
       ) : null}
     </form>

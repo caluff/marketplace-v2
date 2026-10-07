@@ -8,6 +8,7 @@ import type {
   CreateOfferDTO,
   UpdateOfferDTO,
 } from "@mercurjs/types";
+import { ProductChangeActionType } from "@mercurjs/types";
 import { requireSellerWarehouse } from "../vendor-warehouse/access";
 
 const invalid = (message: string): never => {
@@ -105,9 +106,38 @@ async function validateOfferEligibilityBatch(
   const profileIds = new Set(
     profiles.map((profile) => profile.shipping_profile_id),
   );
+  const pendingProductIds = [
+    ...new Set(
+      variants.flatMap((variant) =>
+        variant.product &&
+        ["draft", "proposed"].includes(variant.product.status)
+          ? [variant.product.id]
+          : [],
+      ),
+    ),
+  ];
+  const { data: additions } = pendingProductIds.length
+    ? await query.graph(
+        {
+          entity: "product_change_action",
+          fields: ["product_id"],
+          filters: {
+            product_id: pendingProductIds,
+            action: ProductChangeActionType.PRODUCT_ADD,
+            product_change: { created_by: sellerId },
+          },
+        },
+        { cache: { enable: false } },
+      )
+    : { data: [] };
+  const ownPendingProducts = new Set(
+    additions.map((addition) => addition.product_id),
+  );
   for (const offer of offers) {
+    const product = byVariant.get(offer.variant_id);
     if (
-      byVariant.get(offer.variant_id)?.status !== "published" ||
+      !product ||
+      (product.status !== "published" && !ownPendingProducts.has(product.id)) ||
       !profileIds.has(offer.shipping_profile_id)
     )
       forbidden();

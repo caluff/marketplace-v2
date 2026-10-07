@@ -144,7 +144,11 @@ export async function searchProducts(
     await Promise.all([
       query.graph({
         entity: "product",
-        fields: [...remoteQueryConfig.fields, "sales_channels.id"],
+        fields: [
+          ...remoteQueryConfig.fields,
+          "images.variants.id",
+          "sales_channels.id",
+        ],
         filters: { id: productIds, status: "published" },
       }),
       query.graph({

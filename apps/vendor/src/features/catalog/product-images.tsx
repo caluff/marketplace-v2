@@ -37,12 +37,20 @@ export function ProductImages({
   disabled = false,
   onBusyChange,
   onImagesChange,
+  onMediaChange,
+  scope = "product",
+  maxImages = CATALOG_IMAGE_COUNT,
+  requiresImage = true,
   ref,
 }: {
   initialImages?: Pick<ProductImageDTO, "id" | "url">[];
   disabled?: boolean;
   onBusyChange: (busy: boolean) => void;
   onImagesChange?: (imageIds: string[]) => void;
+  onMediaChange?: (images: Pick<ProductImageDTO, "id" | "url">[]) => void;
+  scope?: "product" | "variant" | "gallery";
+  maxImages?: number;
+  requiresImage?: boolean;
   ref: Ref<ProductImagesHandle>;
 }) {
   const id = useId();
@@ -62,6 +70,7 @@ export function ProductImages({
     latestImages.current = next;
     setImages(next);
     onImagesChange?.(next.map((image) => image.id));
+    onMediaChange?.(next.map(({ id, url }) => ({ id, url })));
   }
   useEffect(() => {
     const urls = objectUrls.current;
@@ -87,6 +96,7 @@ export function ProductImages({
           if (previous && objectUrls.current.delete(previous.url))
             URL.revokeObjectURL(previous.url);
         },
+        maxImages,
       ),
   }));
   async function select(files: File[]) {
@@ -95,8 +105,12 @@ export function ProductImages({
     setIsValidating(true);
     onBusyChange(true);
     try {
-      if (latestImages.current.length + files.length > CATALOG_IMAGE_COUNT)
-        throw new Error("El producto admite hasta seis imágenes.");
+      if (latestImages.current.length + files.length > maxImages)
+        throw new Error(
+          scope === "variant"
+            ? "La variante admite hasta seis imágenes propias."
+            : `El producto admite hasta ${maxImages} imágenes.`,
+        );
       await validateCatalogImages(files);
       const additions = files.map((file) => {
         const url = URL.createObjectURL(file);
@@ -118,16 +132,23 @@ export function ProductImages({
   }
   return (
     <section
-      className="space-y-4 border-t pt-5"
+      className={scope === "product" ? "space-y-4 border-t pt-5" : "space-y-4"}
       aria-labelledby={`${id}-heading`}
     >
       <div>
         <h3 id={`${id}-heading`} className="text-sm font-medium">
-          Imágenes del producto
+          {scope === "variant"
+            ? "Añadir fotos propias"
+            : `Imágenes del producto${requiresImage ? " *" : ""}`}
         </h3>
         <p id={`${id}-help`} className="mt-1 text-xs text-muted-foreground">
-          Hasta seis imágenes PNG, JPEG o WebP de 5 MB. Se cargarán al guardar
-          el producto.
+          {scope === "gallery"
+            ? "PNG, JPEG o WebP de hasta 5 MB. Si quitas una foto, también se retira de las variantes que la usen."
+            : scope === "variant"
+              ? "Hasta seis imágenes propias en PNG, JPEG o WebP de 5 MB. Se cargarán al guardar."
+              : requiresImage
+                ? "Añade al menos una imagen. Hasta seis PNG, JPEG o WebP de 5 MB. Se cargarán al guardar el producto."
+                : "Añade imágenes generales en PNG, JPEG o WebP de 5 MB. Hasta seis; se cargarán al guardar el producto."}
         </p>
       </div>
       <input
@@ -137,7 +158,11 @@ export function ProductImages({
         accept="image/png,image/jpeg,image/webp"
         multiple
         disabled={disabled || isValidating}
-        aria-label="Seleccionar imágenes del producto"
+        aria-label={
+          scope === "variant"
+            ? "Seleccionar imágenes de la variante"
+            : "Seleccionar imágenes del producto"
+        }
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";
@@ -153,7 +178,7 @@ export function ProductImages({
             <AttachmentMedia>
               <Image
                 src={image.url}
-                alt={`Imagen de producto ${index + 1}`}
+                alt={`Imagen ${scope === "variant" ? "de la variante" : "del producto"} ${index + 1}`}
                 fill
                 sizes="128px"
                 unoptimized
@@ -185,7 +210,7 @@ export function ProductImages({
             </AttachmentActions>
           </Attachment>
         ))}
-        {images.length < CATALOG_IMAGE_COUNT ? (
+        {images.length < maxImages ? (
           <Attachment state="idle">
             <AttachmentMedia>
               <ImagePlus
@@ -198,7 +223,9 @@ export function ProductImages({
                 {isValidating ? "Validando…" : "Añadir imagen"}
               </AttachmentTitle>
               <AttachmentDescription>
-                {images.length} de {CATALOG_IMAGE_COUNT} imágenes
+                {scope === "gallery"
+                  ? `${images.length} ${images.length === 1 ? "imagen" : "imágenes"}`
+                  : `${images.length} de ${maxImages} imágenes`}
               </AttachmentDescription>
             </AttachmentContent>
             <AttachmentTrigger

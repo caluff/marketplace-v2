@@ -8,6 +8,28 @@ import { catalogOperations } from "./operations";
 import { resourceId, textField } from "../workspace/validation";
 
 const operations = catalogOperations(authorizeVendor);
+export async function createVariantAction(
+  _previous: MutationState,
+  form: FormData,
+): Promise<MutationState> {
+  try {
+    const { product_change } = await operations.createVariant(form);
+    revalidatePath(
+      `/seller/catalog/${resourceId(textField(form, "id", true))}`,
+    );
+    revalidatePath("/seller/catalog");
+    revalidatePath("/seller/inventory");
+    return {
+      status: "success",
+      message:
+        product_change.status === ProductChangeStatus.CONFIRMED
+          ? "Variante creada con su precio y existencias."
+          : "Variante enviada a revisión. El precio y las existencias se activarán cuando el administrador la apruebe.",
+    };
+  } catch (error) {
+    return { status: "error", message: errorMessage(error) };
+  }
+}
 export async function editVariantAction(
   _previous: MutationState,
   form: FormData,

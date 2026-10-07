@@ -7,6 +7,8 @@ import type {
 } from "@mercurjs/types";
 import { scopedClient, type AuthorizeVendor } from "../workspace/operations";
 import { resourceId, stockQuantity, textField } from "../workspace/validation";
+import { usdAmount } from "./price-validation";
+export { usdAmount } from "./price-validation";
 
 export type OfferPrice = Pick<
   OfferPriceDTO,
@@ -19,11 +21,6 @@ export type OfferWithPrices = Omit<OfferDTO, "prices"> & {
 export const OFFER_FIELDS =
   "id,sku,variant_id,shipping_profile_id,prices.id,prices.amount,prices.currency_code,prices.min_quantity,prices.max_quantity,prices.price_rules.attribute,prices.price_rules.value,inventory_items.inventory_item_id";
 
-export function usdAmount(value: string) {
-  if (!/^(0|[1-9]\d{0,8})(\.\d{1,2})?$/.test(value))
-    throw new Error("Introduce un precio USD válido con hasta dos decimales.");
-  return Number(value);
-}
 export function baseUsdPrice(prices: OfferPrice[]) {
   const candidates = prices.filter(
     (price) =>

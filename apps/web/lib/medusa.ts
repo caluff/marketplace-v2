@@ -2,6 +2,7 @@ import type { HttpTypes, PaginatedResponse } from "@medusajs/types"
 import { cache } from "react"
 import { createCatalogSdk } from "@/lib/catalog-sdk"
 import type { StorefrontOffer } from "@/features/catalog/offers"
+import { getLinkedVariantImages } from "@/features/catalog/variant-images"
 import {
   CATALOG_PAGE_SIZE,
   parseCatalogPage,
@@ -86,7 +87,7 @@ export async function getStorefrontCatalog(options?: {
           offset: (page - 1) * CATALOG_PAGE_SIZE,
           order: "id",
           fields:
-            "id,title,subtitle,description,handle,thumbnail,*images,*categories",
+            "id,title,subtitle,description,handle,thumbnail,*images,images.variants.id,*categories",
         }
 
         if (region) {
@@ -109,7 +110,12 @@ export async function getStorefrontCatalog(options?: {
 
     if (getCatalogContentStatus(result.products) === "empty") {
       if (page > 1)
-        return { status: "out_of_range", products: [], count: result.count, page }
+        return {
+          status: "out_of_range",
+          products: [],
+          count: result.count,
+          page,
+        }
       return {
         status: "empty",
         products: [],
@@ -207,9 +213,19 @@ export const getStorefrontProduct = cache(async (handle: string) => {
       handle,
       limit: 1,
       fields:
-        "id,title,subtitle,description,handle,thumbnail,material,weight,length,width,height,*images,*categories,*options,*variants,*variants.options",
+        "id,title,subtitle,description,handle,thumbnail,material,weight,length,width,height,*images,images.variants.id,*categories,*options,*variants,*variants.options",
     })
-    return products[0] ?? null
+    const product = products[0]
+    return product
+      ? {
+          ...product,
+          variants:
+            product.variants?.map((variant) => ({
+              ...variant,
+              images: getLinkedVariantImages(product.images, variant.id),
+            })) ?? null,
+        }
+      : null
   }, STORE_API_TIMEOUT_MS)
   return {
     product,

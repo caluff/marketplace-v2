@@ -13,17 +13,20 @@ export async function prepareCatalogImages(
   attachments: CatalogAttachment[],
   upload: typeof uploadCatalogImageAction,
   onUploaded: (attachment: CatalogAttachment) => void,
+  maxImages = CATALOG_IMAGE_COUNT,
 ): Promise<{ url: string }[]> {
   const pending = attachments.filter(
     (attachment): attachment is CatalogAttachment & { file: File } =>
       !!attachment.file,
   );
-  if (!pending.length) return attachments.map(({ url }) => ({ url }));
   if (
-    attachments.length > CATALOG_IMAGE_COUNT ||
+    attachments.length > maxImages ||
     pending.some(({ file }) => !file.size || file.size > CATALOG_IMAGE_LIMIT)
   )
-    throw new Error("Selecciona hasta seis imágenes de 5 MB como máximo.");
+    throw new Error(
+      `Selecciona hasta ${maxImages} imágenes de 5 MB como máximo.`,
+    );
+  if (!pending.length) return attachments.map(({ url }) => ({ url }));
   const savedUrls = new Map<string, string>();
   for (let index = 0; index < pending.length;) {
     const batch: typeof pending = [];

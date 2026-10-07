@@ -12,6 +12,7 @@ import {
   ProductStatus,
 } from "@medusajs/framework/utils";
 import {
+  batchVariantImagesWorkflow,
   createProductsWorkflow,
   updateProductsWorkflow,
 } from "@medusajs/core-flows";
@@ -41,9 +42,11 @@ if (process.env.SEARCH_IMAGE_TESTS !== "disposable-local") {
         assertLifecycleBootstrap(container, dbName),
     },
     testSuite: ({ getContainer }) => {
-      it("returns persisted gallery images without a thumbnail, preserves an empty gallery and excludes draft hits", async () => {
+      it("returns persisted general and assigned gallery images without a thumbnail, preserves an empty gallery and excludes draft hits", async () => {
         const container = getContainer();
         const imageUrl = `http://localhost:1/search-image-${randomUUID()}.jpg`;
+        const secondImageUrl = `http://localhost:1/search-image-${randomUUID()}.jpg`;
+        const variantImageUrl = `http://localhost:1/search-variant-image-${randomUUID()}.jpg`;
         const { result: products } = await createProductsWorkflow(
           container,
         ).run({
@@ -52,7 +55,11 @@ if (process.env.SEARCH_IMAGE_TESTS !== "disposable-local") {
               {
                 title: "Published gallery image",
                 status: ProductStatus.PUBLISHED,
-                images: [{ url: imageUrl }],
+                images: [
+                  { url: imageUrl },
+                  { url: secondImageUrl },
+                  { url: variantImageUrl },
+                ],
               },
               {
                 title: "Published without images",
@@ -92,6 +99,19 @@ if (process.env.SEARCH_IMAGE_TESTS !== "disposable-local") {
           },
         });
         const nativeQuery = container.resolve(ContainerRegistrationKeys.QUERY);
+        const { data: galleryProducts } = await nativeQuery.graph({
+          entity: "product",
+          fields: ["id", "images.id", "images.url", "variants.id"],
+          filters: { id: withImage.id },
+        });
+        const gallery = galleryProducts[0];
+        const assignedImage = gallery.images.find(
+          (image) => image.url === variantImageUrl,
+        )!;
+        const variant = gallery.variants[0];
+        await batchVariantImagesWorkflow(container).run({
+          input: { variant_id: variant.id, add: [assignedImage.id] },
+        });
         const scope = container.createScope() as MedusaContainer;
 
         scope.register({
@@ -164,7 +184,21 @@ if (process.env.SEARCH_IMAGE_TESTS !== "disposable-local") {
           );
           expect(galleryProduct?.thumbnail).toBeNull();
           expect(galleryProduct?.images).toEqual([
-            expect.objectContaining({ id: expect.any(String), url: imageUrl }),
+            expect.objectContaining({
+              id: expect.any(String),
+              url: imageUrl,
+              variants: [],
+            }),
+            expect.objectContaining({
+              id: expect.any(String),
+              url: secondImageUrl,
+              variants: [],
+            }),
+            expect.objectContaining({
+              id: assignedImage.id,
+              url: variantImageUrl,
+              variants: [expect.objectContaining({ id: variant.id })],
+            }),
           ]);
           const emptyGalleryProduct = response.products.find(
             (product) => product.id === withoutImage.id,

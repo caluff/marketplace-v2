@@ -1,6 +1,6 @@
 # Flujo de pedidos
 
-Guía vigente actualizada el 2026-10-03. La [auditoría de cierre](develpment/development-completion-audit.md) conserva los requisitos originales; el [progreso](develpment/development-progress.md) y su matriz final registran F01–F12 cerrados para Stripe TEST/USD/manual. Esta actualización documental no ejecuta pedidos ni repite pruebas de navegador.
+Guía vigente actualizada el 2026-10-06. La [auditoría de cierre](develpment/development-completion-audit.md) conserva los requisitos originales; el [progreso](develpment/development-progress.md) y su matriz final registran F01–F12 cerrados para Stripe TEST/USD/manual. Esta actualización documental no ejecuta pedidos ni repite pruebas de navegador.
 
 ## Número de pedido
 
@@ -43,9 +43,11 @@ Las acciones vuelven a consultar el pedido dentro de la sesión del vendedor ant
 | Marcar entregado                      | `/fulfillments/:fulfillmentId/mark-as-delivered`             |
 | Cancelar preparación no enviada       | `/fulfillments/:fulfillmentId/cancel`                        |
 | Cancelar pedido elegible / reembolsar | `/finance` (flujo financiero local con validaciones backend) |
-| Finalizar pedido enviado              | `/complete`                                                  |
+| Finalizar pedido elegible              | `/complete`                                                  |
 
-Se permiten preparaciones parciales. Los artículos con y sin envío se preparan por separado. El backend valida que la ubicación de preparación pertenezca a la tienda. Las operaciones irreversibles exigen confirmación; el estado del servidor decide qué acciones siguen disponibles. El panel permite completar cuando todos los artículos con envío ya fueron enviados o entregados, y los artículos sin envío fueron preparados. Registrar la entrega no es un paso obligatorio para completar; completar no inventa una fecha de entrega.
+Se permiten preparaciones parciales. Los artículos con y sin envío se preparan por separado. El backend valida que la ubicación de preparación pertenezca a la tienda. Las operaciones irreversibles exigen confirmación; el estado del servidor decide qué acciones siguen disponibles.
+
+Para completar, todas las cantidades deben estar preparadas y las de envío físico entregadas. La recogida en tienda permite completar las cantidades preparadas sin exigir un botón previo de entrega; los artículos sin envío también requieren preparación. Marcar una preparación como entregada completa automáticamente el pedido si todas sus cantidades ya cumplen esas condiciones. Si quedan pendientes, conserva el pedido abierto. La opción Cancelar pedido se oculta cuando está completado.
 
 El cobro puede ser compartido por varios pedidos de un carrito. La cancelación y los reembolsos ahora pasan por el [flujo financiero por tienda](order-finance.md): sin captura se cancela sin inventar un refund; con captura se devuelve el saldo elegible de ese pedido. La ruta nativa directa `/cancel` no es una alternativa para evitar esa asignación. El vendedor puede cancelar/reembolsar cuando el backend lo permite; solo el operador puede capturar la compra compartida. No se añade emisión fiscal.
 
@@ -57,18 +59,20 @@ Los dashboards admin/vendor y el desglose por venta de F09 están implementados,
 con snapshots, movimientos conciliados y costes desconocidos explícitos. F04
 incluye protección de `order-edits`; escritores nuevos o SQL externo requieren
 revisión independiente. La extensión automática registra el reloj de finalización
-observado por servidor y espera 72 horas antes de revalidar la transferencia.
+observado por servidor y conserva el plazo configurado al finalizar: entre 0 y
+365 días, con valor inicial de 3 días. Los relojes existentes no cambian al editar
+la configuración. La transferencia vuelve a validar su elegibilidad al vencer.
 Finalizar no captura por sí solo el pago ni asegura elegibilidad; consultar
 [el flujo financiero](order-finance.md).
 
 ## Correo al enviar
 
-El evento nativo `FulfillmentWorkflowEvents.SHIPMENT_CREATED` ejecuta `sendShipmentNotificationWorkflow`. Usa el correo del pedido, su enlace autenticado y los números de seguimiento existentes. No envía para preparaciones canceladas, no enviadas, sin envío físico o con notificaciones suprimidas.
+El evento nativo `FulfillmentWorkflowEvents.SHIPMENT_CREATED` ejecuta `sendShipmentNotificationWorkflow`. Usa el correo del pedido, su enlace privado de seguimiento y los números de seguimiento existentes. El [seguimiento privado](order-tracking.md) permite consultar el estado sin iniciar sesión. No envía para preparaciones canceladas, no enviadas, sin envío físico o con notificaciones suprimidas.
 
 Reutiliza la configuración existente: `AUTH_EMAIL_ENABLED=true`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (alternativamente `AUTH_EMAIL_FROM`) y `STOREFRONT_URL`. Los valores secretos permanecen fuera del repositorio. Cada preparación tiene una clave de idempotencia para evitar duplicados al reintentar. El worker y el proveedor de correo deben estar operativos.
 
 ## Verificación
 
-Las verificaciones históricas cubrieron autorización, cantidades y estados inválidos, preparaciones parciales, seguimiento seguro, kits, cancelación, correo y filtros. Los tests unitarios se retiraron el 2026-10-03; las integraciones aisladas se conservan. La QA histórica incluyó componentes en móvil/escritorio e impresión mediante datos aislados y redirecciones sin sesión. Su alcance concreto está en los informes de [pedidos](reports/qa-orders-browser-2026-09-12.md), [operador](reports/qa-admin-browser-2026-09-12.md) y [finanzas](reports/qa-order-finance-2026-09-12.md).
+Las verificaciones históricas cubrieron autorización, cantidades y estados inválidos, preparaciones parciales, seguimiento seguro, kits, cancelación, correo y filtros. Los tests unitarios se retiraron el 2026-10-03; las integraciones aisladas se conservan. El alcance y los límites de cierre están en la [matriz F01–F12](develpment/evidence/development-closure-20261003.md); se conserva también la [QA financiera](reports/qa-order-finance-2026-09-12.md).
 
-F12 está cerrado con los alcances y calificaciones de la [matriz final](develpment/evidence/development-closure-20261003.md). La verificación nueva pendiente corresponde a completar un pedido TEST, esperar 72 horas reales y conciliar la transferencia automática única. No sustituirla por la QA manual previa ni por relojes adelantados; registrar resultados en [Development Progress](develpment/development-progress.md).
+F12 conserva su cierre histórico. La liberación inmediata pasó una [prueba integral aislada](develpment/evidence/immediate-release-e2e-20261006.md). El pedido original TEST #16 conserva su plazo de 72 horas reales y la comprobación posterior al vencimiento sigue pausada por el cambio de entorno. Esa prueba no se sustituye por la QA inmediata ni por relojes adelantados; consultar [Development Progress](develpment/development-progress.md) antes de retomarla.

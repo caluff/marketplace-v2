@@ -1,8 +1,17 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
-import { Plus, X } from "lucide-react";
+import { useId, useRef, useState, type ReactNode } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useConfirmDiscardWithin } from "../workspace/unsaved-changes";
+import { PresentationEditorProvider } from "./presentation-editor";
 
 export function PresentationControls({
   children,
@@ -12,33 +21,58 @@ export function PresentationControls({
   hasPending: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isBusy, setBusy] = useState(false);
+  const region = useRef<HTMLDivElement>(null);
+  const confirmDiscard = useConfirmDiscardWithin();
   const panelId = useId();
+  function requestClose() {
+    if (!isBusy) confirmDiscard(() => setIsOpen(false), region.current);
+  }
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">Presentaciones y precios</h2>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (next) setIsOpen(true);
+        else requestClose();
+      }}
+    >
+      <DialogTrigger asChild>
         <Button
           type="button"
           variant="outline"
-          aria-expanded={isOpen}
-          aria-controls={panelId}
-          aria-describedby={hasPending ? `${panelId}-pending` : undefined}
+          aria-label="Crear variante"
+          title={
+            hasPending
+              ? "Hay una solicitud pendiente de revisión."
+              : "Crear variante"
+          }
           disabled={hasPending}
-          onClick={() => setIsOpen(!isOpen)}
         >
-          {isOpen ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
-          {isOpen ? "Cerrar" : "Añadir presentación"}
+          <Plus aria-hidden="true" />
+          Crear
         </Button>
-      </div>
-      {hasPending ? (
-        <p id={`${panelId}-pending`} className="text-sm text-muted-foreground">
-          Hay una solicitud pendiente de revisión. Podrás añadir tamaños,
-          colores u otras presentaciones cuando se resuelva.
-        </p>
-      ) : null}
-      <div id={panelId} hidden={!isOpen}>
-        {children}
-      </div>
-    </div>
+      </DialogTrigger>
+      <DialogContent
+        className="max-h-[85dvh] overflow-y-auto sm:max-w-3xl"
+        aria-describedby={undefined}
+      >
+        <DialogHeader>
+          <DialogTitle>Nueva variante</DialogTitle>
+        </DialogHeader>
+        <PresentationEditorProvider
+          value={{
+            close: () => setIsOpen(false),
+            setBusy,
+            open: () => setIsOpen(true),
+            canEdit: !hasPending,
+            panelId,
+          }}
+        >
+          <div ref={region} id={panelId}>
+            {children}
+          </div>
+        </PresentationEditorProvider>
+      </DialogContent>
+    </Dialog>
   );
 }

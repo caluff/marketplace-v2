@@ -75,7 +75,6 @@ export async function ProductOffers({
         }}
       />
       <ProductPurchase
-        variants={product.variants ?? []}
         offers={offers}
         hasRegion={Boolean(region)}
         summary={summary}

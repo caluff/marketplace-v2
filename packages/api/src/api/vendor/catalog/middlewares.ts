@@ -4,10 +4,13 @@ import type {
   MedusaNextFunction,
   MiddlewareRoute,
 } from "@medusajs/framework/http";
+import { validateAndTransformBody } from "@medusajs/framework/http";
 import { MedusaError, PolicyOperation } from "@medusajs/framework/utils";
 import type { SellerContext } from "@mercurjs/core/types/seller-context";
 import { validateVendorCatalogWorkflow } from "../../../workflows/validate-vendor-catalog";
 import "../../../workflows/hooks/vendor-offer-validation";
+import { VariantMediaUpdateSchema } from "../../../lib/catalog/variant-media";
+import { CreateCompleteVariantSchema } from "../../../lib/catalog/create-complete-variant";
 
 const guard =
   (mode: "create" | "update" | "variant" | "attributes") =>
@@ -36,6 +39,20 @@ const guard =
 
 export const vendorCatalogMiddlewares: MiddlewareRoute[] = [
   {
+    matcher: "/vendor/products/:id/variant-configurations",
+    method: "POST",
+    bodyParser: { sizeLimit: "32kb" },
+    policies: [{ resource: "product", operation: PolicyOperation.update }],
+    middlewares: [validateAndTransformBody(CreateCompleteVariantSchema)],
+  },
+  {
+    matcher: "/vendor/products/:id/variants/:variant_id/media",
+    method: "POST",
+    bodyParser: { sizeLimit: "32kb" },
+    policies: [{ resource: "product", operation: PolicyOperation.update }],
+    middlewares: [validateAndTransformBody(VariantMediaUpdateSchema)],
+  },
+  {
     matcher: "/vendor/products/:id/catalog-options",
     method: "GET",
     middlewares: [],
@@ -50,7 +67,7 @@ export const vendorCatalogMiddlewares: MiddlewareRoute[] = [
   {
     matcher: "/vendor/products/:id",
     method: "POST",
-    bodyParser: { sizeLimit: "128kb" },
+    bodyParser: { sizeLimit: "256kb" },
     middlewares: [guard("update")],
   },
   {

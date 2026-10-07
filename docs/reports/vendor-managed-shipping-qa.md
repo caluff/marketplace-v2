@@ -6,7 +6,8 @@ Fecha de QA: 2026-09-07 (UTC).
 
 ## Alcance
 
-Implementación del [plan de envíos](../plans/vendor-managed-shipping.md).
+Verificación inicial del flujo de envíos, hoy descrito en la
+[guía de operación vendor](../vendor-operations.md).
 El vendedor configura perfiles y tarifas desde `Ajustes → Envíos`, y selecciona
 el perfil al crear una oferta. Puede renombrar perfiles, crear varias tarifas,
 editar su precio y condiciones, y desactivarlas para nuevas compras.

@@ -42,12 +42,15 @@ export function getProductImageZoom(input: ZoomInput) {
   )
     return null
 
-  const previewWidth = Math.min(
+  const previewSize = Math.min(
     availableWidth,
-    width * 1.5,
+    width,
+    height,
     imageWidth * MAGNIFICATION,
+    imageHeight * MAGNIFICATION,
   )
-  const previewHeight = Math.min(height, imageHeight * MAGNIFICATION)
+  const previewWidth = previewSize
+  const previewHeight = previewSize
   const lensWidth = previewWidth / MAGNIFICATION
   const lensHeight = previewHeight / MAGNIFICATION
   const lensX = Math.max(

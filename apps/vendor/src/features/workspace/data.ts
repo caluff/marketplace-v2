@@ -78,13 +78,19 @@ export async function productDetail(id: string) {
   const [detail, axes] = await Promise.all([
     client.get<HttpTypes.VendorProductResponse>(`/vendor/products/${id}`, {
       fields:
-        "id,title,subtitle,description,material,weight,length,width,height,status,handle,images.id,images.url,categories.id,categories.name,product_attribute_values.id,product_attribute_values.name,product_attribute_values.attribute.id,product_attribute_values.attribute.name,product_attribute_values.attribute.is_variant_axis,scoped_attributes.id,scoped_attributes.name,scoped_attributes.is_variant_axis,scoped_attributes.values.id,scoped_attributes.values.name,changes.id,changes.status,changes.created_by,changes.created_at,changes.external_note,changes.declined_reason",
+        "id,title,subtitle,description,material,weight,length,width,height,origin_country,hs_code,mid_code,status,handle,discountable,type_id,type.value,collection_id,collection.title,tags.id,tags.value,images.id,images.url,categories.id,categories.name,product_attribute_values.id,product_attribute_values.name,product_attribute_values.attribute.id,product_attribute_values.attribute.name,product_attribute_values.attribute.is_variant_axis,scoped_attributes.id,scoped_attributes.name,scoped_attributes.is_variant_axis,scoped_attributes.values.id,scoped_attributes.values.name,changes.id,changes.status,changes.created_by,changes.created_at,changes.external_note,changes.declined_reason",
     }),
     client.get<Pick<ProductDTO, "options" | "variants">>(
       `/vendor/products/${id}/catalog-options`,
     ),
   ]);
-  return { product: { ...detail.product, ...axes } };
+  return {
+    product: {
+      ...detail.product,
+      options: axes.options,
+      variants: axes.variants,
+    },
+  };
 }
 
 // Medusa formats quantities from the order-item relation: select its counters

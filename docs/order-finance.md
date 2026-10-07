@@ -1,8 +1,8 @@
 # Cancelaciones y reembolsos por tienda
 
-Guía vigente actualizada el 2026-10-06. **F01–F12 / Phase 1–6 DONE**, con **Financial Readiness PASS para Stripe TEST, USD y operación manual**, según la [matriz final](develpment/evidence/development-closure-20261003.md). La [auditoría original](develpment/development-completion-audit.md) conserva sus hallazgos históricos; el [progreso](develpment/development-progress.md) registra su resolución y la extensión automática aún pendiente de prueba integral con un pedido nuevo y 72 horas reales.
+Guía vigente actualizada el 2026-10-06. **F01–F12 / Phase 1–6 DONE**, con **Financial Readiness PASS para Stripe TEST, USD y operación manual**, según la [matriz final](develpment/evidence/development-closure-20261003.md). La [auditoría original](develpment/development-completion-audit.md) conserva sus hallazgos históricos; el [progreso](develpment/development-progress.md) registra su resolución. La liberación inmediata pasó una QA integral aislada; el circuito original del pedido TEST #16 a 72 horas reales sigue pendiente de comprobación y pausado por su cambio de entorno.
 
-Implementación para Mercur 2.3.3 / Medusa 2.18.0. El alcance habilitado es Stripe de prueba, USD, un pago compartido con autorización sin captura, captura completa o captura final ajustada registrada por este flujo. Incluye liquidación operativa y reembolsos anteriores/posteriores a transferencias atribuibles y verificadas. La extensión automática está activa localmente en TEST y conserva los controles de la vía manual. No habilita pagos reales; cambiar claves no implementa compatibilidad LIVE.
+Implementación para Mercur 2.3.3 / Medusa 2.18.0. El alcance habilitado es Stripe de prueba, USD, un pago compartido con autorización sin captura, captura completa o captura final ajustada registrada por este flujo. Incluye liquidación operativa y reembolsos anteriores/posteriores a transferencias atribuibles y verificadas. La extensión automática conserva los controles de la vía manual y necesita configuración activa en el entorno que se va a operar. No habilita pagos reales; cambiar claves no implementa compatibilidad LIVE.
 
 ## Acceso
 
@@ -145,9 +145,10 @@ con instantes finitos. El trigger de inmutabilidad y los permisos privados se
 conservan. La reversión se rechaza si existe algún reloj con plazo distinto de
 3 días; nunca adapta ni elimina esos relojes para permitir un rollback.
 
-La activación local está verificada; la venta nueva con 72 horas reales y
-conciliación del resultado continúa **NEEDS VERIFICATION** hasta que el progreso
-registre evidencia efectiva de ese circuito.
+La activación inicial conserva su evidencia histórica. Inmediato pasó una QA
+integral aislada; el pedido original TEST #16 a 72 horas reales y la conciliación
+posterior continúan **NEEDS VERIFICATION**, con el seguimiento pausado por el
+cambio de entorno. Consultar el progreso antes de retomar ese circuito.
 
 Fuera de esos requisitos, las devoluciones físicas, cambios y reclamaciones tienen primitivas nativas pero esta extensión no añade todos sus formularios logísticos. No son automáticamente bloqueadores del alcance actual. La automatización financiera es opcional (F17) si existe operación manual segura; el modo real y la preparación de producción pertenecen a una etapa posterior.
 

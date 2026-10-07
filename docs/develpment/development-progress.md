@@ -42,7 +42,7 @@ ACTIVACIÓN PASS histórica — código y gates backend PASS. Pedido TEST #16 co
   habitual tras preflight readonly y QA aislado. Ledger, RLS/ACL y cero permisos
   concedidos auditados. Reloj del pedido TEST #16, operaciones financieras,
   tiendas y `.env` permanecieron idénticos.
-- Instrucción vigente del usuario: **un único commit con todos los cambios
+- Instrucción del usuario para aquel checkpoint: **un único commit con todos los cambios
   pendientes; no hacer push**, excepto el test
   `apps/admin/tests/product-review-commerce.test.ts`, que se conserva localmente
   por pertenecer a una tarea paralela. Esta instrucción sustituye la separación
@@ -97,7 +97,7 @@ Los pendientes de estos checkpoints quedaron resueltos en el estado vigente ante
 
 ## Next Action vigente
 
-Esperar el vencimiento real del pedido TEST #16: **6 de octubre de 2026, 12:51:00.416 America/Montevideo**. El seguimiento local diario verificará de sólo lectura una única transferencia automática USD204, journal/payout/Stripe, destino, informes y otro ciclo natural sin duplicados. Mantener API/shared, Redis y equipo disponibles; si están apagados, documentar el retraso sin reducir72 horas ni liquidar manualmente. La compra y finalización ya ocurrieron; no repetirlas ni crear otro pedido. No quedan acciones de activación ni tareas obligatorias F01–F12 del cierre histórico. LIVE, resto de F13–F17 y despliegue siguen fuera de alcance. Preservar cambios ajenos. [Instrucciones y recibos](evidence/automatic-settlement-e2e-20261003.md).
+El plazo del pedido TEST #16 venció el **6 de octubre de 2026, 12:51:00.416 America/Montevideo**. Mantener su seguimiento pausado hasta identificar dónde reside el pedido y el entorno que corresponde verificar; la configuración actual desactiva la liberación automática y usa PostgreSQL local. Después se podrá contrastar la transferencia, su importe/destino, journal/payout/Stripe, informes y un ciclo posterior sin duplicados. No reactivar servicios, crear pedidos ni liquidar manualmente como parte de una revisión documental. La QA inmediata aislada no resuelve este circuito histórico. F01–F12 conservan su cierre; LIVE y el resto de F13–F17 siguen pendientes. [Comprobación al vencimiento y límites](evidence/automatic-settlement-e2e-20261003.md#comprobación-al-vencimiento--2026-10-06).
 
 ## In Progress — registro histórico
 
@@ -130,7 +130,7 @@ None
 
 ## Decisions
 
-- Autorización vigente del usuario (2026-09-19): implementar las seis fases F01–F12, crear tareas/worktrees `codex/*` desde `develop`, revisar e integrar commits; sin push ni despliegue. F13–F17 y producción quedan fuera.
+- Autorización para el cierre histórico (2026-09-19): implementar las seis fases F01–F12, crear tareas/worktrees `codex/*` desde `develop`, revisar e integrar commits; en aquel alcance no se incluían push ni despliegue. Las publicaciones autorizadas después no amplían la certificación a F13–F17 o producción.
 - Confirmado por el usuario: bloquear comisión cero y ausencia de regla aplicable. Conservar regla resuelta por backend y base previa a descuentos; no fijar 8% en código.
 - Confirmado por el usuario: zona temporal de negocio `America/Montevideo`.
 - Preservar todos los cambios ajenos existentes, incluida migración de UI compartida no confirmada. No incorporar esos cambios en commits del cierre.

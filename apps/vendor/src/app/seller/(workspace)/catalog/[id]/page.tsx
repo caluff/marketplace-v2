@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import type { ProductDTO } from "@mercurjs/types";
-import { Suspense } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Suspense, type ReactNode } from "react";
 import {
   DataError,
   PageHeading,
@@ -9,21 +9,26 @@ import {
 } from "@/features/workspace/components";
 import { editProductAction } from "@/features/workspace/actions";
 import { productDetail, resultOf, workspace } from "@/features/workspace/data";
-import { formatDate } from "@/features/workspace/presentation";
-import { MutationForm } from "@/features/workspace/mutation-form";
+import { ProductChangeHistory } from "@/features/catalog/product-change-history";
 import {
   CategoryFields,
   type CategoryResult,
 } from "@/features/catalog/category-fields";
 import { catalogCategories } from "@/features/catalog/data";
-import { ProductForm } from "@/features/catalog/product-form";
-import { VariantForm } from "@/features/catalog/variant-form";
-import { extendAxisAction } from "@/features/catalog/actions";
+import { ProductEditSection } from "@/features/catalog/product-edit-section";
+import { ProductOrganizationFields } from "@/features/catalog/product-organization-fields";
+import {
+  PRODUCT_MEASUREMENTS,
+  PRODUCT_TEXT_ATTRIBUTES,
+} from "@/features/catalog/product-specifications";
+import { CreateVariantContent } from "@/features/catalog/create-variant-content";
 import { ProductOffers } from "@/features/offers/product-offers";
+import { ProductVariantsCard } from "@/features/offers/product-variants-card";
 import { offerConfiguration } from "@/features/offers/data";
 import { PresentationControls } from "@/features/catalog/presentation-controls";
 import { hasPresentationOptions } from "@/features/catalog/variant-options";
 import { CatalogAutoRefresh } from "@/features/catalog/auto-refresh";
+import { ProductDescription } from "@/features/catalog/product-description";
 
 export const metadata: Metadata = { title: "Detalle de producto" };
 const loading = (
@@ -34,40 +39,182 @@ const loading = (
     Cargando datos…
   </div>
 );
-function EditForm({
+function EditSections({
   product,
   categories,
+  disabled = false,
+  history,
+  historyOpen,
+  variants,
 }: {
   product: ProductDTO;
   categories: CategoryResult;
+  disabled?: boolean;
+  history: ReactNode;
+  historyOpen: boolean;
+  variants: ReactNode;
 }) {
+  const showProductAttributes =
+    hasPresentationOptions(product) ||
+    [...PRODUCT_TEXT_ATTRIBUTES, ...PRODUCT_MEASUREMENTS].some(
+      ({ name }) => product[name] != null && product[name] !== "",
+    );
   return (
-    <ProductForm
-      product={product}
-      action={editProductAction}
-      categories={
-        <Suspense
-          fallback={
-            <p role="status" className="h-24 text-sm text-muted-foreground">
-              Cargando categorías…
-            </p>
+    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+      <div className="min-w-0 space-y-6">
+        <ProductEditSection
+          title={product.title}
+          history={history}
+          historyOpen={historyOpen}
+          status={<StatusBadge status={product.status} />}
+          product={product}
+          section="details"
+          action={editProductAction}
+          disabled={disabled}
+        >
+          {product.subtitle ? (
+            <p className="mb-5 text-sm">{product.subtitle}</p>
+          ) : null}
+          <ProductDescription description={product.description} />
+          <dl className="mt-5 space-y-3 border-t pt-4 text-sm">
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-muted-foreground">URL del producto</dt>
+              <dd className="max-w-[60%] text-right break-words">
+                {product.handle || "-"}
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-muted-foreground">Descuentos</dt>
+              <dd>{product.discountable ? "Permitidos" : "No permitidos"}</dd>
+            </div>
+          </dl>
+        </ProductEditSection>
+        <ProductEditSection
+          title="Imágenes"
+          product={product}
+          section="media"
+          action={editProductAction}
+          disabled={disabled}
+        >
+          <div className="flex flex-wrap gap-3">
+            {product.images?.map((image) => (
+              <Image
+                key={image.id}
+                src={image.url}
+                width={120}
+                height={120}
+                alt={product.title}
+                unoptimized
+                className="size-30 border object-cover"
+              />
+            ))}
+          </div>
+        </ProductEditSection>
+        {variants}
+      </div>
+      <div className="min-w-0 space-y-6">
+        <ProductEditSection
+          title="Organización"
+          product={product}
+          section="organization"
+          action={editProductAction}
+          disabled={disabled}
+          organization={<ProductOrganizationFields product={product} />}
+          categories={
+            <Suspense
+              fallback={
+                <p role="status" className="h-24 text-sm text-muted-foreground">
+                  Cargando categorías…
+                </p>
+              }
+            >
+              <CategoryFields
+                categories={categories}
+                selected={product.categories?.map((category) => category.id)}
+              />
+            </Suspense>
           }
         >
-          <CategoryFields
-            categories={categories}
-            selected={product.categories?.map((category) => category.id)}
-          />
-        </Suspense>
-      }
-    />
+          <dl className="space-y-4 text-sm">
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-muted-foreground">Tipo</dt>
+              <dd className="max-w-[60%] text-right break-words">
+                {product.type?.value || "-"}
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-muted-foreground">Colección</dt>
+              <dd className="max-w-[60%] text-right break-words">
+                {product.collection?.title || "-"}
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-muted-foreground">Categorías</dt>
+              <dd className="max-w-[60%] text-right break-words">
+                {product.categories?.map(({ name }) => name).join(", ") || "-"}
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-muted-foreground">Etiquetas</dt>
+              <dd className="max-w-[60%] text-right break-words">
+                {product.tags?.map(({ value }) => value).join(", ") || "-"}
+              </dd>
+            </div>
+          </dl>
+        </ProductEditSection>
+        {showProductAttributes ? (
+          <ProductEditSection
+            title="Atributos generales del producto"
+            product={product}
+            section="attributes"
+            action={editProductAction}
+            disabled={disabled}
+          >
+            <p className="mb-4 text-sm text-muted-foreground">
+              Son independientes de los atributos de cada variante.
+            </p>
+            <dl className="space-y-4 text-sm">
+              {[
+                { name: "material" as const, label: "Material" },
+                ...PRODUCT_MEASUREMENTS,
+                { name: "origin_country" as const, label: "País de origen" },
+                { name: "hs_code" as const, label: "Código HS" },
+                { name: "mid_code" as const, label: "Código MID" },
+              ].map(({ name, label }) => (
+                <div
+                  key={name}
+                  className="flex items-start justify-between gap-4"
+                >
+                  <dt className="text-muted-foreground">{label}</dt>
+                  <dd className="max-w-[60%] text-right break-words">
+                    {product[name] == null || product[name] === ""
+                      ? "-"
+                      : String(product[name])}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </ProductEditSection>
+        ) : null}
+      </div>
+    </div>
   );
 }
-async function ProductContent({ id }: { id: string }) {
+async function ProductContent({
+  id,
+  searchParams,
+}: {
+  id: string;
+  searchParams: Promise<{ history?: string }>;
+}) {
   const { client, membership } = await workspace();
   // Handle an early category failure even when product detail fails or editing is pending.
   const categories = resultOf(catalogCategories(client));
   const configuration = resultOf(offerConfiguration(client));
-  const result = await resultOf(productDetail(id));
+  const [result, query] = await Promise.all([
+    resultOf(productDetail(id)),
+    searchParams,
+  ]);
   if (!result.data)
     return (
       <>
@@ -84,129 +231,77 @@ async function ProductContent({ id }: { id: string }) {
   return (
     <>
       <CatalogAutoRefresh sellerId={membership.seller.id} />
-      {changes.length ? (
-        <details id="solicitudes" className="rounded-xl border bg-card px-5">
-          <summary className="cursor-pointer py-4 text-sm font-semibold focus-visible:outline-2">
-            Historial de cambios · {changes.length}
-            {hasPending ? " · Pendiente de revisión" : " · Ver historial"}
-          </summary>
-          <div className="max-h-72 space-y-3 overflow-y-auto border-t py-4">
-            {changes.map((change) => (
-              <div
-                key={change.id}
-                className="flex flex-wrap items-center justify-between gap-3 border-b pb-3"
-              >
-                <div>
-                  <p className="text-sm">{formatDate(change.created_at)}</p>
-                  {change.external_note || change.declined_reason ? (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {change.external_note ?? change.declined_reason}
-                    </p>
-                  ) : null}
-                </div>
-                <StatusBadge status={change.status} />
-              </div>
-            ))}
-          </div>
-        </details>
+      {hasPending ? (
+        <p className="text-sm text-muted-foreground">
+          Ya hay una solicitud pendiente. Espera su resolución para guardar
+          otros cambios.
+        </p>
       ) : null}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <CardTitle>Datos del producto</CardTitle>
-            <StatusBadge status={product.status} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {hasPending ? (
-            <p className="text-sm text-muted-foreground">
-              Ya hay una solicitud pendiente. Espera su resolución para guardar
-              otros cambios.
-            </p>
-          ) : (
-            <EditForm product={product} categories={categories} />
-          )}
-        </CardContent>
-      </Card>
-      <section className="space-y-4">
-        {hasOptions ? (
-          <PresentationControls hasPending={hasPending}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Nueva presentación</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {!hasPending ? (
-                  <section className="space-y-3">
-                    <VariantForm product={product} />
-                  </section>
-                ) : null}
-                {(product.attributes ?? [])
-                  .filter((attribute) => attribute.is_variant_axis)
-                  .map((attribute) => (
-                    <div key={attribute.id} className="space-y-3 border-t pt-4">
-                      <p className="font-medium">{attribute.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {attribute.values
-                          ?.map((value) => value.name)
-                          .join(", ")}
+      <EditSections
+        product={product}
+        categories={categories}
+        disabled={hasPending}
+        history={<ProductChangeHistory changes={changes} />}
+        historyOpen={query.history === "1"}
+        variants={
+          <ProductVariantsCard
+            createAction={
+              hasOptions ? (
+                <PresentationControls hasPending={hasPending}>
+                  <Suspense
+                    fallback={
+                      <p
+                        role="status"
+                        className="h-32 text-sm text-muted-foreground"
+                      >
+                        Cargando configuración de la variante…
                       </p>
-                      {!hasPending ? (
-                        <details>
-                          <summary className="cursor-pointer text-sm text-primary">
-                            Añadir valores de {attribute.name.toLowerCase()}
-                          </summary>
-                          <div className="pt-4">
-                            <MutationForm
-                              action={extendAxisAction}
-                              hidden={{
-                                id: product.id,
-                                attribute_id: attribute.id,
-                              }}
-                              submit="Guardar valores"
-                              disableAfterSuccess
-                              fields={[
-                                {
-                                  name: "values",
-                                  label: "Valores separados por comas",
-                                  required: true,
-                                  maxLength: 3000,
-                                },
-                              ]}
-                            />
-                          </div>
-                        </details>
-                      ) : null}
-                    </div>
-                  ))}
-              </CardContent>
-            </Card>
-          </PresentationControls>
-        ) : (
-          <h2 className="text-xl font-semibold">Presentaciones y precios</h2>
-        )}
-        <Suspense fallback={loading}>
-          <ProductOffers
-            product={product}
-            configuration={configuration}
-            hasPending={hasPending}
-          />
-        </Suspense>
-      </section>
+                    }
+                  >
+                    <CreateVariantContent
+                      product={product}
+                      configuration={configuration}
+                    />
+                  </Suspense>
+                </PresentationControls>
+              ) : undefined
+            }
+          >
+            <Suspense
+              fallback={
+                <div
+                  role="status"
+                  className="h-48 px-5 py-8 text-sm text-muted-foreground motion-safe:animate-pulse"
+                >
+                  Cargando variantes…
+                </div>
+              }
+            >
+              <ProductOffers
+                product={product}
+                configuration={configuration}
+                hasPending={hasPending}
+              />
+            </Suspense>
+          </ProductVariantsCard>
+        }
+      />
     </>
   );
 }
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ history?: string }>;
 }) {
   const { id } = await params;
   return (
     <div className="space-y-6">
       <PageHeading eyebrow="Catálogo" title="Detalle de producto" />
       <Suspense fallback={loading}>
-        <ProductContent id={id} />
+        <ProductContent id={id} searchParams={searchParams} />
       </Suspense>
     </div>
   );

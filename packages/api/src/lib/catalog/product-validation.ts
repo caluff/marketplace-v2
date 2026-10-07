@@ -11,12 +11,32 @@ import { assertSellerCatalogImages } from "../catalog-media/access";
 
 const text = z.string().trim().min(1).max(200);
 const optionMap = z.record(text, text);
+const physicalSpecifications = {
+  material: text.nullish(),
+  origin_country: z
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z]{2}$/, "Use a two-letter country code.")
+    .nullish(),
+  hs_code: z.string().trim().max(200).nullish(),
+  mid_code: z.string().trim().max(200).nullish(),
+  weight: z.number().finite().positive().nullish(),
+  length: z.number().finite().positive().nullish(),
+  width: z.number().finite().positive().nullish(),
+  height: z.number().finite().positive().nullish(),
+};
+const physicalSpecificationsSchema = z.object(physicalSpecifications);
 const variantSchema = z.object({
   id: z.string().optional(),
   title: text.optional(),
   sku: z.string().trim().max(100).nullish(),
   options: optionMap.optional(),
+  ...physicalSpecifications,
 });
+
+export function validateCatalogVariantFields(body: unknown) {
+  return parseCatalogInput(variantSchema, body);
+}
 const inlineAxis = z.object({
   title: text,
   type: z.literal("multi_select"),
@@ -28,6 +48,20 @@ const invalid: (message: string) => never = (message) => {
 };
 const record = (value: unknown): Record<string, unknown> =>
   z.record(z.string(), z.unknown()).parse(value);
+
+function parseCatalogInput<T extends z.ZodType>(
+  schema: T,
+  value: unknown,
+): z.infer<T> {
+  const parsed = schema.safeParse(value);
+  if (!parsed.success)
+    invalid(
+      parsed.error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join("; "),
+    );
+  return parsed.data;
+}
 
 async function readReferencedAttributes(
   container: MedusaContainer,
@@ -106,6 +140,8 @@ export async function validateCatalogMutation(
   if (!FeatureFlag.isFeatureEnabled(MercurFeatureFlags.PRODUCT_REQUEST))
     invalid("Product moderation must be enabled before vendor catalog writes.");
   const body = record(input.body ?? {});
+  if (input.mode === "create" || input.mode === "update")
+    parseCatalogInput(physicalSpecificationsSchema, body);
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   if (!input.seller_id) invalid("Seller context is required.");
   if (input.mode === "variant" && body.images !== undefined) {
@@ -201,11 +237,13 @@ export async function validateCatalogMutation(
         axes.push(inlineAxis.parse(attribute));
       }
     }
-    const variants = z
-      .array(variantSchema.extend({ title: text, sku: text.max(100) }))
-      .min(1)
-      .max(100)
-      .parse(body.variants);
+    const variants = parseCatalogInput(
+      z
+        .array(variantSchema.extend({ title: text, sku: text.max(100) }))
+        .min(1)
+        .max(100),
+      body.variants,
+    );
     if (
       new Set(variants.map((variant) => variant.sku)).size !== variants.length
     )
@@ -235,7 +273,7 @@ export async function validateCatalogMutation(
       !currentVariants.some((variant) => variant.id === input.variant_id)
     )
       invalid("Variant does not belong to this product.");
-    const variant = variantSchema.parse(body);
+    const variant = parseCatalogInput(variantSchema, body);
     if (
       variant.sku &&
       currentVariants.some(

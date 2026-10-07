@@ -1,6 +1,4 @@
 import type { HttpTypes } from "@medusajs/types"
-import { ImageIcon } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
@@ -8,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { FavoriteButton } from "@/features/account/components/favorite-button"
 import { getProductImage } from "@/features/catalog/image"
+import { ProductCardImages } from "@/features/catalog/product-card-images"
+import { getProductImageSources } from "@/features/catalog/variant-images"
 import {
   formatPrice,
   getLowestOfferPrice,
@@ -30,6 +30,12 @@ export function ProductCard({
   offers = [],
 }: ProductCardProps) {
   const image = getProductImage(product.thumbnail ?? product.images?.[0]?.url)
+  const generalSources = getProductImageSources(product)
+  const sources = generalSources.length
+    ? generalSources
+    : image
+      ? [image.source]
+      : []
   const price = getLowestOfferPrice(offers)
   const href = `/products/${encodeURIComponent(product.handle ?? product.id)}`
   const category = product.categories?.[0]
@@ -42,32 +48,12 @@ export function ProductCard({
     <Card className="group h-full gap-0 overflow-hidden bg-background transition-transform duration-300 hover:-translate-y-1">
       <article className="flex h-full flex-col">
         <div className="relative aspect-[4/5] overflow-hidden border-b border-border bg-muted">
-          <Link
+          <ProductCardImages
+            key={JSON.stringify(sources)}
+            title={product.title}
             href={href}
-            aria-label={`Ver ${product.title}`}
-            className="absolute inset-0 focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            {image ? (
-              <Image
-                src={image.source}
-                alt={product.title}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                loading="lazy"
-                unoptimized={image.unoptimized}
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
-              />
-            ) : (
-              <div className="grid h-full place-items-center text-muted-foreground">
-                <ImageIcon
-                  aria-hidden="true"
-                  className="size-10"
-                  strokeWidth={1.25}
-                />
-                <span className="sr-only">Este producto no tiene imagen</span>
-              </div>
-            )}
-          </Link>
+            sources={sources}
+          />
           {isSale ? (
             <Badge variant="accent" className="absolute bottom-3 left-3">
               Oferta

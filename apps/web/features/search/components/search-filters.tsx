@@ -2,9 +2,14 @@
 
 import type { StoreSearchProductsResponse } from "@usapeek/api/search-contracts";
 import { ChevronDown, LoaderCircle, SlidersHorizontal, X } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition, type FormEvent } from "react";
+import {
+  useId,
+  useState,
+  useTransition,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,17 +43,51 @@ const PRICE_FORMATTER = new Intl.NumberFormat("es-UY", {
   maximumFractionDigits: 2,
 });
 
+function usePriceSliderRange({ parameters, priceRange }: FilterProps) {
+  const scope = JSON.stringify([
+    parameters.q,
+    parameters.categoryIds,
+    parameters.sellerIds,
+  ]);
+  const [cached, setCached] = useState({ scope, priceRange });
+  const hasPriceFilter =
+    parameters.minPrice !== undefined || parameters.maxPrice !== undefined;
+  if (
+    cached.scope !== scope ||
+    (!hasPriceFilter &&
+      (cached.priceRange?.min !== priceRange?.min ||
+        cached.priceRange?.max !== priceRange?.max))
+  ) {
+    setCached({ scope, priceRange });
+    return priceRange;
+  }
+  // Applying a price must leave enough slider range to widen it again.
+  return cached.priceRange;
+}
+
 function PriceRangeFields({
   id,
   parameters,
   priceRange,
-}: Pick<FilterProps, "parameters" | "priceRange"> & { id: string }) {
-  const [minimumPrice, setMinimumPrice] = useState(
-    parameters.minPrice?.toString() ?? "",
-  );
-  const [maximumPrice, setMaximumPrice] = useState(
-    parameters.maxPrice?.toString() ?? "",
-  );
+  onCommit,
+}: Pick<FilterProps, "parameters" | "priceRange"> & {
+  id: string;
+  onCommit: (minimum: string, maximum: string) => void;
+}) {
+  const priceKey = JSON.stringify([parameters.minPrice, parameters.maxPrice]);
+  const [inputs, setInputs] = useState({
+    priceKey,
+    minimumPrice: parameters.minPrice?.toString() ?? "",
+    maximumPrice: parameters.maxPrice?.toString() ?? "",
+  });
+  if (inputs.priceKey !== priceKey) {
+    setInputs({
+      priceKey,
+      minimumPrice: parameters.minPrice?.toString() ?? "",
+      maximumPrice: parameters.maxPrice?.toString() ?? "",
+    });
+  }
+  const { minimumPrice, maximumPrice } = inputs;
   const bounds = getPriceSliderBounds(
     priceRange,
     parameters.minPrice,
@@ -58,14 +97,24 @@ function PriceRangeFields({
     ? getPriceSliderValue(minimumPrice, maximumPrice, bounds)
     : null;
 
-  function updateFromSlider(values: number[]) {
+  function pricesFromSlider(values: number[]) {
     if (values.length < 2 || !bounds) return;
-    setMinimumPrice(
+    return [
       values[0] <= bounds.min ? "" : Number(values[0].toFixed(2)).toString(),
-    );
-    setMaximumPrice(
       values[1] >= bounds.max ? "" : Number(values[1].toFixed(2)).toString(),
-    );
+    ] as const;
+  }
+
+  function updateFromSlider(values: number[]) {
+    const prices = pricesFromSlider(values);
+    if (!prices) return;
+    setInputs({ priceKey, minimumPrice: prices[0], maximumPrice: prices[1] });
+  }
+
+  function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
   }
 
   return (
@@ -86,6 +135,10 @@ function PriceRangeFields({
             step={0.01}
             minStepsBetweenThumbs={0}
             onValueChange={updateFromSlider}
+            onValueCommit={(values) => {
+              const prices = pricesFromSlider(values);
+              if (prices) onCommit(...prices);
+            }}
             thumbLabels={["Precio mínimo", "Precio máximo"]}
             className="min-h-11 lg:min-h-8"
           />
@@ -109,7 +162,14 @@ function PriceRangeFields({
             inputMode="decimal"
             placeholder="Mínimo"
             value={minimumPrice}
-            onChange={(event) => setMinimumPrice(event.target.value)}
+            onChange={(event) =>
+              setInputs({ ...inputs, minimumPrice: event.target.value })
+            }
+            onKeyDown={submitOnEnter}
+            onBlur={(event) => {
+              if (event.currentTarget.form?.checkValidity())
+                onCommit(minimumPrice, maximumPrice);
+            }}
             className="h-11 px-3 text-sm lg:h-9"
           />
         </div>
@@ -130,7 +190,14 @@ function PriceRangeFields({
             inputMode="decimal"
             placeholder="Máximo"
             value={maximumPrice}
-            onChange={(event) => setMaximumPrice(event.target.value)}
+            onChange={(event) =>
+              setInputs({ ...inputs, maximumPrice: event.target.value })
+            }
+            onKeyDown={submitOnEnter}
+            onBlur={(event) => {
+              if (event.currentTarget.form?.checkValidity())
+                onCommit(minimumPrice, maximumPrice);
+            }}
             className="h-11 px-3 text-sm lg:h-9"
           />
         </div>
@@ -144,11 +211,13 @@ function FacetFields({
   name,
   values,
   selected,
+  onChange,
 }: {
   title: string;
   name: string;
   values: StoreSearchProductsResponse["facets"]["categories"];
   selected: string[];
+  onChange: (selected: string[]) => void;
 }) {
   const options = [
     ...values,
@@ -158,7 +227,7 @@ function FacetFields({
   ];
   if (!options.length) return null;
   return (
-    <details open className="group border-b border-border py-3">
+    <details open className="group border-b border-border py-3 last:border-b-0">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold lg:min-h-8 lg:text-xs [&::-webkit-details-marker]:hidden">
         {title}
         <ChevronDown
@@ -177,7 +246,14 @@ function FacetFields({
               type="checkbox"
               name={name}
               value={value.id}
-              defaultChecked={selected.includes(value.id)}
+              checked={selected.includes(value.id)}
+              onChange={(event) =>
+                onChange(
+                  event.target.checked
+                    ? [...selected, value.id]
+                    : selected.filter((id) => id !== value.id),
+                )
+              }
               className="size-4 shrink-0 accent-brand-accent lg:size-3.5"
             />
             <span className="min-w-0 flex-1 break-words">{value.label}</span>
@@ -191,96 +267,114 @@ function FacetFields({
   );
 }
 
-function FilterForm({
-  parameters,
-  facets,
-  priceRange,
-  onApply,
-}: FilterProps & { onApply?: () => void }) {
+function FilterForm({ parameters, facets, priceRange }: FilterProps) {
   const id = useId();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [resetCount, setResetCount] = useState(0);
+  const parameterKey = searchHref(parameters);
+  const [selection, setSelection] = useState({
+    parameterKey,
+    value: parameters,
+  });
+  if (selection.parameterKey !== parameterKey) {
+    setSelection({ parameterKey, value: parameters });
+  }
+  const selectedParameters = selection.value;
+
+  function apply(next: SearchParameters) {
+    const normalized = { ...next, page: 1 };
+    if (searchHref(normalized) === searchHref(selectedParameters)) return;
+    setSelection({ parameterKey, value: normalized });
+    startTransition(() => {
+      router.push(searchHref(normalized), { scroll: false });
+    });
+  }
+
+  function applyPrices(minimum: string, maximum: string) {
+    const prices = parseSearchParameters({
+      min_price: minimum,
+      max_price: maximum,
+    });
+    apply({
+      ...selectedParameters,
+      minPrice: prices.minPrice,
+      maxPrice: prices.maxPrice,
+    });
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const next = parseSearchParameters({
-      q: parameters.q,
-      category_id: form.getAll("category_id").map(String),
-      seller_id: form.getAll("seller_id").map(String),
-      min_price: String(form.get("min_price") ?? ""),
-      max_price: String(form.get("max_price") ?? ""),
-      sort: parameters.sort,
-    });
-    startTransition(() => {
-      router.push(searchHref(next), { scroll: false });
-      onApply?.();
-    });
+    applyPrices(
+      String(form.get("min_price") ?? ""),
+      String(form.get("max_price") ?? ""),
+    );
   }
   return (
-    <form key={resetCount} onSubmit={submit} aria-busy={isPending}>
+    <form onSubmit={submit} aria-busy={isPending}>
+      <ActiveSearchFilters
+        parameters={selectedParameters}
+        facets={facets}
+        onChange={apply}
+      />
+      {isPending ? (
+        <p
+          role="status"
+          className="flex items-center gap-2 py-2 text-xs text-muted-foreground"
+        >
+          <LoaderCircle
+            className="size-3.5 animate-spin motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+          Actualizando productos…
+        </p>
+      ) : null}
       <fieldset className="border-b border-border py-3">
         <legend className="float-left mb-3 w-full text-sm font-semibold lg:text-xs">
           Precio (USD)
         </legend>
         <PriceRangeFields
           id={id}
-          parameters={parameters}
+          parameters={selectedParameters}
           priceRange={priceRange}
+          onCommit={applyPrices}
         />
       </fieldset>
       <FacetFields
         title="Categorías"
         name="category_id"
         values={facets.categories}
-        selected={parameters.categoryIds}
+        selected={selectedParameters.categoryIds}
+        onChange={(categoryIds) =>
+          apply({ ...selectedParameters, categoryIds })
+        }
       />
       <FacetFields
         title="Tiendas"
         name="seller_id"
         values={facets.sellers}
-        selected={parameters.sellerIds}
+        selected={selectedParameters.sellerIds}
+        onChange={(sellerIds) => apply({ ...selectedParameters, sellerIds })}
       />
-      <Button
-        type="submit"
-        size="sm"
-        className="mt-4 h-11 w-full lg:h-9"
-        disabled={isPending}
-      >
-        {isPending ? (
-          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-        ) : null}
-        Aplicar filtros
-      </Button>
-      <Button asChild variant="ghost" size="sm" className="mt-1 w-full">
-        <Link
-          href={searchHref(clearSearchFilters(parameters))}
-          scroll={false}
-          onClick={() => {
-            setResetCount((count) => count + 1);
-            onApply?.();
-          }}
-        >
-          Limpiar filtros
-        </Link>
-      </Button>
     </form>
   );
 }
 
 export function SearchFilters(props: FilterProps) {
+  const priceRange = usePriceSliderRange(props);
   return (
     <aside className="hidden lg:sticky lg:top-20 lg:block lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto lg:border lg:border-border lg:bg-muted/15 lg:p-3">
       <div className="flex min-h-8 items-center gap-2 border-b border-border pb-2">
         <SlidersHorizontal className="size-3.5" aria-hidden="true" />
         <h2 className="text-sm font-semibold">Filtros</h2>
       </div>
-      <FilterForm key={searchHref(props.parameters)} {...props} />
+      <FilterForm {...props} priceRange={priceRange} />
     </aside>
   );
 }
 
 export function MobileSearchFilters(props: FilterProps) {
+  const priceRange = usePriceSliderRange(props);
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -295,11 +389,7 @@ export function MobileSearchFilters(props: FilterProps) {
         aria-describedby={undefined}
       >
         <DialogTitle>Filtrar productos</DialogTitle>
-        <FilterForm
-          key={searchHref(props.parameters)}
-          {...props}
-          onApply={() => setIsOpen(false)}
-        />
+        <FilterForm {...props} priceRange={priceRange} />
       </DialogContent>
     </Dialog>
   );
@@ -344,59 +434,83 @@ export function SearchSortSelect({
   );
 }
 
-export function ActiveSearchFilters({
+function ActiveSearchFilters({
   parameters,
   facets,
-}: Pick<FilterProps, "parameters" | "facets">) {
+  onChange,
+}: Pick<FilterProps, "parameters" | "facets"> & {
+  onChange: (parameters: SearchParameters) => void;
+}) {
   const chips = [
     ...parameters.categoryIds.map((id) => ({
       key: `category-${id}`,
       label: facets.categories.find((facet) => facet.id === id)?.label ?? id,
-      href: searchHref({
+      parameters: {
         ...parameters,
         categoryIds: parameters.categoryIds.filter((value) => value !== id),
         page: 1,
-      }),
+      },
     })),
     ...parameters.sellerIds.map((id) => ({
       key: `seller-${id}`,
       label: facets.sellers.find((facet) => facet.id === id)?.label ?? id,
-      href: searchHref({
+      parameters: {
         ...parameters,
         sellerIds: parameters.sellerIds.filter((value) => value !== id),
         page: 1,
-      }),
+      },
     })),
     ...(parameters.minPrice !== undefined || parameters.maxPrice !== undefined
       ? [
           {
             key: "price",
-            label: `${parameters.minPrice ?? 0} – ${parameters.maxPrice ?? "Sin máximo"} USD`,
-            href: searchHref({
+            label:
+              parameters.minPrice !== undefined &&
+              parameters.maxPrice !== undefined
+                ? `${PRICE_FORMATTER.format(parameters.minPrice)} – ${PRICE_FORMATTER.format(parameters.maxPrice)} USD`
+                : parameters.minPrice !== undefined
+                  ? `Desde ${PRICE_FORMATTER.format(parameters.minPrice)} USD`
+                  : `Hasta ${PRICE_FORMATTER.format(parameters.maxPrice!)} USD`,
+            parameters: {
               ...parameters,
               minPrice: undefined,
               maxPrice: undefined,
               page: 1,
-            }),
+            },
           },
         ]
       : []),
   ];
   if (!chips.length) return null;
   return (
-    <nav aria-label="Filtros activos" className="mb-6 flex flex-wrap gap-2">
-      {chips.map((chip) => (
-        <Link
-          key={chip.key}
-          href={chip.href}
-          scroll={false}
-          className="inline-flex min-h-11 items-center gap-2 border border-border bg-muted/40 px-3 text-xs transition-colors hover:border-foreground"
-          aria-label={`Quitar filtro: ${chip.label}`}
+    <section
+      aria-label="Filtros activos"
+      className="border-b border-border py-3"
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold">Filtros activos</h3>
+        <button
+          type="button"
+          onClick={() => onChange(clearSearchFilters(parameters))}
+          className="min-h-11 text-xs text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring lg:min-h-8"
         >
-          {chip.label}
-          <X className="size-3.5" aria-hidden="true" />
-        </Link>
-      ))}
-    </nav>
+          Quitar todos
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {chips.map((chip) => (
+          <button
+            key={chip.key}
+            type="button"
+            onClick={() => onChange(chip.parameters)}
+            className="inline-flex min-h-11 max-w-full items-center gap-2 border border-border bg-muted/40 px-2 py-1 text-left text-xs transition-colors hover:border-foreground focus-visible:outline-2 focus-visible:outline-ring lg:min-h-8"
+            aria-label={`Quitar filtro: ${chip.label}`}
+          >
+            <span className="min-w-0 break-words">{chip.label}</span>
+            <X className="size-3.5 shrink-0" aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

@@ -1,6 +1,5 @@
 "use client"
 
-import { ZoomIn } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useRef, useState, type PointerEvent } from "react"
 import { DialogTrigger } from "@/components/ui/dialog"
@@ -8,21 +7,23 @@ import { getProductImageZoom } from "./product-image-zoom-geometry"
 
 export function ProductImageZoom({
   title,
-  source,
-  unoptimized,
+  images,
+  selectedIndex,
 }: {
   title: string
-  source: string
-  unoptimized: boolean
+  images: { source: string; unoptimized: boolean }[]
+  selectedIndex: number
 }) {
+  const { source, unoptimized } = images[selectedIndex]
   const imageRef = useRef<HTMLImageElement>(null)
   const lensRef = useRef<HTMLSpanElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
   const zoomRef = useRef<HTMLDivElement>(null)
-  const [isZoomVisible, setIsZoomVisible] = useState(false)
+  const [zoomedSource, setZoomedSource] = useState<string | null>(null)
+  const isZoomVisible = zoomedSource === source
 
   useEffect(() => {
-    const hideZoom = () => setIsZoomVisible(false)
+    const hideZoom = () => setZoomedSource(null)
     window.addEventListener("resize", hideZoom)
     window.addEventListener("scroll", hideZoom, true)
     return () => {
@@ -43,7 +44,7 @@ export function ProductImageZoom({
         "(min-width: 1024px) and (hover: hover) and (pointer: fine)",
       ).matches
     ) {
-      setIsZoomVisible(false)
+      setZoomedSource(null)
       return
     }
 
@@ -61,7 +62,7 @@ export function ProductImageZoom({
       availableWidth: contentRight - bounds.right - 24,
     })
     if (!geometry) {
-      setIsZoomVisible(false)
+      setZoomedSource(null)
       return
     }
 
@@ -74,7 +75,7 @@ export function ProductImageZoom({
     zoom.style.width = `${geometry.zoomWidth}px`
     zoom.style.height = `${geometry.zoomHeight}px`
     zoom.style.transform = `translate(${geometry.zoomLeft}px, ${geometry.zoomTop}px)`
-    setIsZoomVisible(true)
+    setZoomedSource(source)
   }
 
   return (
@@ -85,30 +86,41 @@ export function ProductImageZoom({
           aria-label={`Ampliar imagen de ${title}`}
           onPointerEnter={updateZoom}
           onPointerMove={updateZoom}
-          onPointerLeave={() => setIsZoomVisible(false)}
-          onPointerDown={() => setIsZoomVisible(false)}
-          onBlur={() => setIsZoomVisible(false)}
-          className="group absolute inset-0 cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40"
+          onPointerLeave={() => setZoomedSource(null)}
+          onPointerDown={() => setZoomedSource(null)}
+          onBlur={() => setZoomedSource(null)}
+          className="absolute inset-0 overflow-hidden cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40"
         >
-          <Image
-            ref={imageRef}
-            src={source}
-            alt={title}
-            fill
-            sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, (max-width: 1440px) 40vw, 520px"
-            unoptimized={unoptimized}
-            className="object-contain"
-            preload
-          />
+          <div
+            className="absolute inset-0 flex flex-col transition-transform duration-[var(--motion-medium)] ease-[var(--ease-out)] motion-reduce:transition-none"
+            style={{ transform: `translateY(-${selectedIndex * 100}%)` }}
+          >
+            {images.map((image, index) => (
+              <div
+                key={image.source}
+                className="relative h-full shrink-0 overflow-hidden"
+                aria-hidden={selectedIndex !== index}
+              >
+                <Image
+                  ref={selectedIndex === index ? imageRef : undefined}
+                  src={image.source}
+                  alt={title}
+                  fill
+                  sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, (max-width: 1440px) 40vw, 520px"
+                  unoptimized={image.unoptimized}
+                  className="object-contain"
+                  preload={index === 0}
+                  loading={index === 0 ? undefined : "lazy"}
+                />
+              </div>
+            ))}
+          </div>
           <span
             ref={lensRef}
             hidden={!isZoomVisible}
             aria-hidden="true"
             className="pointer-events-none absolute top-0 left-0 border border-brand-accent/60 bg-brand-accent/15"
           />
-          <span className="absolute right-3 bottom-3 grid size-11 place-items-center border border-border bg-background/90 text-muted-foreground transition-colors group-hover:text-foreground">
-            <ZoomIn className="size-4" aria-hidden="true" />
-          </span>
         </button>
       </DialogTrigger>
       <div

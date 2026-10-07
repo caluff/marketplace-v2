@@ -1,6 +1,5 @@
 "use client"
 
-import type { HttpTypes } from "@medusajs/types"
 import {
   ArrowRight,
   LoaderCircle,
@@ -26,6 +25,7 @@ import {
 } from "./offers"
 import { cn } from "@/lib/utils"
 import { ProductShipping } from "./product-shipping"
+import { useProductVariantSelection } from "./product-variant-selection"
 
 function QuantityField({
   maximum,
@@ -80,14 +80,12 @@ function QuantityField({
 }
 
 export function ProductPurchase({
-  variants,
   offers,
   hasRegion,
   summary,
   overview,
   paymentMethods,
 }: {
-  variants: HttpTypes.StoreProductVariant[]
   offers: StorefrontOffer[]
   hasRegion: boolean
   summary: ReactNode
@@ -96,9 +94,7 @@ export function ProductPurchase({
 }) {
   const router = useRouter()
   const cartButtonRef = useRef<HTMLButtonElement>(null)
-  const [variantId, setVariantId] = useState(
-    variants.length === 1 ? variants[0].id : "",
-  )
+  const { variants, variantId, selectVariant } = useProductVariantSelection()
   const [offerId, setOfferId] = useState("")
   const matchingOffers = offers.filter(
     (offer) => offer.variant_id === variantId,
@@ -205,7 +201,7 @@ export function ProductPurchase({
                   type="button"
                   aria-pressed={variantId === variant.id}
                   onClick={() => {
-                    setVariantId(variant.id)
+                    selectVariant(variant.id)
                     setOfferId("")
                   }}
                   className={cn(
@@ -269,7 +265,7 @@ export function ProductPurchase({
           href="#product-details"
           className="mt-5 inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-brand-accent"
         >
-          Ver descripción y ficha técnica{" "}
+          Ver ficha técnica{" "}
           <ArrowRight className="size-3.5" aria-hidden="true" />
         </a>
       </section>

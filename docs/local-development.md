@@ -52,6 +52,12 @@ No copiar las credenciales a los archivos públicos de los frontends.
 Redis usa la instancia Docker existente y la base lógica **1**, que estaba vacía
 antes del cambio. La base **0** del entorno anterior permanece conservada.
 
+Los workers siguen consumiendo recursos aunque no haya usuarios conectados.
+La configuración de API usa `drainDelay: 60` para espaciar las consultas de las
+colas vacías; no retrasa un trabajo que acaba de llegar ni desactiva la revisión
+de trabajos demorados o interrumpidos. Para detener el entorno local, cerrar los
+procesos de desarrollo y usar `pnpm services:stop`, que conserva los volúmenes.
+
 ## Alcance de la copia
 
 La restauración incluye todos los esquemas no internos de PostgreSQL presentes

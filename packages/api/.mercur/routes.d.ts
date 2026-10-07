@@ -883,9 +883,12 @@ export type Routes = {
                 cancel: typeof import("@mercurjs/core/api/vendor/products/[id]/cancel/route");
                 preview: typeof import("@mercurjs/core/api/vendor/products/[id]/preview/route");
                 variants: typeof import("../src/api/vendor/products/[id]/variants/route") & {
-                    $variantId: typeof import("../src/api/vendor/products/[id]/variants/[variant_id]/route");
+                    $variantId: typeof import("../src/api/vendor/products/[id]/variants/[variant_id]/route") & {
+                        media: typeof import("../src/api/vendor/products/[id]/variants/[variant_id]/media/route");
+                    };
                 };
                 catalogOptions: typeof import("../src/api/vendor/products/[id]/catalog-options/route");
+                variantConfigurations: typeof import("../src/api/vendor/products/[id]/variant-configurations/route");
             };
         };
         promotions: typeof import("@mercurjs/core/api/vendor/promotions/route") & {
@@ -1004,6 +1007,12 @@ export type Routes = {
         onboarding: typeof import("../src/api/vendor/onboarding/route");
         orderNotifications: typeof import("../src/api/vendor/order-notifications/route") & {
             stream: typeof import("../src/api/vendor/order-notifications/stream/route");
+        };
+        productLifecycle: {
+            $id: typeof import("../src/api/vendor/product-lifecycle/[id]/route") & {
+                archive: typeof import("../src/api/vendor/product-lifecycle/[id]/archive/route");
+                visibility: typeof import("../src/api/vendor/product-lifecycle/[id]/visibility/route");
+            };
         };
         productSaleStatus: typeof import("../src/api/vendor/product-sale-status/route");
         shippingConfiguration: typeof import("../src/api/vendor/shipping-configuration/route");

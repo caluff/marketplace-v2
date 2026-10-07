@@ -66,7 +66,7 @@ export function ProductRowActions({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href={`/seller/catalog/${productId}#solicitudes`}>
+          <Link href={`/seller/catalog/${productId}?history=1`}>
             <History aria-hidden="true" />
             Ver historial de cambios
           </Link>

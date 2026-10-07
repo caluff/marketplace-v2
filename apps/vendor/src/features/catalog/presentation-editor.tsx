@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirmDiscardWithin } from "../workspace/unsaved-changes";
 
 const EditorContext = createContext<{
   close: () => void;
@@ -18,6 +19,17 @@ const EditorContext = createContext<{
   canEdit: boolean;
   panelId: string;
 } | null>(null);
+export function PresentationEditorProvider({
+  children,
+  value,
+}: {
+  children: ReactNode;
+  value: NonNullable<ReturnType<typeof usePresentationEditor>>;
+}) {
+  return (
+    <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
+  );
+}
 export function usePresentationEditor() {
   return useContext(EditorContext);
 }
@@ -57,10 +69,14 @@ export function PresentationEditor({
   const [isEditing, setIsEditing] = useState(false);
   const [isBusy, setBusy] = useState(false);
   const shouldRestoreFocus = useRef(false);
+  const region = useRef<HTMLDivElement>(null);
+  const confirmDiscard = useConfirmDiscardWithin();
   const panelId = useId();
   function close() {
-    shouldRestoreFocus.current = true;
-    setIsEditing(false);
+    confirmDiscard(() => {
+      shouldRestoreFocus.current = true;
+      setIsEditing(false);
+    }, region.current);
   }
   function open() {
     if (!isBusy) setIsEditing(true);
@@ -102,6 +118,7 @@ export function PresentationEditor({
           {!isEditing ? summary : null}
           {isEditing ? (
             <div
+              ref={region}
               id={panelId}
               className="space-y-5"
               onKeyDown={(event) => {

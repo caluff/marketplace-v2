@@ -1,14 +1,26 @@
 import type { CreateProductDTO } from "@mercurjs/types";
 import { AttributeType } from "@mercurjs/types";
-import type { HttpTypes as MedusaHttpTypes } from "@medusajs/types";
-import { resourceId, textField } from "../workspace/validation";
-import { productSpecifications } from "./product-specifications";
+import type {
+  CreateProductVariantDTO,
+  HttpTypes as MedusaHttpTypes,
+} from "@medusajs/types";
+import { resourceId, stockQuantity, textField } from "../workspace/validation";
+import { usdAmount } from "../offers/price-validation";
+import {
+  productSpecifications,
+  variantSpecifications,
+  type SpecificationDraft,
+} from "./product-specifications";
 
 export type CatalogAxis = { title: string; values: string[] };
 export type CatalogVariant = {
   title: string;
   sku: string;
   options: Record<string, string>;
+  specifications?: SpecificationDraft;
+  amount?: string;
+  stockedQuantity?: string;
+  imageIndexes?: number[];
 };
 type MasterSkuFactory = (
   variant: Pick<CatalogVariant, "title" | "options">,
@@ -73,12 +85,12 @@ export function selectedCategories(form: FormData) {
   return ids.map((id) => ({ id }));
 }
 
-export function submittedImages(form: FormData) {
+export function submittedImages(form: FormData, maxImages = 6) {
   const entries = JSON.parse(
-    textField(form, "images", false, 15000) || "[]",
+    textField(form, "images", false, maxImages * 2100 + 1000) || "[]",
   ) as unknown;
-  if (!Array.isArray(entries) || entries.length > 6)
-    throw new Error("El producto admite hasta seis imágenes.");
+  if (!Array.isArray(entries) || entries.length > maxImages)
+    throw new Error(`El producto admite hasta ${maxImages} imágenes.`);
   return entries.map((entry) => {
     const image = object(entry);
     if (typeof image.url !== "string" || image.url.length > 2048)
@@ -93,7 +105,7 @@ export function submittedImages(form: FormData) {
 export function createCatalogBody(
   form: FormData,
   createMasterSku?: MasterSkuFactory,
-): CreateProductDTO & Pick<MedusaHttpTypes.AdminCreateProduct, "categories"> {
+) {
   if (textField(form, "status", true) !== "proposed")
     throw new Error("Los nuevos productos deben enviarse a aprobación.");
   if (!form.has("categories_present"))
@@ -107,7 +119,8 @@ export function createCatalogBody(
     return { title: string(axis.title), values: axis.values.map(string) };
   });
   const combinations = variantCombinations(axes);
-  const variants: CatalogVariant[] = jsonArray(form, "variants").map(
+  const submittedVariants = jsonArray(form, "variants");
+  const variants: CreateProductVariantDTO[] = submittedVariants.map(
     (value, index) => {
       const variant = object(value);
       const title = string(variant.title);
@@ -127,6 +140,10 @@ export function createCatalogBody(
         title,
         sku,
         options,
+        ...variantSpecifications(
+          object(variant.specifications ?? {}),
+          "create",
+        ),
       };
     },
   );
@@ -137,15 +154,72 @@ export function createCatalogBody(
   const expected = new Set(combinations.map(key));
   if (
     variants.length !== expected.size ||
-    new Set(variants.map((variant) => key(variant.options))).size !==
+    new Set(variants.map((variant) => key(variant.options ?? {}))).size !==
       expected.size ||
-    variants.some((variant) => !expected.has(key(variant.options)))
+    variants.some((variant) => !expected.has(key(variant.options ?? {})))
   )
     throw new Error("Incluye cada combinación de opciones una sola vez.");
   if (new Set(variants.map((variant) => variant.sku)).size !== variants.length)
     throw new Error("Cada variante necesita un SKU maestro distinto.");
+  const images = submittedImages(form);
+  const initialOffers = form.has("initial_offers_present")
+    ? submittedVariants.map((value, index) => {
+        const variant = object(value);
+        return {
+          variant_sku: variants[index].sku!,
+          amount: usdAmount(
+            typeof variant.amount === "string" ? variant.amount : "",
+          ),
+          stocked_quantity: stockQuantity(
+            typeof variant.stockedQuantity === "string"
+              ? variant.stockedQuantity
+              : "0",
+          ),
+          shipping_profile_id: resourceId(
+            textField(form, "shipping_profile_id", true),
+          ),
+        };
+      })
+    : undefined;
+  const initialVariantImages = submittedVariants.flatMap((value, index) => {
+    const draft = object(value);
+    if (draft.imageIndexes === undefined) return [];
+    if (
+      !Array.isArray(draft.imageIndexes) ||
+      new Set(draft.imageIndexes).size !== draft.imageIndexes.length ||
+      draft.imageIndexes.some(
+        (at) => !Number.isInteger(at) || at < 0 || at >= images.length,
+      )
+    )
+      throw new Error("Revisa las imágenes seleccionadas para la variante.");
+    return [
+      {
+        variant_sku: variants[index].sku!,
+        image_urls: draft.imageIndexes.map((at: number) => images[at].url),
+      },
+    ];
+  });
   return {
     title: textField(form, "title", true, 200),
+    ...(textField(form, "handle", false, 200)
+      ? { handle: textField(form, "handle", false, 200) }
+      : {}),
+    ...(form.has("discountable_present")
+      ? { discountable: form.get("discountable") === "true" }
+      : {}),
+    ...(textField(form, "type_id")
+      ? { type_id: resourceId(textField(form, "type_id")) }
+      : {}),
+    ...(textField(form, "collection_id")
+      ? { collection_id: resourceId(textField(form, "collection_id")) }
+      : {}),
+    ...(form.has("tag_id")
+      ? {
+          tags: form
+            .getAll("tag_id")
+            .map((id) => ({ id: resourceId(String(id)) })),
+        }
+      : {}),
     subtitle: textField(form, "subtitle", false, 200),
     description: textField(form, "description", false, 10000),
     ...productSpecifications(form, "create"),
@@ -157,6 +231,17 @@ export function createCatalogBody(
       is_variant_axis: true,
     })),
     variants,
-    images: submittedImages(form),
-  };
+    images,
+    ...(initialOffers || initialVariantImages.length
+      ? {
+          additional_data: {
+            ...(initialOffers ? { initial_offers: initialOffers } : {}),
+            ...(initialVariantImages.length
+              ? { initial_variant_images: initialVariantImages }
+              : {}),
+          },
+        }
+      : {}),
+  } satisfies CreateProductDTO &
+    Pick<MedusaHttpTypes.AdminCreateProduct, "categories" | "tags">;
 }

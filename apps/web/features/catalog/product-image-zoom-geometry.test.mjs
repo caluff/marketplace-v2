@@ -14,7 +14,7 @@ const square = {
 
 test("the preview shows exactly the image region covered by the lens", () => {
   const zoom = getProductImageZoom(square)
-  assert.equal(zoom.previewWidth, 600)
+  assert.equal(zoom.previewWidth, 400)
   assert.equal(zoom.previewHeight, 400)
   assert.equal(zoom.zoomWidth / square.width, 3)
   assert.equal(zoom.zoomLeft, -zoom.lensLeft * 3)
@@ -47,20 +47,21 @@ test("portrait and landscape images exclude their empty contain margins", () => 
     null,
   )
   const portrait = getProductImageZoom({ ...square, naturalWidth: 500 })
-  assert.equal(portrait.lensLeft, 100)
+  assert.ok(portrait.lensLeft >= 100)
+  assert.ok(portrait.lensLeft + portrait.lensWidth <= 300)
   assert.equal(portrait.zoomWidth, 600)
   const landscape = getProductImageZoom({ ...square, naturalHeight: 500 })
   assert.ok(landscape.lensTop >= 100)
   assert.ok(landscape.lensTop + landscape.lensHeight <= 300)
 })
 
-test("the preview fits the space to the right even for very narrow images", () => {
-  assert.equal(
-    getProductImageZoom({ ...square, availableWidth: 280 }).previewWidth,
-    280,
-  )
+test("the preview stays square within the available space and image", () => {
+  const constrained = getProductImageZoom({ ...square, availableWidth: 280 })
+  assert.equal(constrained.previewWidth, 280)
+  assert.equal(constrained.previewHeight, 280)
   const narrow = getProductImageZoom({ ...square, naturalWidth: 100 })
   assert.equal(narrow.previewWidth, 120)
+  assert.equal(narrow.previewHeight, 120)
   assert.ok(narrow.zoomLeft === 0)
 })
 

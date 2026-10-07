@@ -70,3 +70,20 @@ export function nextVariantOptions(product: VariantOptionsProduct) {
 
   return find(0);
 }
+
+export function newVariantOptionDraft(product: VariantOptionsProduct) {
+  const available = nextVariantOptions(product);
+  let needsNewValue = available === null;
+  return (product.options ?? []).map((option, index) => {
+    const isNew =
+      option.title !== "__default__" &&
+      (needsNewValue || !option.values?.length);
+    if (isNew) needsNewValue = false;
+    return {
+      isNew,
+      value: isNew
+        ? ""
+        : (available?.[index] ?? option.values?.[0]?.value ?? ""),
+    };
+  });
+}

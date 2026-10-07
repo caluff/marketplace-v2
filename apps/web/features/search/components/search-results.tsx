@@ -18,7 +18,6 @@ import {
   type SearchUrlParameters,
 } from "../parameters";
 import {
-  ActiveSearchFilters,
   MobileSearchFilters,
   SearchFilters,
   SearchSortSelect,
@@ -114,7 +113,7 @@ export async function SearchResults({
 }) {
   const parameters = parseSearchParameters(await searchParams);
   return (
-    <Suspense key={searchHref(parameters)} fallback={<SearchResultsSkeleton />}>
+    <Suspense fallback={<SearchResultsSkeleton />}>
       <ResolvedSearchResults parameters={parameters} />
     </Suspense>
   );
@@ -188,7 +187,6 @@ async function ResolvedSearchResults({
       <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-6">
         <SearchFilters {...filters} />
         <section aria-label="Resultados de productos" className="min-w-0">
-          <ActiveSearchFilters {...filters} />
           {pagination.isOutOfRange ? (
             <div className="border border-dashed border-border px-6 py-16 text-center">
               <h2 className="text-2xl">Esta página ya no está disponible</h2>

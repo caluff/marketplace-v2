@@ -41,7 +41,7 @@ export function PresentationCard({
       inventoryLink={inventoryLink}
       form={
         priceForm ??
-        (!hasPending && hasOptions ? (
+        (!hasPending ? (
           <VariantForm
             product={product}
             variant={variant}

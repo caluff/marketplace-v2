@@ -10,7 +10,6 @@ import {
 } from "@medusajs/framework/workflows-sdk";
 import { MedusaError } from "@medusajs/framework/utils";
 import {
-  confirmProductChangeWorkflow,
   productEditUpdateAttributesWorkflow,
   productEditUpdateProductWorkflow,
   productEditUpdateVariantsWorkflow,
@@ -26,6 +25,7 @@ import {
   prepareCatalogPermissionStep,
   type CatalogPermissionActor,
 } from "./catalog-permission-prepare";
+import { confirmCompleteCatalogProductChangeWorkflow } from "./confirm-complete-catalog-product-change";
 
 type Input = CatalogPermissionActor & { product_id: string } & (
     | { mode: "update"; body: VendorUpdateProductType }
@@ -125,9 +125,9 @@ export const catalogPermissionEditProductWorkflow = createWorkflow(
       attributeChange,
     });
     when({ permission }, ({ permission }) => permission.authorized).then(() =>
-      confirmProductChangeWorkflow.runAsStep({
+      confirmCompleteCatalogProductChangeWorkflow.runAsStep({
         input: transform({ change, input }, ({ change, input }) => ({
-          ids: [change.id],
+          id: change.id,
           confirmed_by: input.seller_id,
           internal_note: "Cambio automático: tienda autorizada.",
         })),

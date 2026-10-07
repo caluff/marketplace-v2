@@ -35,12 +35,14 @@ sus checkpoints previos y resultados unitarios se conservan como historia.
 | Tema                              | Referencias                                                                                                                                                                                            |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Arquitectura, arranque y comandos | [README raíz](../README.md), [instrucciones del repositorio](../AGENTS.md)                                                                                                                             |
+| Desarrollo local                  | [PostgreSQL, Redis y arranque de la API](local-development.md) |
 | Sesiones, actores y correo        | [Autenticación](../AUTHENTICATION.md), [Google OAuth](google-auth.md), [Resend](../packages/api/src/modules/resend/README.md)                                                                          |
 | Búsqueda                          | [Algolia](algolia-search.md), [módulo de indexación](../packages/api/src/modules/algolia/README.md)                                                                                                    |
 | Operación de vendedores           | [Guía vendor](vendor-operations.md), [README vendor](../apps/vendor/README.md)                                                                                                                         |
 | Permisos de catálogo              | [Supervisado y Autorizado por tienda](catalog-permissions.md) |
 | Operación administrativa          | [README admin](../apps/admin/README.md), [feedback de formularios](admin-vendor-form-notifications.md)                                                                                                 |
-| Pedidos                           | [Flujo de pedidos](orders-flow.md), [cancelaciones y reembolsos](order-finance.md)                                                                                                                     |
+| Pedidos                           | [Flujo de pedidos](orders-flow.md), [cancelaciones y reembolsos](order-finance.md), [seguimiento privado y asociación a la cuenta](order-tracking.md) |
+| Documentos legales                | [Términos y privacidad en vista previa](legal/README.md), [flujos pendientes](legal/pending-workflows.md) |
 | Backend                           | [Rutas](../packages/api/src/api/README.md), [workflows](../packages/api/src/workflows/README.md), [módulos](../packages/api/src/modules/README.md), [links](../packages/api/src/links/README.md)       |
 | Procesamiento asíncrono           | [Subscribers](../packages/api/src/subscribers/README.md), [jobs](../packages/api/src/jobs/README.md)                                                                                                   |
 | Diagnóstico y pruebas             | [Scripts operativos](../packages/api/src/scripts/README.md), [tests de integración](../packages/api/integration-tests/http/README.md), [trazado de peticiones](reports/performance-request-tracing.md) |
@@ -57,14 +59,17 @@ como el inventario actual de pruebas.
 
 ## Planes e informes históricos
 
-Se conservan porque explican decisiones, incidencias y pruebas que la auditoría
-referencia. Sus fechas, comandos, resultados y cuerpos originales no se
-reescriben como si hubieran sido verificados hoy.
+La limpieza del 2026-10-06 retira 23 planes e informes iniciales sustituidos por
+las guías y la evidencia de cierre. Su contenido permanece recuperable en Git.
+Se conservan los contratos de recuperación, las pruebas financieras y de
+concurrencia, y los diagnósticos que aportan evidencia propia. Sus resultados
+solo corresponden a las revisiones, fixtures y entornos descritos; no son una
+verificación del estado actual.
 
-- [Planes anteriores](plans): [onboarding](plans/vendor-onboarding.md), [comercio vendor](plans/phase-1-vendor-commerce.md) y [envíos](plans/vendor-managed-shipping.md). Documentan alcance y decisiones de esas etapas; no sustituyen el nuevo plan de cierre.
-- [Informes de implementación y QA](reports): incluyen catálogo, inventario, onboarding, Stripe, comisiones, correo, checkout, pedidos y rendimiento. Las pruebas son válidas únicamente para las revisiones, fixtures y entornos descritos.
+- [Onboarding](plans/vendor-onboarding.md): contrato histórico detallado de solicitudes, identidad y recuperación. [Migración a Railway](plans/migration-to-railway.md): propuesta de infraestructura pendiente, separada del despliegue ya declarado.
+- [Informes conservados](reports): evidencia de finanzas, almacén, correo, inventario, envíos y rendimiento.
 - QA financiera: [cancelaciones y reembolsos](reports/qa-order-finance-2026-09-12.md), [captura y reversiones](reports/qa-order-finance-extension-2026-09-12.md), [auditoría de seguridad de pagos](reports/qa-payment-safety-2026-09-12.md).
-- QA de interfaces: [operador](reports/qa-admin-browser-2026-09-12.md), [pedidos](reports/qa-orders-browser-2026-09-12.md), [envíos vendor](reports/vendor-managed-shipping-qa.md).
+- Cierre y recorridos: [matriz F01–F12](develpment/evidence/development-closure-20261003.md), [checkout nativo](develpment/evidence/native-checkout-browser-20260922.md), [envíos vendor](reports/vendor-managed-shipping-qa.md).
 - Primeras interfaces: [informe admin](../apps/admin/IMPLEMENTATION_REPORT.md) e [informe vendor](../apps/vendor/IMPLEMENTATION.md). Sus descripciones de mocks corresponden a la implementación inicial, no al estado completo actual.
 
 `reports/performance-request-tracing.md` es una guía de diagnóstico vigente

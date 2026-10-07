@@ -1,8 +1,10 @@
 import type Medusa from "@medusajs/js-sdk";
 import { normalizeUsState } from "@usapeek/ui/us-states";
-import type { InventoryLevelDTO, HttpTypes as MedusaHttpTypes } from "@medusajs/types";
 import type {
-  CreateProductDTO,
+  InventoryLevelDTO,
+  HttpTypes as MedusaHttpTypes,
+} from "@medusajs/types";
+import type {
   HttpTypes,
   ProductChangeDTO,
   SellerMemberDTO,
@@ -16,7 +18,11 @@ import {
   textField,
   websiteField,
 } from "./validation";
-import { createCatalogBody, selectedCategories, submittedImages } from "../catalog/validation";
+import {
+  createCatalogBody,
+  selectedCategories,
+  submittedImages,
+} from "../catalog/validation";
 import { createMasterSku } from "../catalog/master-sku";
 import { productSpecifications } from "../catalog/product-specifications";
 
@@ -77,14 +83,52 @@ export function vendorOperations(authorize: AuthorizeVendor) {
     async editProduct(form: FormData) {
       const client = scopedClient(await authorize());
       const id = resourceId(textField(form, "id", true));
+      const images = form.has("images")
+        ? submittedImages(form, 100)
+        : undefined;
       const body = {
-        title: textField(form, "title", true, 200),
-        subtitle: textField(form, "subtitle", false, 200),
-        description: textField(form, "description", false, 10000),
+        ...(form.has("title")
+          ? { title: textField(form, "title", true, 200) }
+          : {}),
+        ...(form.has("subtitle")
+          ? { subtitle: textField(form, "subtitle", false, 200) }
+          : {}),
+        ...(form.has("description")
+          ? { description: textField(form, "description", false, 10000) }
+          : {}),
+        ...(form.has("handle")
+          ? { handle: textField(form, "handle", true, 200) }
+          : {}),
+        ...(form.has("discountable_present")
+          ? { discountable: form.get("discountable") === "true" }
+          : {}),
+        ...(form.has("type_id_present")
+          ? {
+              type_id: textField(form, "type_id")
+                ? resourceId(textField(form, "type_id"))
+                : null,
+            }
+          : {}),
+        ...(form.has("collection_id_present")
+          ? {
+              collection_id: textField(form, "collection_id")
+                ? resourceId(textField(form, "collection_id"))
+                : null,
+            }
+          : {}),
+        ...(form.has("tags_present")
+          ? {
+              tags: form
+                .getAll("tag_id")
+                .map((id) => ({ id: resourceId(String(id)) })),
+            }
+          : {}),
         ...productSpecifications(form, "update"),
-        ...(form.has("categories_present") ? { categories: selectedCategories(form) } : {}),
-        ...(form.has("images") ? { images: submittedImages(form) } : {}),
-      } satisfies Pick<CreateProductDTO, "title" | "subtitle" | "description"> & Pick<MedusaHttpTypes.AdminUpdateProduct, "categories">;
+        ...(form.has("categories_present")
+          ? { categories: selectedCategories(form) }
+          : {}),
+        ...(images ? { images } : {}),
+      } satisfies MedusaHttpTypes.AdminUpdateProduct;
       return client.post<{ product_change: ProductChangeDTO }>(
         `/vendor/products/${id}`,
         body,
