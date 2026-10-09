@@ -17,6 +17,10 @@ export function financePeriodInput(value: unknown): FinanceReportingPeriod {
   );
 }
 
-export function financePeriodHref(period: FinanceReportingPeriod, page = 1) {
-  return `/seller?${new URLSearchParams({ period, page: String(page) })}`;
+export function financePeriodHref(
+  period: FinanceReportingPeriod,
+  page = 1,
+  basePath: "/seller" | "/seller/settlements/paid" = "/seller",
+) {
+  return `${basePath}?${new URLSearchParams({ period, page: String(page) })}`;
 }

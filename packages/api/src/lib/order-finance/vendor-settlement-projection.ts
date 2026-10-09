@@ -1,6 +1,7 @@
 import type { MedusaContainer } from "@medusajs/framework/types";
 import {
   ContainerRegistrationKeys,
+  MathBN,
   MedusaError,
   Modules,
 } from "@medusajs/framework/utils";
@@ -202,6 +203,11 @@ export function buildSettlementProjection(input: {
   if (
     current.financialProblem ||
     current.hasPendingChanges ||
+    MathBN.lt(
+      current.group.orders.find((order) => order.id === completion.id)
+        ?.summary?.pending_difference ?? 0,
+      0,
+    ) ||
     current.state?.review_required ||
     current.state?.active_token ||
     readFinanceExecutionWriters(current.state?.observation).length ||

@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useSellerNotifications } from "../workspace/seller-notifications";
 import { createSettlementRefreshQueue } from "./refresh-queue";
 
-export function SettlementAutoRefresh({ sellerId }: { sellerId: string }) {
+export function SettlementAutoRefresh({
+  sellerId,
+  eventName = "settlements-changed",
+}: {
+  sellerId: string;
+  eventName?: "settlements-changed" | "finance-reporting-changed";
+}) {
   const router = useRouter();
   const notifications = useSellerNotifications(sellerId);
   const [isPending, startTransition] = useTransition();
@@ -19,7 +25,7 @@ export function SettlementAutoRefresh({ sellerId }: { sellerId: string }) {
     );
     queueRef.current = queue;
     const unsubscribe = notifications?.subscribe({
-      eventName: "settlements-changed",
+      eventName,
       onReady: queue.request,
       onChanged: queue.request,
       onUnavailable: () => {},
@@ -35,7 +41,7 @@ export function SettlementAutoRefresh({ sellerId }: { sellerId: string }) {
       queue.dispose();
       queueRef.current = null;
     };
-  }, [router, notifications]);
+  }, [router, notifications, eventName]);
 
   useEffect(() => {
     if (!isPending) queueRef.current?.settled();

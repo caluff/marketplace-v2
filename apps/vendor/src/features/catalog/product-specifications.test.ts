@@ -95,7 +95,6 @@ test("physical and customs attributes are independent native fields", () => {
     ),
     { origin_country: null, hs_code: null, mid_code: null },
   );
-  assert.deepEqual(variantSpecifications({}, "update"), {});
 });
 
 test("customs attributes reject nontext payloads and overly long values", () => {

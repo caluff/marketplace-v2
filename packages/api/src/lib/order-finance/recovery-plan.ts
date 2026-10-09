@@ -29,6 +29,7 @@ import {
   assertSettlementCapture,
 } from "./settlement-plan";
 import {
+  prepareSettlement,
   proportionalSettlement,
   settlementReduction,
   verifySettlementHistory,
@@ -640,6 +641,165 @@ async function inspectRefund(current: RecoveryCurrent, operationId: string) {
   };
 }
 
+async function inspectCancellationAfterRefund(
+  current: RecoveryCurrent,
+  operationId: string,
+) {
+  const operation = current.operations.find((item) => item.id === operationId)!;
+  const result = financeOperationSchema.parse(operation.result);
+  const order = current.group.orders.find(
+    (item) => item.id === result.order_id,
+  );
+  const original = current.original!;
+  requireRecovery(
+    order &&
+      order.id === original.order_id &&
+      result.action === "cancel" &&
+      financeAmount(result.amount) === 0 &&
+      result.refund_ids.length === 0 &&
+      !result.provider_refund_id &&
+      !result.settlement &&
+      !result.capture_orders &&
+      !result.capture_evidence &&
+      result.refund_attempted === false &&
+      result.reversal_attempted === false &&
+      result.capture_attempted === false &&
+      result.cancel_authorization_attempted === false &&
+      (result.credit_amount === undefined ||
+        financeAmount(result.credit_amount) === 0),
+    "La cancelación sin importe contiene un efecto financiero pendiente.",
+  );
+  requireRecovery(
+    !current.financialProblem &&
+      ["pending", "canceled"].includes(order.status) &&
+      order.fulfillments.every((part) => part.canceled_at),
+    "El pedido o sus finanzas no permiten completar la cancelación.",
+  );
+  assertSettlementCapture(current);
+  const payment = order.cart.payment_collection.payments[0];
+  const completed = current.operations.flatMap((item) => {
+    if (item.id === operationId || item.state !== "complete") return [];
+    const parsed = financeOperationSchema.safeParse(item.result);
+    return parsed.success &&
+      ["refund", "cancel"].includes(parsed.data.action) &&
+      financeAmount(parsed.data.amount) > 0
+      ? [{ id: item.id, result: parsed.data }]
+      : [];
+  });
+  const ownRefunds = completed.filter(
+    (item) => item.result.order_id === order.id,
+  );
+  const refunded = ownRefunds.reduce(
+    (sum, item) => MathBN.add(sum, item.result.amount).toNumber(),
+    0,
+  );
+  requireRecovery(
+    MathBN.eq(refunded, original.gross) &&
+      hasRecoveryTransaction(
+        order,
+        "capture",
+        payment.captures[0].id,
+        original.gross,
+      ),
+    "El pedido no tiene un reembolso total y un cobro local verificados.",
+  );
+  for (const { result: previous } of ownRefunds) {
+    requireRecovery(
+      previous.refund_ids.length === 1 &&
+        previous.credit_amount !== undefined &&
+        previous.settlement?.version === 2 &&
+        MathBN.lte(previous.credit_amount, previous.amount) &&
+        payment.refunds.some(
+          (refund) =>
+            refund.id === previous.refund_ids[0] &&
+            MathBN.eq(refund.amount, previous.amount),
+        ) &&
+        hasRecoveryTransaction(
+          order,
+          "refund",
+          previous.refund_ids[0],
+          -financeAmount(previous.amount),
+        ) &&
+        (hasRecoveryCredit(
+          order,
+          previous.refund_ids[0],
+          financeAmount(previous.credit_amount),
+        ) ||
+          financeAmount(previous.credit_amount) === 0),
+      "El reembolso anterior conserva pasos locales sin verificar.",
+    );
+  }
+  const provider = await readFinanceProvider(payment.data.id);
+  requireRecovery(
+    provider.intent.status === "succeeded",
+    "El proveedor no confirma el cobro de esta compra.",
+  );
+  assertProviderBalances(
+    provider,
+    financeAmount(payment.captures[0].amount),
+    payment.refunds.reduce(
+      (sum, refund) => MathBN.add(sum, refund.amount).toNumber(),
+      0,
+    ),
+    current.finalCapture?.released_refund_ids,
+  );
+  const providerRefunds = provider.refunds.filter(
+    (refund) => !current.finalCapture?.released_refund_ids.includes(refund.id),
+  );
+  requireRecovery(
+    providerRefunds.length === payment.refunds.length &&
+      payment.refunds.every((refund) => {
+        const matches = completed.filter((item) =>
+          item.result.refund_ids.includes(refund.id),
+        );
+        if (matches.length !== 1) return false;
+        const previous = matches[0];
+        return (
+          previous.result.refund_ids.length === 1 &&
+          MathBN.eq(refund.amount, previous.result.amount) &&
+          refund.metadata?.finance_operation_id === previous.id &&
+          refund.metadata?.order_id === previous.result.order_id &&
+          providerRefunds.filter(
+            (part) =>
+              part.id === previous.result.provider_refund_id &&
+              part.metadata?.finance_operation_id === previous.id &&
+              part.metadata?.order_id === previous.result.order_id &&
+              part.currency === "usd" &&
+              part.amount === minor(refund.amount) &&
+              idOf(part.payment_intent) === payment.data.id &&
+              idOf(part.charge) === idOf(provider.intent.latest_charge),
+          ).length === 1
+        );
+      }),
+    "Los reembolsos de la compra no tienen una atribución verificada.",
+  );
+  // Inspect the existing settlement at zero additional money; recovery only cancels the order.
+  await prepareSettlement({
+    payout: current.payout,
+    orderId: order.id,
+    sellerId: order.seller.id,
+    gross: original.gross,
+    sellerNet: original.seller_entitlement,
+    refunded,
+    amount: 0,
+    paymentIntentId: payment.data.id,
+    chargeId: idOf(provider.intent.latest_charge),
+    groupOrderIds: current.group.orders.map((part) => part.id),
+    prior: ownRefunds.map((item) => item.result.settlement!),
+  });
+  const actions: RecoveryAction[] =
+    order.status === "canceled" ? [] : ["cancel_order"];
+  return {
+    kind: "cancellation" as const,
+    result,
+    actions,
+    payment_id: payment.id,
+    capture_id: payment.captures[0].id,
+    native_refund_ids: payment.refunds.map((refund) => refund.id),
+    provider_refund_ids: providerRefunds.map((refund) => refund.id),
+  };
+}
+
 export async function inspectFinanceRecovery(
   container: MedusaContainer,
   rawInput: RecoveryInput,
@@ -676,7 +836,11 @@ export async function inspectFinanceRecovery(
             financeAmount(
               financeOperationSchema.parse(operation.result).amount,
             ) === 0)
-        ? await inspectAuthorizationRecovery(current, operation.id)
+        ? operation.kind === "cancel" &&
+          current.group.orders[0].cart.payment_collection.payments[0].captures
+            .length > 0
+          ? await inspectCancellationAfterRefund(current, operation.id)
+          : await inspectAuthorizationRecovery(current, operation.id)
         : await inspectRefund(current, operation.id);
   requireRecovery(
     prepared.result.order_id === input.order_id,
@@ -702,11 +866,18 @@ export async function inspectFinanceRecovery(
             released_refund_ids: prepared.released_refund_ids,
             capture_orders: prepared.capture_orders,
           }
-        : {
-            refund_id: prepared.refund?.id ?? null,
-            native_refund_id: prepared.localRefund?.id ?? null,
-            reversal_id: prepared.reversal?.id ?? null,
-          };
+        : prepared.kind === "cancellation"
+          ? {
+              payment_id: prepared.payment_id,
+              capture_id: prepared.capture_id,
+              native_refund_ids: prepared.native_refund_ids,
+              provider_refund_ids: prepared.provider_refund_ids,
+            }
+          : {
+              refund_id: prepared.refund?.id ?? null,
+              native_refund_id: prepared.localRefund?.id ?? null,
+              reversal_id: prepared.reversal?.id ?? null,
+            };
   const plan = {
     version: 1,
     operation_id: operation.id,

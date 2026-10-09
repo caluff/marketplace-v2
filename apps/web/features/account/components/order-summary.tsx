@@ -1,6 +1,7 @@
 import type { HttpTypes } from "@medusajs/types";
 import { getMoneyRoundingAdjustment } from "@/lib/money-rounding";
 import { formatOrderAmount } from "../order-format";
+import { getOrderAmounts, getOrderItemQuantities } from "../order-amounts";
 
 export function OrderAddress({
   address,
@@ -36,12 +37,20 @@ export function OrderAddress({
 export function OrderTotals({
   order,
   highlighted = false,
+  showPaymentHistory = true,
 }: {
   order: HttpTypes.StoreOrder;
   highlighted?: boolean;
+  showPaymentHistory?: boolean;
 }) {
-  const amount = (value: number) =>
-    formatOrderAmount(value, order.currency_code);
+  const amount = (value: number | null) =>
+    value === null
+      ? "No disponible"
+      : formatOrderAmount(value, order.currency_code);
+  const amounts = getOrderAmounts(order);
+  const hasReturns = order.items?.some(
+    (item) => getOrderItemQuantities(item).returnedQuantity > 0,
+  );
   const discount = order.discount_total - order.discount_tax_total;
   const roundingAdjustment = getMoneyRoundingAdjustment({
     amounts: [
@@ -57,7 +66,9 @@ export function OrderTotals({
   return (
     <dl className="space-y-3 text-sm">
       <div className="flex justify-between gap-4">
-        <dt className="text-muted-foreground">Productos</dt>
+        <dt className="text-muted-foreground">
+          {hasReturns ? "Productos actuales" : "Productos"}
+        </dt>
         <dd className="tabular-nums">{amount(order.original_item_subtotal)}</dd>
       </div>
       <div className="flex justify-between gap-4">
@@ -97,15 +108,9 @@ export function OrderTotals({
             : "flex justify-between gap-4 border-t border-border pt-4 text-base font-semibold"
         }
       >
-        <dt>
-          {highlighted
-            ? order.payment_status === "captured"
-              ? "Total pagado"
-              : "Total del pedido"
-            : `Total (${order.currency_code.toUpperCase()})`}
-        </dt>
+        <dt>{hasReturns ? "Total actual del pedido" : "Total del pedido"}</dt>
         <dd className="tabular-nums">
-          {amount(order.total)}
+          {amount(amounts.currentTotal)}
           {highlighted ? (
             <span className="ml-1 text-xs">
               {order.currency_code.toUpperCase()}
@@ -113,13 +118,27 @@ export function OrderTotals({
           ) : null}
         </dd>
       </div>
-      {order.summary?.refunded_total > 0 ? (
-        <div className="flex justify-between gap-4 border-t border-border pt-3">
-          <dt className="text-muted-foreground">Reembolsado de este pedido</dt>
-          <dd className="tabular-nums">
-            {amount(order.summary.refunded_total)}
-          </dd>
-        </div>
+      {showPaymentHistory ? (
+        <>
+          <div className="flex justify-between gap-4 border-t border-border pt-3">
+            <dt className="text-muted-foreground">Cobrado de este pedido</dt>
+            <dd className="tabular-nums">{amount(amounts.chargedTotal)}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">
+              Reembolsado de este pedido
+            </dt>
+            <dd className="tabular-nums">{amount(amounts.refundedTotal)}</dd>
+          </div>
+          {amounts.refundedTotal !== null && amounts.refundedTotal > 0 ? (
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Cobrado neto</dt>
+              <dd className="tabular-nums">
+                {amount(amounts.netChargedTotal)}
+              </dd>
+            </div>
+          ) : null}
+        </>
       ) : null}
     </dl>
   );

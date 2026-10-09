@@ -9,6 +9,23 @@ export type FinanceActionState = {
   data?: OrderFinanceResponse;
 };
 
+export function availableFinanceOperations(
+  finance: Pick<
+    OrderFinanceResponse["finance"],
+    "capture" | "refund" | "cancellation"
+  >,
+) {
+  const options: Array<{ value: OrderFinanceInput["action"]; label: string }> =
+    [];
+  if (finance.capture.allowed)
+    options.push({ value: "capture", label: "Cobrar compra" });
+  if (finance.refund.allowed)
+    options.push({ value: "refund", label: "Reembolsar" });
+  if (finance.cancellation.allowed)
+    options.push({ value: "cancel", label: "Cancelar pedido" });
+  return options;
+}
+
 export function financePayload(form: FormData): OrderFinanceInput {
   const action = form.get("action");
   const note = String(form.get("note") ?? "").trim();

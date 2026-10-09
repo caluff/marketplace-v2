@@ -7,7 +7,8 @@ import { getOrderProgress } from "../account/order-progress"
 type ProgressOrder = Pick<
   StoreOrderTrackingResponse["order"],
   "status" | "fulfillment_status" | "created_at" | "items" | "fulfillments"
->
+> &
+  Partial<Pick<StoreOrderTrackingResponse["order"], "delivery_mode">>
 
 function lastCompletedAt(values: (string | null)[]) {
   let latest: { value: string; timestamp: number } | null = null
@@ -22,7 +23,8 @@ function lastCompletedAt(values: (string | null)[]) {
 }
 
 export function getTrackingProgress(order: ProgressOrder) {
-  const steps = getOrderProgress(order)
+  const isPickup = order.delivery_mode === "pickup"
+  const steps = getOrderProgress(order, isPickup)
   const activePackages = order.fulfillments.filter(
     (fulfillment) => !fulfillment.canceled_at,
   )
@@ -31,10 +33,20 @@ export function getTrackingProgress(order: ProgressOrder) {
   const dates = [
     lastCompletedAt([order.created_at]),
     lastCompletedAt(
-      activePackages.map((fulfillment) => fulfillment.packed_at ?? fulfillment.created_at),
+      activePackages.map(
+        (fulfillment) => fulfillment.packed_at ?? fulfillment.created_at,
+      ),
     ),
-    lastCompletedAt(activePackages.map((fulfillment) => fulfillment.shipped_at)),
-    lastCompletedAt(activePackages.map((fulfillment) => fulfillment.delivered_at)),
+    ...(!isPickup
+      ? [
+          lastCompletedAt(
+            activePackages.map((fulfillment) => fulfillment.shipped_at),
+          ),
+        ]
+      : []),
+    lastCompletedAt(
+      activePackages.map((fulfillment) => fulfillment.delivered_at),
+    ),
   ]
 
   return steps.map((step, index) => ({

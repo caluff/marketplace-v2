@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import {
   authorizePaymentSessionStep,
   createLinksWorkflow,
+  createOrderShipmentWorkflow,
   createShippingOptionsWorkflow,
   createStockLocationsWorkflow,
   createUsersWorkflow,
@@ -10,13 +11,18 @@ import {
 import type {
   ICartModuleService,
   IFulfillmentModuleService,
+  IInventoryService,
   IOrderModuleService,
   IPaymentModuleService,
   IProductModuleService,
   LinkDefinition,
   MedusaContainer,
 } from "@medusajs/framework/types";
-import { MathBN, Modules } from "@medusajs/framework/utils";
+import {
+  ContainerRegistrationKeys,
+  MathBN,
+  Modules,
+} from "@medusajs/framework/utils";
 import {
   createWorkflow,
   WorkflowResponse,
@@ -25,6 +31,7 @@ import type OfferModule from "@mercurjs/core/modules/offer";
 import type PayoutModule from "@mercurjs/core/modules/payout";
 import type SellerModule from "@mercurjs/core/modules/seller";
 import {
+  batchOfferInventoryItemsWorkflow,
   createCommissionRatesWorkflow,
   createOrderFulfillmentWorkflow,
   updateCommissionRatesWorkflow,
@@ -45,6 +52,7 @@ import {
 } from "../../../src/workflows/order-finance-native";
 import { recordReconciledPayoutWorkflow } from "../../../src/workflows/recovery-native";
 import { linkSettlementPayoutWorkflow } from "../../../src/workflows/settlement-native";
+import { onboardingService } from "../../../src/lib/vendor-onboarding/access";
 
 const authorizeFixturePaymentWorkflow = createWorkflow(
   "authorize-finance-durability-fixture-payment",
@@ -67,13 +75,19 @@ export async function createFinanceDurabilityFixture(
   {
     withPayout = false,
     paymentState = "captured",
+    withPhysicalShipment = false,
+    withPhysicalFulfillment = false,
   }: {
     withPayout?: boolean;
     paymentState?: "authorized" | "captured";
+    withPhysicalShipment?: boolean;
+    withPhysicalFulfillment?: boolean;
   } = {},
 ) {
   assert.equal(process.env.NODE_ENV, "test");
   assert.ok(paymentState === "authorized" || paymentState === "captured");
+  const withPhysicalInventory = withPhysicalShipment || withPhysicalFulfillment;
+  assert.ok(!withPhysicalInventory || paymentState === "captured");
   assert.ok(
     !withPayout || paymentState === "captured",
     "A payout requires capture",
@@ -162,6 +176,19 @@ export async function createFinanceDurabilityFixture(
       },
     });
     const location = locations[0];
+    if (withPhysicalInventory) {
+      await onboardingService(container).createVendorWarehouses({
+        seller_id: sellerId,
+        stock_location_id: location.id,
+        application_id: `durability-fixture-${id}`,
+        operation_id: randomUUID(),
+        submission_revision: 1,
+        address: { finance_data_kind: "qa_fixture" },
+        name: location.name,
+        created_location: true,
+        state: "ready",
+      });
+    }
     const fulfillment = container.resolve<IFulfillmentModuleService>(
       Modules.FULFILLMENT,
     );
@@ -231,6 +258,7 @@ export async function createFinanceDurabilityFixture(
   }
 
   async function createSale(amount: number, label: "target" | "sibling") {
+    const quantity = withPhysicalInventory && label === "target" ? 3 : 1;
     const seller = await sellers.createSellers({
       name: `Finance durability ${label}`,
       handle: `durability-${label}-${id}`,
@@ -253,18 +281,20 @@ export async function createFinanceDurabilityFixture(
       shipping_profile_id: profile.id,
       sku: `durability-${label}-${id}`,
       created_by: actorId,
-      manage_inventory: false,
+      manage_inventory: withPhysicalInventory,
     });
     const item = {
       title: product.title,
       product_id: product.id,
       variant_id: variant.id,
-      unit_price: amount,
-      quantity: 1,
-      ...(paymentState === "authorized" ? { requires_shipping: true } : {}),
+      unit_price: amount / quantity,
+      quantity,
+      ...(paymentState === "authorized" || withPhysicalInventory
+        ? { requires_shipping: true }
+        : {}),
     };
     const shipping =
-      paymentState === "authorized"
+      paymentState === "authorized" || withPhysicalInventory
         ? await createShipping(seller.id, product.id, label)
         : undefined;
     const order = await orders.createOrders({
@@ -292,10 +322,48 @@ export async function createFinanceDurabilityFixture(
           }
         : {}),
     });
-    return { seller, offer, order, item, amount, shipping };
+    let inventoryItemId: string | undefined;
+    if (withPhysicalInventory) {
+      assert.ok(shipping);
+      const inventory = container.resolve<IInventoryService>(Modules.INVENTORY);
+      const inventoryItem = await inventory.createInventoryItems({
+        sku: `durability-stock-${label}-${id}`,
+        title: product.title,
+      });
+      inventoryItemId = inventoryItem.id;
+      await inventory.createInventoryLevels({
+        inventory_item_id: inventoryItem.id,
+        location_id: shipping.locationId,
+        stocked_quantity: 10,
+      });
+      await createLinksWorkflow(container).run({
+        input: [
+          {
+            [Modules.INVENTORY]: { inventory_item_id: inventoryItem.id },
+            [MercurModules.SELLER]: { seller_id: seller.id },
+          },
+        ],
+      });
+      await batchOfferInventoryItemsWorkflow(container).run({
+        input: {
+          offer_id: offer.id,
+          create: [
+            { inventory_item_id: inventoryItem.id, required_quantity: 1 },
+          ],
+        },
+      });
+      await inventory.createReservationItems({
+        inventory_item_id: inventoryItem.id,
+        location_id: shipping.locationId,
+        line_item_id: order.items![0].id,
+        quantity,
+      });
+    }
+    return { seller, offer, order, item, amount, shipping, inventoryItemId };
   }
-  const target = await createSale(70, "target");
-  const sibling = await createSale(30, "sibling");
+  // Three whole-price items exercise cumulative returns without fractional USD.
+  const target = await createSale(withPhysicalInventory ? 69 : 70, "target");
+  const sibling = await createSale(withPhysicalInventory ? 31 : 30, "sibling");
   const sales = [target, sibling];
   const cart = await container
     .resolve<ICartModuleService>(Modules.CART)
@@ -380,19 +448,38 @@ export async function createFinanceDurabilityFixture(
         },
       });
     }
-  } else {
-    for (const { order, shipping } of sales) {
+  }
+  if (paymentState === "authorized" || withPhysicalInventory) {
+    for (const { order, shipping, item: saleItem } of sales) {
       assert.ok(shipping);
-      await createOrderFulfillmentWorkflow(container).run({
+      const { result: fulfillment } = await createOrderFulfillmentWorkflow(
+        container,
+      ).run({
         input: {
           order_id: order.id,
           location_id: shipping.locationId,
           shipping_option_id: shipping.option.id,
-          items: order.items!.map((item) => ({ id: item.id, quantity: 1 })),
+          items: order.items!.map((item) => ({
+            id: item.id,
+            quantity: saleItem.quantity,
+          })),
           created_by: actorId,
           no_notification: true,
         },
       });
+      if (withPhysicalShipment) {
+        await createOrderShipmentWorkflow(container).run({
+          input: {
+            order_id: order.id,
+            fulfillment_id: fulfillment.id,
+            items: order.items!.map((item) => ({
+              id: item.id,
+              quantity: saleItem.quantity,
+            })),
+            no_notification: true,
+          },
+        });
+      }
     }
   }
 
@@ -443,6 +530,24 @@ export async function createFinanceDurabilityFixture(
     });
     assert.equal(current.financialProblem, null);
     assert.equal(current.originals.length, 2);
+    if (withPhysicalInventory) {
+      const {
+        data: [nativeOrder],
+      } = await container.resolve(ContainerRegistrationKeys.QUERY).graph(
+        {
+          entity: "order",
+          fields: ["items.*", "items.detail.*"],
+          filters: { id: order.id },
+        },
+        { cache: { enable: false } },
+      );
+      const shipped = nativeOrder.items![0]!;
+      assert.equal(
+        Number(shipped.detail?.shipped_quantity),
+        withPhysicalShipment ? (order.id === target.order.id ? 3 : 1) : 0,
+        `Native shipped fixture quantities: ${JSON.stringify(nativeOrder.items?.map((item) => item && { id: item.id, quantity: item.quantity, detail: item.detail }))}`,
+      );
+    }
     assert.equal(current.original?.gross, amount);
     assert.equal(
       current.original.commission,
@@ -474,5 +579,10 @@ export async function createFinanceDurabilityFixture(
     paymentIntentId: "pi_durability",
     chargeId: "ch_durability",
     transferId,
+    itemId: target.order.items![0].id,
+    siblingItemId: sibling.order.items![0].id,
+    locationId: target.shipping?.locationId,
+    siblingLocationId: sibling.shipping?.locationId,
+    inventoryItemId: target.inventoryItemId,
   };
 }

@@ -66,6 +66,8 @@ export function installFinanceDurabilityStripe() {
     loseReversalResponse: false,
     hideRefunds: false,
     hideReversals: false,
+    expectedRefundAmount: 2_000,
+    expectedReversalAmount: 1_840,
   };
   const charge = () => ({
     id: "ch_durability",
@@ -169,7 +171,7 @@ export function installFinanceDurabilityStripe() {
         balance_transaction: null,
       };
       if (
-        value.amount !== 2_000 ||
+        value.amount !== state.expectedRefundAmount ||
         value.payment_intent !== intent.id ||
         !value.metadata.finance_operation_id
       )
@@ -214,7 +216,7 @@ export function installFinanceDurabilityStripe() {
       };
       if (
         !transfer ||
-        value.amount !== 1_840 ||
+        value.amount !== state.expectedReversalAmount ||
         !value.metadata.finance_operation_id
       )
         throw new Error("Unexpected simulated reversal request");

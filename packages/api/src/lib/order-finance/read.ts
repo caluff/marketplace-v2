@@ -29,11 +29,16 @@ import {
   type OriginalSale,
 } from "./snapshot";
 
-export type FinanceActor = { actor_id: string; seller_id?: string };
+export type FinanceActor = {
+  actor_id: string;
+  seller_id?: string;
+  customer_id?: string;
+};
 const GROUP_FIELDS = [
   "id",
   "cart_id",
   "orders.id",
+  "orders.customer_id",
   "orders.version",
   "orders.status",
   "orders.currency_code",
@@ -88,6 +93,16 @@ export async function readOrderFinance(
       MedusaError.Types.UNAUTHORIZED,
       "Debes iniciar sesión.",
     );
+  if (
+    actor.customer_id !== undefined &&
+    (!actor.customer_id ||
+      actor.customer_id !== actor.actor_id ||
+      actor.seller_id !== undefined)
+  )
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      "El acceso al pedido no es válido.",
+    );
   if (actor.seller_id !== undefined) {
     if (!actor.seller_id)
       throw new MedusaError(
@@ -97,6 +112,25 @@ export async function readOrderFinance(
     await validateSellerOrder(container, actor.seller_id, orderId);
   }
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
+  if (actor.customer_id !== undefined) {
+    const { data: orders } = await query.graph(
+      {
+        entity: "order",
+        fields: ["id", "customer_id"],
+        filters: { id: orderId, customer_id: actor.customer_id },
+      },
+      { cache: { enable: false } },
+    );
+    if (
+      orders.length !== 1 ||
+      orders[0].id !== orderId ||
+      orders[0].customer_id !== actor.customer_id
+    )
+      throw new MedusaError(
+        MedusaError.Types.NOT_FOUND,
+        "No encontramos este pedido en tu cuenta.",
+      );
+  }
   const { data: links } = await query.graph(
     {
       entity: "order_group_order",
@@ -131,10 +165,19 @@ export async function readOrderFinance(
     );
   }
   const group = parsed.data;
+  if (
+    actor.customer_id !== undefined &&
+    group.orders.find((order) => order.id === orderId)?.customer_id !==
+      actor.customer_id
+  )
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      "No encontramos este pedido en tu cuenta.",
+    );
   const journal = container.resolve<CommerceAutomationService>(
     COMMERCE_AUTOMATION_MODULE,
   );
-  const [states, operations, payoutLinks, pendingChanges, originalRecords] =
+  const [states, operations, payoutLinks, pendingChanges, originalRecords, activeReturns] =
     await Promise.all([
       journal.listCommerceGroupStates({ id: group.id }, { take: 1 }),
       journal.listCommerceOperations(
@@ -172,6 +215,19 @@ export async function readOrderFinance(
         { cache: { enable: false } },
       ),
       journal.listFinanceSaleSnapshots({ group_id: group.id }, { take: 51 }),
+      query.graph(
+        {
+          entity: "return",
+          fields: ["id"],
+          filters: {
+            order_id: orderId,
+            status: ["open", "requested", "partially_received"],
+            canceled_at: null,
+          },
+          pagination: { take: 1 },
+        },
+        { cache: { enable: false } },
+      ),
     ]);
   if (operations.length > 1000)
     throw new MedusaError(
@@ -277,6 +333,9 @@ export async function readOrderFinance(
     .id;
   const matchingPayouts = payoutLinks.data.filter((link) => {
     if (link.seller_id !== sellerId) return false;
+    // A stale module link can remain after its payout was deleted. There is
+    // no settlement to attribute when Query returns an absent relation.
+    if (link.payout === null || link.payout === undefined) return false;
     const data = link.payout?.data;
     const metadata = financePayoutSchema.shape.data.shape.metadata.safeParse(data?.metadata);
     const attributed = metadata.success ? metadata.data.order_id : undefined;
@@ -311,7 +370,8 @@ export async function readOrderFinance(
     hasPayout: false,
     payoutProblem,
     finalCapture,
-    isOperator: actor.seller_id === undefined,
+    isOperator: actor.seller_id === undefined && actor.customer_id === undefined,
+    customerId: actor.customer_id,
     isHeld:
       invalidOperation ||
       Boolean(state?.review_required) ||
@@ -380,6 +440,16 @@ export async function readOrderFinance(
       reason,
     };
   }
+  if (activeReturns.data.length) {
+    const reason =
+      "Recibe o cancela la devolución física antes de reembolsar o cancelar este pedido.";
+    view.finance.refund = { allowed: false, reason };
+    view.finance.cancellation = {
+      ...view.finance.cancellation,
+      allowed: false,
+      reason,
+    };
+  }
   return {
     group,
     allocation,
@@ -392,7 +462,8 @@ export async function readOrderFinance(
     original,
     originals,
     originalProblem,
-    hasPendingChanges: pendingChanges.data.length > 0,
+    hasPendingChanges:
+      pendingChanges.data.length > 0 || activeReturns.data.length > 0,
     financialProblem:
       originalProblem ??
       payoutProblem ??

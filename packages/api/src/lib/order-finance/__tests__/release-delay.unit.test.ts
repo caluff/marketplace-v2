@@ -9,6 +9,11 @@ import { recordOrderCompletions } from "../../../workflows/record-order-completi
 import { COMMERCE_AUTOMATION_MODULE } from "../../../modules/commerce-automation";
 import type { readOrderFinance } from "../read";
 import { financeGroup, originalSales } from "./fixtures";
+import { readCompletedOrderDeliveryReady } from "../../vendor-orders/completion";
+
+jest.mock("../../vendor-orders/completion", () => ({
+  readCompletedOrderDeliveryReady: jest.fn(),
+}));
 
 const savedEnvironment = { ...process.env };
 const graph = jest.fn();
@@ -62,6 +67,7 @@ function clock(delayDays: number) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.mocked(readCompletedOrderDeliveryReady).mockResolvedValue(false);
   process.env.STRIPE_API_KEY = "sk_test_disposable";
   process.env.STRIPE_WEBHOOK_SECRET = "whsec_disposable";
   process.env.STRIPE_PAYOUT_WEBHOOK_SECRET = "whsec_disposable";
@@ -76,6 +82,118 @@ beforeEach(() => {
 });
 afterAll(() => {
   process.env = savedEnvironment;
+});
+
+it("accepts a completed pickup only with the same verified delivery proof used by vendor completion", async () => {
+  const completion = orderCompletionSchema.parse(clock(0));
+  listStores.mockResolvedValue(settings(0));
+  const group = financeGroup();
+  group.orders[0].status = "completed";
+  const current = { group, original: originalSales(group)[0] } as Awaited<
+    ReturnType<typeof readOrderFinance>
+  >;
+  const nativeOrder = {
+    id: "order_1",
+    status: "completed",
+    updated_at: completion.observed_order_updated_at,
+    items: [
+      {
+        quantity: 1,
+        requires_shipping: true,
+        detail: {
+          fulfilled_quantity: 1,
+          shipped_quantity: 0,
+          delivered_quantity: 0,
+        },
+      },
+    ],
+  };
+  graph.mockImplementation(async ({ entity }) => ({
+    data:
+      entity === "seller"
+        ? [{ id: "seller_1", status: "open" }]
+        : [nativeOrder],
+  }));
+  await expect(
+    assertAutomaticSettlementEligible(
+      container,
+      current,
+      completion,
+      completion.eligible_at.getTime(),
+    ),
+  ).rejects.toThrow("preparación y el envío");
+  jest.mocked(readCompletedOrderDeliveryReady).mockResolvedValue(true);
+  await expect(
+    assertAutomaticSettlementEligible(
+      container,
+      current,
+      completion,
+      completion.eligible_at.getTime(),
+    ),
+  ).resolves.toBeUndefined();
+  expect(readCompletedOrderDeliveryReady).toHaveBeenCalledWith(
+    container,
+    "seller_1",
+    "order_1",
+  );
+  expect(nativeOrder.items[0].detail).toEqual({
+    fulfilled_quantity: 1,
+    shipped_quantity: 0,
+    delivered_quantity: 0,
+  });
+  nativeOrder.items[0].detail.fulfilled_quantity = 0;
+  await expect(
+    assertAutomaticSettlementEligible(
+      container,
+      current,
+      completion,
+      completion.eligible_at.getTime(),
+    ),
+  ).rejects.toThrow("preparación y el envío");
+});
+
+it("checks the immutable version before allowing the pickup exception", async () => {
+  const completion = orderCompletionSchema.parse(clock(0));
+  const group = financeGroup();
+  group.orders[0].status = "completed";
+  const current = { group, original: originalSales(group)[0] } as Awaited<
+    ReturnType<typeof readOrderFinance>
+  >;
+  graph.mockImplementation(async ({ entity }) => ({
+    data:
+      entity === "seller"
+        ? [{ id: "seller_1", status: "open" }]
+        : [
+            {
+              id: "order_1",
+              status: "completed",
+              updated_at: new Date(
+                completion.observed_order_updated_at.getTime() + 1,
+              ),
+              items: [
+                {
+                  quantity: 1,
+                  requires_shipping: true,
+                  detail: {
+                    fulfilled_quantity: 1,
+                    shipped_quantity: 0,
+                    delivered_quantity: 0,
+                  },
+                },
+              ],
+            },
+          ],
+  }));
+  jest.mocked(readCompletedOrderDeliveryReady).mockResolvedValue(true);
+  await expect(
+    assertAutomaticSettlementEligible(
+      container,
+      current,
+      completion,
+      completion.eligible_at.getTime(),
+    ),
+  ).rejects.toThrow("pedido cambió");
+  expect(readCompletedOrderDeliveryReady).not.toHaveBeenCalled();
 });
 
 it.each([0, 1, 2, 3, 365])(

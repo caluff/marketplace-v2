@@ -3,6 +3,7 @@ import { retrieveOrder } from "./data";
 import {
   canComplete,
   canDeliver,
+  canCancelFulfillment,
   isOrderId,
   OrderValidationError,
 } from "./helpers";
@@ -14,7 +15,11 @@ export async function operateOrder(sdk: Medusa, form: FormData) {
     throw new OrderValidationError("Pedido inválido.");
   if (form.get("confirmed") !== "yes")
     throw new OrderValidationError("Confirma la operación antes de continuar.");
-  if (action !== "complete" && action !== "deliver")
+  if (
+    action !== "complete" &&
+    action !== "deliver" &&
+    action !== "cancel_fulfillment"
+  )
     throw new OrderValidationError("Operación no disponible.");
   // Re-read immediately before mutation; never trust the rendered capabilities.
   const order = await retrieveOrder(sdk, id);
@@ -29,12 +34,18 @@ export async function operateOrder(sdk: Medusa, form: FormData) {
     if (
       typeof fulfillmentId !== "string" ||
       !/^ful_[a-zA-Z0-9]+$/.test(fulfillmentId) ||
-      !canDeliver(order, fulfillmentId)
+      !(action === "deliver"
+        ? canDeliver(order, fulfillmentId)
+        : canCancelFulfillment(order, fulfillmentId))
     )
       throw new OrderValidationError(
-        "El envío ya no está pendiente de entrega en este pedido. Actualiza el pedido.",
+        action === "deliver"
+          ? "El envío ya no está pendiente de entrega en este pedido. Actualiza el pedido."
+          : "La preparación ya no se puede cancelar. Actualiza el pedido.",
       );
-    await sdk.admin.order.markAsDelivered(id, fulfillmentId, {});
+    if (action === "deliver")
+      await sdk.admin.order.markAsDelivered(id, fulfillmentId, {});
+    else await sdk.admin.order.cancelFulfillment(id, fulfillmentId, {});
   }
   return id;
 }

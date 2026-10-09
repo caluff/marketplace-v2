@@ -79,27 +79,40 @@ export async function withFinanceExecutionLock<T>(
   try {
     await locking.acquire(scope.cartId, { ownerId });
   } catch (error) {
-    if (!options?.releaseStoppedWriter) throw error;
-    const writers = [
-      ...candidates,
-      ...(options.priorWriter ? [options.priorWriter] : []),
-    ];
-    let released = false;
-    for (const writer of writers) {
-      if (writer.execution_owner_id === ownerId) continue;
-      if (
-        options.stoppedOwnerId &&
-        writer.execution_owner_id !== options.stoppedOwnerId
-      )
-        continue;
-      if (await releaseStoppedFinanceWriter(container, scope, writer)) {
-        released = true;
-        stoppedWriter = writer;
-        break;
+    try {
+      if (!options?.releaseStoppedWriter) throw error;
+      const writers = [
+        ...candidates,
+        ...(options.priorWriter ? [options.priorWriter] : []),
+      ];
+      let released = false;
+      for (const writer of writers) {
+        if (writer.execution_owner_id === ownerId) continue;
+        if (
+          options.stoppedOwnerId &&
+          writer.execution_owner_id !== options.stoppedOwnerId
+        )
+          continue;
+        if (await releaseStoppedFinanceWriter(container, scope, writer)) {
+          released = true;
+          stoppedWriter = writer;
+          break;
+        }
       }
+      if (!released) throw error;
+      await locking.acquire(scope.cartId, { ownerId });
+    } catch (acquisitionError) {
+      // Redis's acknowledged contention means this owner never acquired the
+      // lock. An IO failure can hide a successful acquisition: retain that
+      // identity so the unexpiring lock remains recoverable after process exit.
+      if (
+        acquisitionError instanceof MedusaError &&
+        acquisitionError.type === MedusaError.Types.CONFLICT
+      ) {
+        await journal.removeFinanceExecutionWriter({ ...scope, ownerId });
+      }
+      throw acquisitionError;
     }
-    if (!released) throw error;
-    await locking.acquire(scope.cartId, { ownerId });
   }
   try {
     const result = await work(ownerId);

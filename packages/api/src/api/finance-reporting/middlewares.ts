@@ -6,6 +6,7 @@ import { PolicyOperation } from "@medusajs/framework/utils";
 import { z } from "@medusajs/framework/zod";
 import {
   financeReportingQuerySchema,
+  vendorEarningsQuerySchema,
   vendorSettlementsQuerySchema,
 } from "../../lib/order-finance/contracts";
 
@@ -13,6 +14,12 @@ export const vendorSettlementsStreamQuerySchema = z.strictObject({});
 export const vendorReportingStreamQuerySchema = z.strictObject({});
 
 export const financeReportingMiddlewares: MiddlewareRoute[] = [
+  {
+    matcher: "/vendor/finance/earnings",
+    method: "GET",
+    middlewares: [validateAndTransformQuery(vendorEarningsQuerySchema, {})],
+    policies: [{ resource: "order", operation: PolicyOperation.read }],
+  },
   {
     matcher: "/vendor/finance/reporting/stream",
     method: "GET",

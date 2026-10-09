@@ -15,6 +15,7 @@ export const StoreOrderTrackingResponseSchema = z.object({
     custom_display_id: z.string().nullable().default(null),
     created_at: timestamp,
     status: z.enum(OrderStatus),
+    delivery_mode: z.enum(["pickup", "shipping", "mixed", "unknown"]).default("unknown"),
     fulfillment_status: z.enum([
       "not_fulfilled", "partially_fulfilled", "fulfilled", "partially_shipped",
       "shipped", "partially_delivered", "delivered", "canceled",
@@ -47,6 +48,7 @@ export const StoreOrderTrackingResponseSchema = z.object({
     fulfillments: z.array(z.object({
       id: z.string(),
       created_at: timestamp.nullable().default(null),
+      delivery_mode: z.enum(["pickup", "shipping", "unknown"]).default("unknown"),
       packed_at: timestamp.nullable().default(null),
       shipped_at: timestamp.nullable().default(null),
       delivered_at: timestamp.nullable().default(null),

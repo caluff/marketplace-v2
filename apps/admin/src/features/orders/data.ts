@@ -14,7 +14,7 @@ export type OperatorOrder = Omit<HttpTypes.AdminOrder, "fulfillments"> & {
 
 // Explicit relation counters are required by Medusa's order formatter.
 export const ORDER_FIELDS =
-  "id,display_id,custom_display_id,created_at,status,email,currency_code,total,item_total,discount_total,shipping_total,tax_total,payment_status,fulfillment_status,seller.id,seller.name,customer.first_name,customer.last_name,items.id,items.product_id,items.title,items.thumbnail,items.variant.product.thumbnail,items.variant.product.images.url,items.quantity,items.unit_price,items.total,items.detail.quantity,items.detail.fulfilled_quantity,items.detail.shipped_quantity,items.detail.delivered_quantity,shipping_address.*,shipping_methods.*,fulfillments.id,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.canceled_at,fulfillments.labels.*";
+  "id,display_id,custom_display_id,created_at,status,email,currency_code,total,item_total,discount_total,shipping_total,tax_total,payment_status,fulfillment_status,seller.id,seller.name,customer.first_name,customer.last_name,items.id,items.product_id,items.title,items.thumbnail,items.variant.product.thumbnail,items.variant.product.images.url,items.quantity,items.unit_price,items.total,items.detail.quantity,items.detail.fulfilled_quantity,items.detail.return_requested_quantity,items.detail.return_received_quantity,items.detail.return_dismissed_quantity,items.detail.shipped_quantity,items.detail.delivered_quantity,shipping_address.*,shipping_methods.*,fulfillments.id,fulfillments.shipped_at,fulfillments.delivered_at,fulfillments.canceled_at,fulfillments.labels.*";
 
 export function orderItemImage(item: HttpTypes.AdminOrderLineItem) {
   return (

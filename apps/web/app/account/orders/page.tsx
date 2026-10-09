@@ -11,6 +11,10 @@ import { AccountEmptyState } from "@/features/account/components/empty-state"
 import { AccountPagination } from "@/features/account/components/pagination"
 import { OrderItems } from "@/features/account/components/order-items"
 import {
+  getOrderAmounts,
+  getOrderItemQuantities,
+} from "@/features/account/order-amounts"
+import {
   ACCOUNT_PAGE_SIZE,
   getAccount,
   getPageNumber,
@@ -35,7 +39,7 @@ async function OrderList({ searchParams }: Props) {
     offset: (page - 1) * ACCOUNT_PAGE_SIZE,
     order: "-created_at",
     fields:
-      "+items.id,+items.title,+items.quantity,+items.variant_title,+items.thumbnail,+items.product_handle,+items.variant.product.thumbnail,+items.variant.product.images.url",
+      "+items.id,+items.title,+items.quantity,+items.detail.*,+items.variant_title,+items.thumbnail,+items.product_handle,+items.variant.product.thumbnail,+items.variant.product.images.url",
   })
   const lastPage = Math.max(1, Math.ceil(count / ACCOUNT_PAGE_SIZE))
   if (page > lastPage) redirect("/account/orders?page=" + lastPage)
@@ -64,7 +68,9 @@ async function OrderList({ searchParams }: Props) {
                     {formatOrderDate(order.created_at)}
                   </p>
                 </div>
-                <Badge variant="outline">
+                <Badge
+                  variant={order.status === "canceled" ? "destructive" : "outline"}
+                >
                   {getOrderStatusLabel(order.status)}
                 </Badge>
               </div>
@@ -83,7 +89,11 @@ async function OrderList({ searchParams }: Props) {
                 </div>
                 <div className="sm:text-right">
                   <p className="text-xs text-muted-foreground">
-                    Total del pedido
+                    {order.items?.some(
+                      (item) => getOrderItemQuantities(item).returnedQuantity > 0,
+                    )
+                      ? "Total actual del pedido"
+                      : "Total del pedido"}
                   </p>
                   <p className="mt-1 text-lg font-semibold tabular-nums">
                     {formatOrderAmount(order.total, order.currency_code)}
@@ -91,17 +101,35 @@ async function OrderList({ searchParams }: Props) {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {getPaymentStatusLabel(order.payment_status)}
                   </p>
+                  {order.items?.some(
+                    (item) => getOrderItemQuantities(item).returnedQuantity > 0,
+                  ) || (order.summary?.refunded_total ?? 0) > 0 ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Cobrado:{" "}
+                      {formatOrderAmount(
+                        getOrderAmounts(order).chargedTotal ?? Number.NaN,
+                        order.currency_code,
+                      )}
+                      {" · "}Reembolsado:{" "}
+                      {formatOrderAmount(
+                        getOrderAmounts(order).refundedTotal ?? Number.NaN,
+                        order.currency_code,
+                      )}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
-                <p className="flex items-center gap-2 text-xs font-medium">
-                  <Truck
-                    className="size-4 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  {getShippingStatusLabel(order.fulfillment_status)}
-                </p>
-                <Button asChild variant="outline">
+                {order.status !== "canceled" ? (
+                  <p className="flex items-center gap-2 text-xs font-medium">
+                    <Truck
+                      className="size-4 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    {getShippingStatusLabel(order.fulfillment_status)}
+                  </p>
+                ) : null}
+                <Button asChild variant="outline" className="ml-auto">
                   <Link
                     href={"/account/orders/" + order.id}
                     aria-label={

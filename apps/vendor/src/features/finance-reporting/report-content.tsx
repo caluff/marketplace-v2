@@ -51,7 +51,7 @@ export function FinanceReportContent({
           <Card
             key={key}
             className={
-              key === "pending_settlement"
+              key === "pending_settlement" || key === "vendor_earnings"
                 ? "relative cursor-pointer hover:bg-muted/40"
                 : undefined
             }
@@ -59,9 +59,13 @@ export function FinanceReportContent({
             <CardHeader className="pb-2">
               <CardTitle asChild className="text-sm font-medium">
                 <h3>
-                  {key === "pending_settlement" ? (
+                  {key === "pending_settlement" || key === "vendor_earnings" ? (
                     <Link
-                      href="/seller/settlements"
+                      href={
+                        key === "vendor_earnings"
+                          ? `/seller/settlements/paid?${new URLSearchParams({ period: report.filters.period })}`
+                          : "/seller/settlements"
+                      }
                       className="flex items-center justify-between gap-3 after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-[-2px] focus-visible:after:outline-ring"
                     >
                       {label}

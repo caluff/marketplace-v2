@@ -198,7 +198,7 @@ export type Routes = {
                 creditLines: typeof import("@medusajs/medusa/api/admin/orders/[id]/credit-lines/route");
                 fulfillments: typeof import("@medusajs/medusa/api/admin/orders/[id]/fulfillments/route") & {
                     $fulfillmentId: {
-                        cancel: typeof import("@medusajs/medusa/api/admin/orders/[id]/fulfillments/[fulfillment_id]/cancel/route");
+                        cancel: typeof import("../src/api/admin/orders/[id]/fulfillments/[fulfillment_id]/cancel/route");
                         markAsDelivered: typeof import("@medusajs/medusa/api/admin/orders/[id]/fulfillments/[fulfillment_id]/mark-as-delivered/route");
                         shipments: typeof import("@medusajs/medusa/api/admin/orders/[id]/fulfillments/[fulfillment_id]/shipments/route");
                     };
@@ -392,7 +392,7 @@ export type Routes = {
                     $actionId: typeof import("@medusajs/medusa/api/admin/returns/[id]/dismiss-items/[action_id]/route");
                 };
                 receive: typeof import("@medusajs/medusa/api/admin/returns/[id]/receive/route") & {
-                    confirm: typeof import("@mercurjs/core/api/admin/returns/[id]/receive/confirm/route");
+                    confirm: typeof import("../src/api/admin/returns/[id]/receive/confirm/route");
                 };
                 receiveItems: typeof import("@medusajs/medusa/api/admin/returns/[id]/receive-items/route") & {
                     $actionId: typeof import("@medusajs/medusa/api/admin/returns/[id]/receive-items/[action_id]/route");
@@ -638,6 +638,8 @@ export type Routes = {
                     decline: typeof import("@medusajs/medusa/api/store/orders/[id]/transfer/decline/route");
                     request: typeof import("@medusajs/medusa/api/store/orders/[id]/transfer/request/route");
                 };
+                cancellation: typeof import("../src/api/store/orders/[id]/cancellation/route");
+                returns: typeof import("../src/api/store/orders/[id]/returns/route");
             };
         };
         paymentCollections: typeof import("../src/api/store/payment-collections/route") & {
@@ -822,7 +824,7 @@ export type Routes = {
                 changes: typeof import("@mercurjs/core/api/vendor/orders/[id]/changes/route");
                 commissionLines: typeof import("@mercurjs/core/api/vendor/orders/[id]/commission-lines/route");
                 complete: typeof import("../src/api/vendor/orders/[id]/complete/route");
-                fulfillments: typeof import("@mercurjs/core/api/vendor/orders/[id]/fulfillments/route") & {
+                fulfillments: typeof import("../src/api/vendor/orders/[id]/fulfillments/route") & {
                     $fulfillmentId: {
                         cancel: typeof import("@mercurjs/core/api/vendor/orders/[id]/fulfillments/[fulfillment_id]/cancel/route");
                         markAsDelivered: typeof import("../src/api/vendor/orders/[id]/fulfillments/[fulfillment_id]/mark-as-delivered/route");
@@ -993,6 +995,7 @@ export type Routes = {
         };
         catalogPermission: typeof import("../src/api/vendor/catalog-permission/route");
         finance: {
+            earnings: typeof import("../src/api/vendor/finance/earnings/route");
             reporting: typeof import("../src/api/vendor/finance/reporting/route") & {
                 stream: typeof import("../src/api/vendor/finance/reporting/stream/route");
             };

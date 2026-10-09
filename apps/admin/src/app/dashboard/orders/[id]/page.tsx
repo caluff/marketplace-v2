@@ -10,6 +10,7 @@ import {
   OrderFinanceRegion,
   OrderFinanceSkeleton,
 } from "@/features/orders/finance-region";
+import { OrderReturnsRegion } from "@/features/orders/return-region";
 
 export const metadata: Metadata = {
   title: "Detalle del pedido | usapeek Admin",
@@ -36,6 +37,9 @@ export default async function OrderPage({
       </Suspense>
       <Suspense fallback={<OrderFinanceSkeleton />}>
         <OrderFinanceRegion id={id} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OrderReturnsRegion id={id} />
       </Suspense>
     </div>
   );

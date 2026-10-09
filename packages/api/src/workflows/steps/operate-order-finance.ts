@@ -45,6 +45,11 @@ export async function operateOrderFinance(
   container: MedusaContainer,
   input: OperateOrderFinanceInput,
 ) {
+  if (input.customer_id !== undefined && input.action !== "cancel")
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      "Solo puedes cancelar tu pedido desde este canal.",
+    );
   const initial = await readOrderFinance(container, input.order_id, input);
   return withFinanceExecutionLock(
     container,
@@ -66,7 +71,11 @@ async function operateLockedOrderFinance(
     confirm: input.confirm,
   });
   if (input.automatic_capture_revision !== undefined) {
-    if (body.action !== "capture" || input.seller_id !== undefined)
+    if (
+      body.action !== "capture" ||
+      input.seller_id !== undefined ||
+      input.customer_id !== undefined
+    )
       throw new MedusaError(
         MedusaError.Types.NOT_ALLOWED,
         "Operación automática no válida.",
@@ -84,6 +93,7 @@ async function operateLockedOrderFinance(
         order_id: input.order_id,
         actor_id: input.actor_id,
         seller_id: input.seller_id,
+        customer_id: input.customer_id,
       }),
     )
     .digest("hex");
@@ -216,6 +226,9 @@ async function operateLockedOrderFinance(
     );
     operationResult = {
       actor_id: input.actor_id,
+      ...(input.customer_id === undefined
+        ? {}
+        : { customer_id: input.customer_id }),
       execution_owner_id: ownerId,
       execution_host: hostname(),
       execution_pid: process.pid,

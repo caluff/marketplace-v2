@@ -162,3 +162,26 @@ it("uses persisted line images first, then the current product thumbnail or gall
     expect(response.order.items[0]).not.toHaveProperty("variant");
   }
 });
+
+it("identifies pickup before preparation and strips option details from bearer responses", async () => {
+  const method = (type: string) => ({ shipping_option: { id: "so_private", metadata: { private: true },
+    service_zone: { fulfillment_set: { type }, name: "private" } } });
+  for (const [methods, expected] of [
+    [[method("pickup")], "pickup"],
+    [[method("shipping")], "shipping"],
+    [[method("pickup"), method("shipping")], "mixed"],
+    [[method("pickup"), {}], "unknown"],
+    [[], "unknown"],
+  ] as const) {
+    run.mockResolvedValue({ result: { ...nativeOrder(), shipping_methods: methods, fulfillments: [] } });
+    const response = await readOrderTracking(container, createOrderTrackingToken(identity));
+    expect(response.order.delivery_mode).toBe(expected);
+    expect(response.order).not.toHaveProperty("shipping_methods");
+  }
+  const native = nativeOrder();
+  run.mockResolvedValue({ result: { ...native, shipping_methods: [method("pickup")],
+    fulfillments: [{ ...native.fulfillments[0], ...method("pickup") }] } });
+  const response = await readOrderTracking(container, createOrderTrackingToken(identity));
+  expect(response.order.fulfillments[0].delivery_mode).toBe("pickup");
+  expect(response.order.fulfillments[0]).not.toHaveProperty("shipping_option");
+});

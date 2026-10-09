@@ -45,6 +45,7 @@ import { accountEmailVerificationMiddlewares } from "./auth/account/email-verifi
 import { googlePanelProfileMiddlewares } from "./auth/account/profile/google/middlewares";
 import { orderTrackingMiddlewares } from "./store/order-tracking/middlewares";
 import { orderTrackingClaimMiddlewares } from "./store/order-tracking/claim/middlewares";
+import { orderAftersalesMiddlewares } from "./store/order-aftersales/middlewares";
 
 const requireSellerRegistrationFlag = (
   _req: MedusaRequest,
@@ -63,6 +64,7 @@ const requireSellerRegistrationFlag = (
 
 export default defineMiddlewares({
   routes: [
+    ...orderAftersalesMiddlewares,
     ...orderTrackingClaimMiddlewares,
     ...orderTrackingMiddlewares,
     ...googlePanelProfileMiddlewares,

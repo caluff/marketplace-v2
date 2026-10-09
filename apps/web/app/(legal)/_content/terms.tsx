@@ -1,4 +1,4 @@
-import type { LegalSection } from "../_components/legal-document"
+import type { LegalSection } from "../_components/legal-document";
 
 export const TERMS_SECTIONS: readonly LegalSection[] = [
   {
@@ -40,8 +40,8 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
       <p>
         Puedes solicitar la cancelación de tu pedido hasta que la tienda empiece
         a prepararlo. Este límite a la cancelación voluntaria no elimina los
-        derechos legales que te correspondan por incidencias. El canal para
-        solicitarla desde tu cuenta está pendiente de implementación.
+        derechos legales que te correspondan por incidencias. Puedes solicitarla
+        desde el detalle del pedido en tu cuenta.
       </p>
     ),
   },
@@ -78,8 +78,10 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
         <p>
           Las reclamaciones se presentarán desde el pedido correspondiente en la
           cuenta del comprador. Si compraste como invitado, necesitarás iniciar
-          sesión y asociar el pedido a tu cuenta. Este canal de reclamaciones
-          todavía está pendiente de implementación.
+          sesión y asociar el pedido a tu cuenta. Desde el detalle del pedido
+          puedes solicitar la devolución de productos incorrectos, dañados o
+          defectuosos. El canal para pedidos no recibidos y la solicitud de
+          intervención de usapeek todavía están pendientes de implementación.
         </p>
         <p>
           La tienda responsable atenderá primero la reclamación y dispondrá de
@@ -167,11 +169,11 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
             vendedores y las garantías aplicables a los productos.
           </li>
           <li>
-            Los canales de cancelación y reclamación, la intervención de usapeek
-            y la gestión de devoluciones y reemplazos.
+            El canal para pedidos no recibidos, la intervención de usapeek y la
+            gestión de reemplazos.
           </li>
           <li>
-            Las instrucciones y el destino de devolución, el plazo para revisar
+            Las instrucciones de transporte de devolución, el plazo para revisar
             el producto y emitir el reembolso, y el medio y momento para
             devolver el gasto de transporte adelantado.
           </li>
@@ -184,4 +186,4 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
       </>
     ),
   },
-]
+];

@@ -163,6 +163,42 @@ export type VendorFinanceReportingResponse = {
   };
 };
 
+export const vendorEarningsQuerySchema = financeReportingQuerySchema.extend({
+  period: z.enum(FINANCE_REPORTING_PERIODS).default("last_30_days"),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().nonnegative().safe().default(0),
+});
+export type VendorEarningsQuery = z.infer<typeof vendorEarningsQuerySchema>;
+
+export type VendorEarningItem = {
+  order_id: string;
+  order_display_id: number | null;
+  order_custom_display_id: string | null;
+  captured_at: string | null;
+  captured_amount: number;
+  refunded_amount: number;
+  total_amount: number | null;
+  commission_amount: number | null;
+  net_amount: number | null;
+  coverage: "complete" | "partial";
+};
+
+export type VendorEarningsResponse = {
+  earnings: {
+    filters: FinanceReportingQuery;
+    window: VendorFinanceReportingResponse["report"]["window"];
+    coverage: VendorFinanceReportingResponse["report"]["coverage"];
+    freshness: VendorFinanceReportingResponse["report"]["freshness"];
+    total_amount: number | null;
+    total_commission: number | null;
+    total_net: number | null;
+    count: number;
+    limit: number;
+    offset: number;
+    items: VendorEarningItem[];
+  };
+};
+
 export const vendorSettlementsQuerySchema = z.strictObject({
   mode: z.literal("test"),
   currency_code: z.literal("usd"),
@@ -232,6 +268,52 @@ export const orderFinanceInputSchema = z
   });
 
 export type OrderFinanceInput = z.infer<typeof orderFinanceInputSchema>;
+
+export const storeOrderCancellationInputSchema = z.strictObject({
+  note: orderFinanceInputSchema.shape.note,
+  request_id: orderFinanceInputSchema.shape.request_id,
+  confirm: orderFinanceInputSchema.shape.confirm,
+});
+export type StoreOrderCancellationInput = z.infer<
+  typeof storeOrderCancellationInputSchema
+>;
+export type StoreOrderCancellationResponse = {
+  cancellation: { allowed: boolean; reason: string | null };
+  canceled?: true;
+};
+
+export const customerReturnInputSchema = z.strictObject({
+  request_id: z.uuid(),
+  reason: z.enum(["damaged", "wrong_item"]),
+  note: z.string().trim().min(3).max(500),
+  items: z
+    .array(
+      z.strictObject({
+        id: z.string().min(1),
+        quantity: z.number().int().positive().max(999),
+      }),
+    )
+    .min(1)
+    .max(100)
+    .refine(
+      (items) => new Set(items.map((item) => item.id)).size === items.length,
+      "No repitas un artículo.",
+    ),
+  confirm: z.literal(true),
+});
+export type CustomerReturnInput = z.infer<typeof customerReturnInputSchema>;
+export type CustomerReturnsResponse = {
+  eligibility: { allowed: boolean; reason: string | null };
+  items: Array<{ id: string; title: string; available_quantity: number }>;
+  requests: Array<{
+    id: string;
+    status:
+      "pending" | "approved" | "partially_received" | "received" | "canceled";
+    reason: "damaged" | "wrong_item" | "store_return";
+    note: string;
+    destination: string | null;
+  }>;
+};
 
 export type OrderFinanceResponse = {
   finance: {

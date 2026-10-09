@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Suspense } from "react";
 import {
   OrderFilters,
@@ -22,6 +24,11 @@ export default async function OrdersPage({
   return (
     <div className="space-y-6">
       <h1 className="sr-only">Pedidos de la tienda</h1>
+      <div className="flex justify-end">
+        <Button asChild size="sm" variant="outline">
+          <Link href="/seller/orders/returns">Devoluciones</Link>
+        </Button>
+      </div>
       <OrderFilters input={input} />
       <Suspense
         key={`${input.q}:${input.tab.value}:${input.page}`}

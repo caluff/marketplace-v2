@@ -1,31 +1,3 @@
-diff --git a/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch b/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
---- a/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
-+++ b/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
-@@ -1,6 +1,5 @@
- diff --git a/dist/cart/workflows/refresh-cart-shipping-methods.js b/dist/cart/workflows/refresh-cart-shipping-methods.js
--index 74e27fb..016edc9 100644
- --- a/dist/cart/workflows/refresh-cart-shipping-methods.js
- +++ b/dist/cart/workflows/refresh-cart-shipping-methods.js
- @@ -107,7 +107,15 @@ exports.refreshCartShippingMethodsWorkflow = (0, workflows_sdk_1.createWorkflow)
-              // Collect profile IDs still required by remaining cart items so that
-@@ -19,3 +18,17 @@
-              const requiredProfileIds = new Set(items
-                  .filter((item) => item.requires_shipping)
-                  .map((item) => item.variant?.product?.shipping_profile?.id)
-+diff --git a/dist/order/workflows/create-order-credit-lines.js b/dist/order/workflows/create-order-credit-lines.js
-+--- a/dist/order/workflows/create-order-credit-lines.js
-++++ b/dist/order/workflows/create-order-credit-lines.js
-+@@ -37,7 +37,9 @@
-+     const orderQuery = (0, common_1.useQueryGraphStep)({
-+         entity: "orders",
-+-        fields: ["id", "status", "summary", "total"],
-++        // Use the persisted accounting summary. Requesting total decorates
-++        // pending_difference and erases an exact one-cent USD balance.
-++        fields: ["id", "status", "summary"],
-+         filters: { id: input.id },
-+         options: { throwIfKeyNotFound: true },
-+     }).config({ name: "get-order" });
-+     const order = (0, workflows_sdk_1.transform)({ orderQuery }, ({ orderQuery }) => orderQuery.data[0]);
 diff --git a/.medusa/server/src/api/store/carts/[id]/line-items/route.js b/.medusa/server/src/api/store/carts/[id]/line-items/route.js
 index e26bb387b5ab9d172b1adeee76fec2f1b7c3a3e4..e0b9bf1dc4b0bf22d84fb9d17c80a4db298200c8 100644
 --- a/.medusa/server/src/api/store/carts/[id]/line-items/route.js
@@ -99,6 +71,42 @@ index 5da074a05b02520c8348cfe445cbcce21679cf26..f801cbfd0c7537aead8a806253201873
      req.auth_context.app_metadata = {
          ...req.auth_context.app_metadata,
          // Members predating RBAC have no role. Route policy checks reject an actor
+diff --git a/.medusa/server/src/api/vendor/orders/validators.d.ts b/.medusa/server/src/api/vendor/orders/validators.d.ts
+index fb35706aafe31ad85448085090a587faa0056547..67cdf03c6eb9f6cbe67b3d8476324f24a2967134 100644
+--- a/.medusa/server/src/api/vendor/orders/validators.d.ts
++++ b/.medusa/server/src/api/vendor/orders/validators.d.ts
+@@ -161,9 +161,11 @@ declare const CreateFulfillment: z.ZodObject<{
+     }>, "many">;
+     requires_shipping: z.ZodBoolean;
+     location_id: z.ZodString;
++    shipping_option_id: z.ZodOptional<z.ZodString>;
+ }, "strip", z.ZodTypeAny, {
+     location_id: string;
+     requires_shipping: boolean;
++    shipping_option_id?: string | undefined;
+     items: {
+         id: string;
+         quantity: number;
+@@ -171,6 +173,7 @@ declare const CreateFulfillment: z.ZodObject<{
+ }, {
+     location_id: string;
+     requires_shipping: boolean;
++    shipping_option_id?: string | undefined;
+     items: {
+         id: string;
+         quantity: number;
+diff --git a/.medusa/server/src/api/vendor/orders/validators.js b/.medusa/server/src/api/vendor/orders/validators.js
+index e56250604ae33399914bb41942fadd2e64ccccdd..bdc4bdd94292f5ed7704b6e09a554709e34967f7 100644
+--- a/.medusa/server/src/api/vendor/orders/validators.js
++++ b/.medusa/server/src/api/vendor/orders/validators.js
+@@ -28,6 +28,7 @@ const CreateFulfillment = zod_1.z.object({
+     })),
+     requires_shipping: zod_1.z.boolean(),
+     location_id: zod_1.z.string(),
++    shipping_option_id: zod_1.z.string().min(1).optional(),
+ });
+ exports.VendorCreateFulfillment = (0, validators_1.WithAdditionalData)(CreateFulfillment);
+ const CancelFulfillment = zod_1.z
 diff --git a/.medusa/server/src/api/vendor/products/helpers.d.ts b/.medusa/server/src/api/vendor/products/helpers.d.ts
 index e51b4c387cf4f216df3ae191f1aa9f0a1e9397d7..8dfc54cf564a89a72c01ba888f38b4cf64879fde 100644
 --- a/.medusa/server/src/api/vendor/products/helpers.d.ts
@@ -163,7 +171,7 @@ index 6827d089cd024befdd982e78c78273dd20722108..7782f4814a553d270db800ac878b8dfa
  }
  export {};
 diff --git a/.medusa/server/src/modules/payout/services/payout-module-service.js b/.medusa/server/src/modules/payout/services/payout-module-service.js
-index aac5c5353e5d78991d6369a8255c3f8a9ab187c5..86ec7a1486b94152b5718042258eb8a5ad9c5506 100644
+index aac5c5353e5d78991d6369a8255c3f8a9ab187c5..f102e52b262dc3dbf37f5349cde60d26deefe938 100644
 --- a/.medusa/server/src/modules/payout/services/payout-module-service.js
 +++ b/.medusa/server/src/modules/payout/services/payout-module-service.js
 @@ -129,6 +129,20 @@ class PayoutModuleService extends (0, utils_1.MedusaService)({
@@ -200,6 +208,7 @@ index aac5c5353e5d78991d6369a8255c3f8a9ab187c5..86ec7a1486b94152b5718042258eb8a5
 +    __metadata("design:returntype", Promise)
 +], PayoutModuleService.prototype, "recordReconciledPayout", null);
  //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicGF5b3V0LW1vZHVsZS1zZXJ2aWNlLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vLi4vLi4vLi4vc3JjL21vZHVsZXMvcGF5b3V0L3NlcnZpY2VzL3BheW91dC1tb2R1bGUtc2VydmljZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7OztBQUFBLHFEQU9rQztBQUNsQywyQ0Fhd0I7QUFFeEIsc0NBQTZEO0FBUzdELE1BQXFCLG1CQUFvQixTQUFRLElBQUEscUJBQWEsRUFBQztJQUMzRCxVQUFVLEVBQVYsbUJBQVU7SUFDVixNQUFNLEVBQU4sZUFBTTtJQUNOLGFBQWEsRUFBYixzQkFBYTtDQUNoQixDQUFDO0lBS0UsWUFBWSxFQUFFLHFCQUFxQixFQUFFLGNBQWMsRUFBd0IsRUFBRSxPQUE0QjtRQUNyRyxhQUFhO1FBQ2IsS0FBSyxDQUFDLEdBQUcsU0FBUyxDQUFDLENBQUE7UUFDbkIsSUFBSSxDQUFDLHNCQUFzQixHQUFHLHFCQUFxQixDQUFBO1FBQ25ELElBQUksQ0FBQyxlQUFlLEdBQUcsY0FBYyxDQUFBO1FBQ3JDLElBQUksQ0FBQyxRQUFRLEdBQUc7WUFDWixHQUFHLHFDQUE2QjtZQUNoQyxHQUFHLENBQUMsT0FBTyxJQUFJLEVBQUUsQ0FBQztTQUNyQixDQUFBO0lBQ0wsQ0FBQztJQUVELFVBQVU7UUFDTixPQUFPO1lBQ0gsR0FBRyxxQ0FBNkI7WUFDaEMsR0FBRyxDQUFDLElBQUksQ0FBQyxRQUFRLElBQUksRUFBRSxDQUFDO1NBQzNCLENBQUE7SUFDTCxDQUFDO0lBSUssQUFBTixLQUFLLENBQUMsbUJBQW1CLENBQ3JCLEtBQTZCLEVBQ1osYUFBc0M7UUFFdkQsSUFBSSxhQUFhLEdBQWlELElBQUksQ0FBQTtRQUN0RSxJQUFJLGVBQWUsR0FBdUMsSUFBSSxDQUFBO1FBRTlELElBQUksQ0FBQztZQUNELGFBQWEsR0FBRyxNQUFNLElBQUksQ0FBQyxvQkFBb0IsQ0FDM0MsRUFBRSxJQUFJLEVBQUUs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
+\ No newline at end of file
 diff --git a/.medusa/server/src/modules/seller/repositories/order-group.js b/.medusa/server/src/modules/seller/repositories/order-group.js
 index a64058b778254434d80188ac20e2902a9cbba5de..84fdf54aedb0f0ea368b8901ba8563e099cfccfb 100644
 --- a/.medusa/server/src/modules/seller/repositories/order-group.js
@@ -267,6 +276,34 @@ index 3ac3ae6051585a5bd9b60a510b25d2dc8e288c71..ce17f9258b2555d051d23153aca20f74
      const policyByKey = new Map(policies.map((policy) => [policy.key, policy]));
      const existingBindings = new Set(existingRolePolicies.map((rolePolicy) => `${rolePolicy.role_id}:${rolePolicy.policy_id}`));
      const rolePoliciesToCreate = [];
+diff --git a/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch b/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
+index a19dc0e2b77bc5546d8c972b44e240d4568a018f..4c087d29290b50bb233ef54f715eb77abbfabc19 100644
+--- a/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
++++ b/.medusa/server/src/patches/patches/@medusajs+core-flows@2.18.0.patch
+@@ -1,5 +1,4 @@
+ diff --git a/dist/cart/workflows/refresh-cart-shipping-methods.js b/dist/cart/workflows/refresh-cart-shipping-methods.js
+-index 74e27fb..016edc9 100644
+ --- a/dist/cart/workflows/refresh-cart-shipping-methods.js
+ +++ b/dist/cart/workflows/refresh-cart-shipping-methods.js
+ @@ -107,7 +107,15 @@ exports.refreshCartShippingMethodsWorkflow = (0, workflows_sdk_1.createWorkflow)
+@@ -19,3 +18,17 @@ index 74e27fb..016edc9 100644
+              const requiredProfileIds = new Set(items
+                  .filter((item) => item.requires_shipping)
+                  .map((item) => item.variant?.product?.shipping_profile?.id)
++diff --git a/dist/order/workflows/create-order-credit-lines.js b/dist/order/workflows/create-order-credit-lines.js
++--- a/dist/order/workflows/create-order-credit-lines.js
+++++ b/dist/order/workflows/create-order-credit-lines.js
++@@ -37,7 +37,9 @@
++     const orderQuery = (0, common_1.useQueryGraphStep)({
++         entity: "orders",
++-        fields: ["id", "status", "summary", "total"],
+++        // Use the persisted accounting summary. Requesting total decorates
+++        // pending_difference and erases an exact one-cent USD balance.
+++        fields: ["id", "status", "summary"],
++         filters: { id: input.id },
++         options: { throwIfKeyNotFound: true },
++     }).config({ name: "get-order" });
++     const order = (0, workflows_sdk_1.transform)({ orderQuery }, ({ orderQuery }) => orderQuery.data[0]);
 diff --git a/.medusa/server/src/subscribers/payout-webhook.js b/.medusa/server/src/subscribers/payout-webhook.js
 index 421ad74978a9bfe6b28456f541f71484e6d6cbf8..daee4b54067c5e7e02ced7a44a6cd8662e52f2c6 100644
 --- a/.medusa/server/src/subscribers/payout-webhook.js
@@ -415,6 +452,29 @@ index 2f5c4545425355ecefff8d0a3515ef20be8c0372..e00e7198e2540b1b7e299e68505b77f4
      });
      const result = (0, workflows_sdk_1.transform)({ createdOrderGroup, orderGroupId }, ({ createdOrderGroup, orderGroupId }) => {
          return { order_group_id: createdOrderGroup?.id ?? orderGroupId };
+diff --git a/.medusa/server/src/workflows/order/workflows/confirm-return-receive.js b/.medusa/server/src/workflows/order/workflows/confirm-return-receive.js
+index 9e0cd05eb374a51e7192b5de273ac6235d7c45d2..c1318ad827bb047d6c5246883559679c95927bfa 100644
+--- a/.medusa/server/src/workflows/order/workflows/confirm-return-receive.js
++++ b/.medusa/server/src/workflows/order/workflows/confirm-return-receive.js
+@@ -164,12 +164,14 @@ exports.confirmReturnReceiveWorkflow = (0, workflows_sdk_1.createWorkflow)(expor
+                 }
+                 return;
+             }
++            const previous = retItems.find((item) => item.item_id === itemId);
+             itemUpdates[itemId] = {
+                 id: itemMap[itemId],
+-                received_quantity: act.details.quantity,
+-                damaged_quantity: act.action === utils_1.ChangeActionType.RECEIVE_DAMAGED_RETURN_ITEM
+-                    ? act.details.quantity
+-                    : 0,
++                received_quantity: utils_1.MathBN.add(previous?.received_quantity ?? 0, act.details.quantity),
++                damaged_quantity: utils_1.MathBN.add(previous?.damaged_quantity ?? 0,
++                    act.action === utils_1.ChangeActionType.RECEIVE_DAMAGED_RETURN_ITEM
++                        ? act.details.quantity
++                        : 0),
+             };
+         });
+         const hasReceivedAllItems = retItems.every((item) => {
 diff --git a/.medusa/server/src/workflows/payout/workflows/create-payout.d.ts b/.medusa/server/src/workflows/payout/workflows/create-payout.d.ts
 index f03dcf6d711075a4c1437a87fe833e872dadb79b..7c3158609a4ccdb3eab16b30a1a118e378b33a2e 100644
 --- a/.medusa/server/src/workflows/payout/workflows/create-payout.d.ts

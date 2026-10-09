@@ -104,7 +104,9 @@ export function StatusBadge({ status }: { status?: string }) {
               status === "pending" ||
               status === "requires_action"
             ? "warning"
-            : "muted"
+            : status === "canceled"
+              ? "destructive"
+              : "muted"
       }
     >
       {statusLabel(status)}

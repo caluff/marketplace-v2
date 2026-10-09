@@ -39,12 +39,15 @@ export function orderNotificationEventInput(
 export const config: SubscriberConfig = {
   event: [
     "order_group.created",
+    "order.customer_return_requested",
     OrderWorkflowEvents.PLACED,
     OrderWorkflowEvents.UPDATED,
     OrderWorkflowEvents.COMPLETED,
     OrderWorkflowEvents.CANCELED,
     OrderWorkflowEvents.FULFILLMENT_CREATED,
     OrderWorkflowEvents.FULFILLMENT_CANCELED,
+    OrderWorkflowEvents.RETURN_REQUESTED,
+    OrderWorkflowEvents.RETURN_RECEIVED,
     FulfillmentWorkflowEvents.SHIPMENT_CREATED,
     FulfillmentWorkflowEvents.DELIVERY_CREATED,
   ],

@@ -24,6 +24,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -118,6 +121,8 @@ export function VendorSidebar({
                     .filter((route) => group.routes.includes(route.id))
                     .map((route) => {
                       const Icon = ROUTE_ICONS[route.id];
+                      const children =
+                        "children" in route ? route.children : undefined;
                       const isCurrent =
                         pathname === route.href ||
                         (route.href !== "/seller" &&
@@ -127,13 +132,15 @@ export function VendorSidebar({
                         <SidebarMenuItem key={route.href}>
                           <SidebarMenuButton
                             asChild
-                            isActive={isCurrent}
+                            isActive={isCurrent && !children}
                             tooltip={route.label}
                             className="relative h-11 md:h-9"
                           >
                             <Link
                               href={route.href}
-                              aria-current={isCurrent ? "page" : undefined}
+                              aria-current={
+                                isCurrent && !children ? "page" : undefined
+                              }
                               onNavigate={() => setOpenMobile(false)}
                             >
                               <Icon aria-hidden="true" />
@@ -146,6 +153,33 @@ export function VendorSidebar({
                               ) : null}
                             </Link>
                           </SidebarMenuButton>
+                          {children ? (
+                            <SidebarMenuSub>
+                              {children.map((child) => {
+                                const isChildCurrent = pathname === child.href;
+
+                                return (
+                                  <SidebarMenuSubItem key={child.href}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={isChildCurrent}
+                                      className="h-11 md:h-9"
+                                    >
+                                      <Link
+                                        href={child.href}
+                                        aria-current={
+                                          isChildCurrent ? "page" : undefined
+                                        }
+                                        onNavigate={() => setOpenMobile(false)}
+                                      >
+                                        {child.label}
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                );
+                              })}
+                            </SidebarMenuSub>
+                          ) : null}
                         </SidebarMenuItem>
                       );
                     })}

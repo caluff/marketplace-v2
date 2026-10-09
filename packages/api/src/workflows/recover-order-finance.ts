@@ -160,6 +160,15 @@ export async function recoverOrderFinance(
               await checkpoint();
             },
           });
+        } else if (prepared.kind === "cancellation") {
+          if (prepared.actions.includes("cancel_order")) {
+            await cancelOrderWorkflow(container).run({
+              input: {
+                order_id: prepared.result.order_id,
+                canceled_by: input.actor_id,
+              },
+            });
+          }
         } else {
           const value: FinanceOperation = structuredClone(prepared.result);
           result = value;

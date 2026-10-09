@@ -14,7 +14,7 @@ export function OrderFinancePanel({
 }) {
   const finance = data.finance;
   return (
-    <section aria-labelledby="order-finance-title" className="space-y-5">
+    <section id="order-finance" aria-labelledby="order-finance-title" className="space-y-5">
       <h2
         id="order-finance-title"
         className="text-lg font-semibold text-[color-mix(in_oklch,var(--brand-accent)_30%,var(--foreground))]"

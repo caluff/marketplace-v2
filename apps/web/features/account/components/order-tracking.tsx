@@ -1,4 +1,4 @@
-import { Check, ExternalLink, Package, Truck } from "lucide-react"
+import { Check, ExternalLink, Package, Store, Truck } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -10,11 +10,18 @@ import { ProductThumbnail } from "@/components/ui/product-thumbnail"
 import type { AccountOrder } from "../order-data"
 import { formatOrderDate, getShippingStatusLabel } from "../order-format"
 import { getOrderItemThumbnail } from "../order-item-image"
-import { getOrderProgress, safeTrackingUrl } from "../order-progress"
+import {
+  getOrderProgress,
+  getPickupStatusLabel,
+  safeTrackingUrl,
+} from "../order-progress"
+import { isPickupOrder, isPickupOption } from "../order-delivery"
 
 export function OrderTracking({ order }: { order: AccountOrder }) {
   const canceled = order.status === "canceled"
-  const steps = getOrderProgress(order)
+  const isPickup = isPickupOrder(order)
+  const DeliveryIcon = isPickup ? Store : Truck
+  const steps = getOrderProgress(order, isPickup)
   const currentStep =
     order.fulfillment_status === "canceled"
       ? -1
@@ -23,12 +30,14 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
     <section className="space-y-6" aria-label="Seguimiento del pedido">
       <div className="grid gap-4 rounded-lg bg-muted/60 p-4 sm:grid-cols-2">
         <div className="flex items-start gap-3">
-          <Truck
+          <DeliveryIcon
             className="mt-0.5 size-5 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />
           <div>
-            <h3 className="text-xs font-semibold">Envío y entrega</h3>
+            <h3 className="text-xs font-semibold">
+              {isPickup ? "Recogida en tienda" : "Envío y entrega"}
+            </h3>
             <p className="mt-1 text-xs text-muted-foreground">
               {order.shipping_methods?.length
                 ? order.shipping_methods
@@ -38,7 +47,9 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
             </p>
             {order.fulfillments?.map((fulfillment, shipmentIndex) => (
               <div key={fulfillment.id}>
-                {!fulfillment.canceled_at
+                {!fulfillment.canceled_at &&
+                !isPickupOption(fulfillment.shipping_option) &&
+                !isPickup
                   ? fulfillment.labels?.map((label, index) => {
                       const href = safeTrackingUrl(label.tracking_url)
                       return (
@@ -84,14 +95,16 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
           <div className="min-w-0 flex-1">
             <span>
               <span className="block text-xs font-semibold">
-                Estado del envío
+                {isPickup ? "Estado de la recogida" : "Estado del envío"}
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
                 {canceled
                   ? "Pedido cancelado"
                   : order.fulfillment_status === "canceled"
                     ? "Preparaciones canceladas"
-                    : getShippingStatusLabel(order.fulfillment_status)}
+                    : isPickup
+                      ? getPickupStatusLabel(order)
+                      : getShippingStatusLabel(order.fulfillment_status)}
               </span>
             </span>
             <Dialog>
@@ -100,7 +113,9 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
               </DialogTrigger>
               <DialogContent aria-describedby={undefined}>
                 <DialogHeader>
-                  <DialogTitle>Detalle del envío</DialogTitle>
+                  <DialogTitle>
+                    {isPickup ? "Detalle de la recogida" : "Detalle del envío"}
+                  </DialogTitle>
                 </DialogHeader>
                 <OrderShipmentHistory order={order} />
               </DialogContent>
@@ -110,7 +125,9 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
       </div>
       <div>
         {!canceled ? (
-          <ol className="grid sm:grid-cols-4">
+          <ol
+            className={`grid ${isPickup ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}
+          >
             {steps.map((step, index) => (
               <li
                 key={step.label}
@@ -161,57 +178,75 @@ export function OrderShipmentHistory({ order }: { order: AccountOrder }) {
   return (
     <div className="space-y-6">
       {order.fulfillments?.length ? (
-        order.fulfillments.map((fulfillment, index) => (
-          <div key={fulfillment.id}>
-            <p className="text-sm font-semibold">
-              Envío {index + 1}
-              {fulfillment.canceled_at ? " · Cancelado" : ""}
-            </p>
-            {fulfillment.items?.length ? (
-              <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
-                {Array.from(
-                  new Set(fulfillment.items.map((item) => item.line_item_id)),
-                ).map((lineItemId) => {
-                  const product = order.items?.find(
-                    (line) => line.id === lineItemId,
-                  )
-                  return product ? (
-                    <li key={lineItemId} className="flex items-center gap-3">
-                      <ProductThumbnail
-                        src={getOrderItemThumbnail(product)}
-                        alt={product.title}
-                        className="size-10"
-                        sizes="40px"
-                      />
-                      <span>{product.title}</span>
-                    </li>
-                  ) : null
-                })}
-              </ul>
-            ) : null}
-            <dl className="mt-4 space-y-3 text-sm">
-              {[
-                ["Preparado", fulfillment.packed_at ?? fulfillment.created_at],
-                ["Enviado", fulfillment.shipped_at],
-                ["Entregado", fulfillment.delivered_at],
-                ["Cancelado", fulfillment.canceled_at],
-              ].map(([label, date]) =>
-                date ? (
-                  <div
-                    key={String(label)}
-                    className="grid gap-1 border-b border-border pb-3 last:border-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:gap-4"
-                  >
-                    <dt className="text-muted-foreground">{String(label)}</dt>
-                    <dd>{formatOrderDate(date)}</dd>
-                  </div>
-                ) : null,
-              )}
-            </dl>
-          </div>
-        ))
+        order.fulfillments.map((fulfillment, index) => {
+          const isPickup =
+            isPickupOption(fulfillment.shipping_option) || isPickupOrder(order)
+          return (
+            <div key={fulfillment.id}>
+              <p className="text-sm font-semibold">
+                {isPickup ? "Recogida" : "Envío"} {index + 1}
+                {fulfillment.canceled_at ? " · Cancelado" : ""}
+              </p>
+              {fulfillment.items?.length ? (
+                <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
+                  {Array.from(
+                    new Set(fulfillment.items.map((item) => item.line_item_id)),
+                  ).map((lineItemId) => {
+                    const product = order.items?.find(
+                      (line) => line.id === lineItemId,
+                    )
+                    return product ? (
+                      <li key={lineItemId} className="flex items-center gap-3">
+                        <ProductThumbnail
+                          src={getOrderItemThumbnail(product)}
+                          alt={product.title}
+                          className="size-10"
+                          sizes="40px"
+                        />
+                        <span>{product.title}</span>
+                      </li>
+                    ) : null
+                  })}
+                </ul>
+              ) : null}
+              <dl className="mt-4 space-y-3 text-sm">
+                {[
+                  [
+                    isPickup ? "Listo para recoger" : "Preparado",
+                    fulfillment.packed_at ?? fulfillment.created_at,
+                  ],
+                  ...(!isPickup ? [["Enviado", fulfillment.shipped_at]] : []),
+                  [
+                    isPickup ? "Recogido" : "Entregado",
+                    fulfillment.delivered_at,
+                  ],
+                  ["Cancelado", fulfillment.canceled_at],
+                ].map(([label, date]) =>
+                  date ? (
+                    <div
+                      key={String(label)}
+                      className="grid gap-1 border-b border-border pb-3 last:border-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:gap-4"
+                    >
+                      <dt className="text-muted-foreground">{String(label)}</dt>
+                      <dd>{formatOrderDate(date)}</dd>
+                    </div>
+                  ) : null,
+                )}
+              </dl>
+              {isPickup &&
+              !fulfillment.canceled_at &&
+              !fulfillment.delivered_at &&
+              order.status === "completed" ? (
+                <p className="mt-3 text-sm">Recogido</p>
+              ) : null}
+            </div>
+          )
+        })
       ) : (
         <p className="text-xs text-muted-foreground">
-          Aún no hay movimientos del envío.
+          {isPickupOrder(order)
+            ? "Aún no hay movimientos de la recogida."
+            : "Aún no hay movimientos del envío."}
         </p>
       )}
     </div>

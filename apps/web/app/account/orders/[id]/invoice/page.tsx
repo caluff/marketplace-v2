@@ -18,6 +18,7 @@ import {
   getPaymentStatusLabel,
 } from "@/features/account/order-format"
 import { getOrderItemThumbnail } from "@/features/account/order-item-image"
+import { getOrderItemQuantities } from "@/features/account/order-amounts"
 import styles from "./invoice.module.css"
 
 export const metadata: Metadata = {
@@ -29,6 +30,9 @@ async function Invoice({ params }: Props) {
   const { id } = await params
   const order = await getAccountOrder(id)
   if (!order) notFound()
+  const hasReturns = order.items?.some(
+    (item) => getOrderItemQuantities(item).returnedQuantity > 0,
+  )
   return (
     <>
       <div
@@ -83,31 +87,44 @@ async function Invoice({ params }: Props) {
               <tr className="border-y border-border">
                 <th className="w-16 py-3 pr-4 font-medium">Imagen</th>
                 <th className="py-3 pr-4 font-medium">Producto</th>
-                <th className="p-3 text-right font-medium">Cantidad</th>
+                <th className="p-3 text-right font-medium">
+                  {hasReturns ? "Cantidad actual" : "Cantidad"}
+                </th>
                 <th className="p-3 text-right font-medium">Precio unitario</th>
                 <th className="py-3 pl-3 text-right font-medium">Total</th>
               </tr>
             </thead>
             <tbody>
-              {order.items?.map((item) => (
-                <tr key={item.id} className="border-b border-border">
-                  <td className="py-4 pr-4">
-                    <ProductThumbnail
-                      src={getOrderItemThumbnail(item)}
-                      alt={item.title}
-                      loading="eager"
-                    />
-                  </td>
-                  <td className="py-4 pr-4">{item.title}</td>
-                  <td className="p-3 text-right">{item.quantity}</td>
-                  <td className="whitespace-nowrap p-3 text-right">
-                    {formatOrderAmount(item.unit_price, order.currency_code)}
-                  </td>
-                  <td className="whitespace-nowrap py-3 pl-3 text-right">
-                    {formatOrderAmount(item.total, order.currency_code)}
-                  </td>
-                </tr>
-              ))}
+              {order.items?.map((item) => {
+                const quantities = getOrderItemQuantities(item)
+                return (
+                  <tr key={item.id} className="border-b border-border">
+                    <td className="py-4 pr-4">
+                      <ProductThumbnail
+                        src={getOrderItemThumbnail(item)}
+                        alt={item.title}
+                        loading="eager"
+                      />
+                    </td>
+                    <td className="py-4 pr-4">
+                      {item.title}
+                      {quantities.returnedQuantity > 0 ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Comprados: {quantities.orderedQuantity} · Devueltos:{" "}
+                          {quantities.returnedQuantity}
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="p-3 text-right">{quantities.currentQuantity}</td>
+                    <td className="whitespace-nowrap p-3 text-right">
+                      {formatOrderAmount(item.unit_price, order.currency_code)}
+                    </td>
+                    <td className="whitespace-nowrap py-3 pl-3 text-right">
+                      {formatOrderAmount(item.total, order.currency_code)}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

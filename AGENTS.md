@@ -385,6 +385,19 @@ it was executed successfully.
 During implementation:
 
 - Prefer targeted typecheck, lint, and focused tests when useful for feedback.
+- Select tests by the behavior changed, using the commands in the root README.
+  Do not run the full API integration suite for localized changes or run backend
+  integrations for CSS, layout, copy or animation changes alone.
+- `pnpm test` runs only API unit tests. Prefer the affected unit file or the
+  `test:catalog` / `test:finance` groups when the change is local. Use application
+  `test:auth`, `test:orders` or `test:account` groups for those frontend changes.
+- Run HTTP/module integrations only when the change affects their persistence,
+  authorization, concurrency, compensation or cross-module behavior. Select the
+  relevant files with `--runTestsByPath`; run multiple HTTP files in separate
+  processes. Expand to other domains only when a cross-cutting change affects them.
+- External Stripe TEST suites require changes to that integration and their
+  explicit disposable-environment launcher. Do not enable them as an incidental
+  completion check.
 
 At completion:
 
@@ -410,6 +423,9 @@ Targeted variants are available as `lint:*`, `typecheck:*`, `test:*`, and
   run the corresponding root checks and `pnpm peers check` when dependencies
   changed.
 - Documentation-only changes do not require application builds.
+- Test-only maintenance or test-command changes require the changed runners and
+  applicable lint/typechecks; they do not require application builds or restarting
+  deployed services when application behavior and dependencies are unchanged.
 - If a required check cannot run because of missing infrastructure or
   credentials, report exactly what was not verified.
 

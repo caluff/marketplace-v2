@@ -30,7 +30,7 @@ Las seis fases obligatorias están cerradas. La siguiente verificación funciona
 | Admin                | `apps/admin`                           | Operación del marketplace, revisión de vendedores, catálogo y pedidos | `http://localhost:7000/dashboard` |
 | Vendor               | `apps/vendor`                          | Ofertas, inventario, almacén, envíos, pedidos y cuenta Connect        | `http://localhost:7001/seller`    |
 | API / worker         | `packages/api`                         | Mercur 2.3.3 / Medusa 2.18.0; modos server, worker y shared           | API: `http://localhost:9000`      |
-| Sistema visual       | `packages/ui`                          | Componentes, tokens y motion canónicos para los tres frontends       | —                                 |
+| Sistema visual       | `packages/ui`                          | Componentes, tokens y motion canónicos para los tres frontends        | —                                 |
 | Tema                 | `packages/theme-sync`                  | Contrato y sincronización de preferencias visuales                    | —                                 |
 | Contratos onboarding | `packages/vendor-onboarding-contracts` | Contratos de transporte compartidos del alta de vendedor              | —                                 |
 
@@ -89,9 +89,24 @@ pnpm build
 pnpm peers check
 ```
 
-`lint:*`, `typecheck:*` y `build:*` tienen variantes `web`, `admin`, `vendor` y `api`, además de lint y typecheck para `ui`. Los tests unitarios se retiraron por decisión del usuario. `pnpm test` y `pnpm test:api` ejecutan las integraciones de módulos y HTTP del backend. Un cambio exclusivamente documental necesita revisión de formato, enlaces y diff; no requiere builds de aplicaciones.
+`lint:*`, `typecheck:*` y `build:*` tienen variantes `web`, `admin`, `vendor` y `api`, además de lint y typecheck para `ui`. Ejecutar las comprobaciones del área modificada: la lista anterior no obliga a repetir todo el repositorio por cada cambio.
 
-`pnpm test:smoke` ejecuta la integración HTTP de API. Todos los comandos de tests restantes, incluidos `test:api:integration:http` y `test:api:integration:modules`, requieren infraestructura aislada de pruebas y pueden crear/modificar/eliminar bases y datos: consultar su [guía](packages/api/integration-tests/http/README.md) antes de ejecutarlos. No tratar scripts operativos de QA como tests unitarios ni ejecutarlos contra datos compartidos sin comprobar su alcance.
+`pnpm test` y `pnpm test:api` ejecutan únicamente las pruebas unitarias rápidas del backend, sin arrancar PostgreSQL, Redis ni proveedores externos. Las integraciones se ejecutan explícitamente cuando cambian los comportamientos que cubren.
+
+| Cambio                                     | Pruebas locales pertinentes                                                                                |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Catálogo, variantes e imágenes             | `pnpm test:catalog`; también se puede seleccionar `test:catalog` en una sola aplicación                    |
+| Finanzas y configuración de comisiones     | `pnpm test:finance`                                                                                        |
+| Autenticación del storefront               | `pnpm --filter @usapeek/web run test:auth`                                                                 |
+| Pedidos, tracking o carrito del storefront | `pnpm --filter @usapeek/web run test:orders`                                                               |
+| Pedidos del vendedor u operador            | `pnpm --filter @usapeek/vendor run test:orders` o `pnpm --filter @usapeek/admin run test:orders`           |
+| Perfil del vendedor u operador             | `pnpm --filter @usapeek/vendor run test:account` o `pnpm --filter @usapeek/admin run test:account`         |
+| Utilidades del sistema visual              | `pnpm test:ui` si cambia la lógica comprobada; un ajuste de CSS no necesita pruebas de finanzas o catálogo |
+| Cambios amplios de una aplicación          | `pnpm test:web`, `pnpm test:admin` o `pnpm test:vendor`                                                    |
+
+Para una función concreta del backend, seleccionar su archivo con `pnpm --filter @usapeek/api run test:unit --runTestsByPath <archivo>`. Para integración, configurar primero la infraestructura aislada y los opt-ins de la [guía](packages/api/integration-tests/http/README.md), y ejecutar el archivo pertinente con `test:integration:http --runTestsByPath <archivo>` o `test:integration:modules --runTestsByPath <archivo>`. Por ejemplo, los cambios de moderación usan `catalog-permission.spec.ts`; los cambios de migraciones o permisos SQL usan `database-hardening.spec.ts` y los módulos afectados. Si se necesitan varias suites HTTP, ejecutarlas en procesos separados para evitar acumular memoria.
+
+Para cambios transversales, ampliar la selección a los otros dominios afectados, con los opt-ins necesarios. No ejecutar todas las integraciones por defecto para ajustes visuales o cambios localizados. Las pruebas con Stripe TEST externo requieren su lanzador específico y solo corresponden a cambios de esa integración. Un cambio exclusivamente documental necesita revisión de formato, enlaces y diff; no requiere builds de aplicaciones. No tratar scripts operativos de QA como pruebas unitarias ni ejecutarlos contra datos compartidos sin comprobar su alcance.
 
 Los resultados históricos están fechados en informes y auditoría. No constituyen verificación del siguiente cambio: cada fase exige registrar comandos, resultados y verificaciones pendientes en el handoff.
 

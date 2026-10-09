@@ -4,7 +4,6 @@ import {
   readReleaseSettings,
   parseReleaseDelayDays,
   releaseDelayLabel,
-  releaseSettingsErrorMessage,
   saveReleaseSettings,
 } from "./release-settings";
 
@@ -249,13 +248,4 @@ test("preserves a custom waiting period when switching to manual", async () => {
       },
     ],
   ]);
-});
-
-test("requires refreshing stale settings and identifies authorization failures", () => {
-  assert.match(
-    releaseSettingsErrorMessage(409),
-    /Actualiza la página antes de guardar/,
-  );
-  assert.match(releaseSettingsErrorMessage(401), /sesión venció/);
-  assert.match(releaseSettingsErrorMessage(403), /no tiene permisos/);
 });

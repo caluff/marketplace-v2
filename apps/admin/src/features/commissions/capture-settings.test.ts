@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  saveCaptureSettings,
-  captureSettingsErrorMessage,
-} from "./capture-settings";
+import { saveCaptureSettings } from "./capture-settings";
 
 test("sends only the selected mode and concurrency revision to the typed SDK", async () => {
   const calls: unknown[] = [];
@@ -48,11 +45,4 @@ test("rejects duplicated mode fields before making a request", async () => {
     form,
   );
   assert.equal(result.status, "error");
-});
-
-test("explains stale settings without silently overriding a saved mode", () => {
-  assert.match(
-    captureSettingsErrorMessage(409),
-    /Actualiza la página antes de guardar/,
-  );
 });

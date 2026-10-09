@@ -1,5 +1,5 @@
 import type { StoreOrderTrackingResponse } from "@usapeek/api/order-tracking-contracts"
-import { Check, ExternalLink, Package, Truck } from "lucide-react"
+import { Check, ExternalLink, Package, Store, Truck } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,10 @@ import {
   getOrderStatusLabel,
   getShippingStatusLabel,
 } from "@/features/account/order-format"
-import { safeTrackingUrl } from "@/features/account/order-progress"
+import {
+  getPickupStatusLabel,
+  safeTrackingUrl,
+} from "@/features/account/order-progress"
 import { getTrackingProgress } from "./progress"
 
 type TrackingOrder = StoreOrderTrackingResponse["order"]
@@ -24,12 +27,17 @@ export function TrackingOrderView({
   accountAccess?: ReactNode
 }) {
   const isCanceled = order.status === "canceled"
+  const isPickup = order.delivery_mode === "pickup"
+  const DeliveryIcon = isPickup ? Store : Truck
   const shipments = order.fulfillments.filter(
     (fulfillment) =>
+      fulfillment.delivery_mode === "pickup" ||
       fulfillment.shipped_at ||
       fulfillment.delivered_at ||
       fulfillment.canceled_at ||
-      fulfillment.labels.some((label) => label.tracking_number || label.tracking_url),
+      fulfillment.labels.some(
+        (label) => label.tracking_number || label.tracking_url,
+      ),
   )
 
   return (
@@ -63,19 +71,21 @@ export function TrackingOrderView({
       {accountAccess}
       <section aria-labelledby="tracking-shipping-title" className="space-y-6">
         <div className="flex items-start gap-4 bg-muted/40 p-5 sm:p-6">
-          <Truck
+          <DeliveryIcon
             className="mt-0.5 size-6 shrink-0 text-brand-accent"
             strokeWidth={1.75}
             aria-hidden="true"
           />
           <div>
             <h3 id="tracking-shipping-title" className="text-sm font-medium">
-              Estado del envío
+              {isPickup ? "Estado de la recogida" : "Estado del envío"}
             </h3>
             <p className="mt-1 text-xl font-semibold">
               {isCanceled
                 ? "Pedido cancelado"
-                : getShippingStatusLabel(order.fulfillment_status)}
+                : isPickup
+                  ? getPickupStatusLabel(order)
+                  : getShippingStatusLabel(order.fulfillment_status)}
             </p>
           </div>
         </div>
@@ -84,66 +94,90 @@ export function TrackingOrderView({
         ) : null}
         {shipments.length ? (
           <ul className="space-y-6">
-            {shipments.map((fulfillment, index) => (
-              <li key={fulfillment.id} className="space-y-3">
-                <h4 className="flex items-center gap-2 text-sm font-semibold">
-                  <Package className="size-4" aria-hidden="true" />
-                  Envío {index + 1}
-                  {fulfillment.canceled_at ? (
-                    <Badge variant="neutral">Cancelado</Badge>
+            {shipments.map((fulfillment, index) => {
+              const isPickupFulfillment = fulfillment.delivery_mode === "pickup"
+              return (
+                <li key={fulfillment.id} className="space-y-3">
+                  <h4 className="flex items-center gap-2 text-sm font-semibold">
+                    <Package className="size-4" aria-hidden="true" />
+                    {isPickupFulfillment ? "Recogida" : "Envío"} {index + 1}
+                    {fulfillment.canceled_at ? (
+                      <Badge variant="neutral">Cancelado</Badge>
+                    ) : null}
+                  </h4>
+                  <dl className="space-y-2 text-sm">
+                    {[
+                      ...(isPickupFulfillment
+                        ? [
+                            [
+                              "Listo para recoger",
+                              fulfillment.packed_at ?? fulfillment.created_at,
+                            ],
+                          ]
+                        : [["Enviado", fulfillment.shipped_at]]),
+                      [
+                        isPickupFulfillment ? "Recogido" : "Entregado",
+                        fulfillment.delivered_at,
+                      ],
+                      ["Cancelado", fulfillment.canceled_at],
+                    ].map(([label, date]) =>
+                      date ? (
+                        <div
+                          key={label}
+                          className="flex flex-wrap gap-x-4 gap-y-1"
+                        >
+                          <dt className="text-muted-foreground">{label}</dt>
+                          <dd>{formatOrderDate(date)}</dd>
+                        </div>
+                      ) : null,
+                    )}
+                  </dl>
+                  {isPickupFulfillment &&
+                  !fulfillment.canceled_at &&
+                  !fulfillment.delivered_at &&
+                  order.status === "completed" ? (
+                    <p className="text-sm">Recogido</p>
                   ) : null}
-                </h4>
-                <dl className="space-y-2 text-sm">
-                  {[
-                    ["Enviado", fulfillment.shipped_at],
-                    ["Entregado", fulfillment.delivered_at],
-                    ["Cancelado", fulfillment.canceled_at],
-                  ].map(([label, date]) =>
-                    date ? (
-                      <div key={label} className="flex flex-wrap gap-x-4 gap-y-1">
-                        <dt className="text-muted-foreground">{label}</dt>
-                        <dd>{formatOrderDate(date)}</dd>
-                      </div>
-                    ) : null,
-                  )}
-                </dl>
-                {!fulfillment.canceled_at && !isCanceled ? (
-                  <ul className="space-y-1">
-                    {fulfillment.labels.map((label, labelIndex) => {
-                      const href = safeTrackingUrl(label.tracking_url)
-                      return href || label.tracking_number ? (
-                        <li key={labelIndex} className="text-sm">
-                          {href ? (
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              referrerPolicy="no-referrer"
-                              className="inline-flex min-h-11 max-w-full items-center gap-2 font-medium text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
-                            >
-                              <span className="break-all">
-                                Rastrear envío
-                                {label.tracking_number
-                                  ? `: ${label.tracking_number}`
-                                  : ""}
-                              </span>
-                              <ExternalLink
-                                className="size-4 shrink-0"
-                                aria-hidden="true"
-                              />
-                            </a>
-                          ) : (
-                            <p className="break-all text-muted-foreground">
-                              Seguimiento: {label.tracking_number}
-                            </p>
-                          )}
-                        </li>
-                      ) : null
-                    })}
-                  </ul>
-                ) : null}
-              </li>
-            ))}
+                  {!isPickupFulfillment &&
+                  !fulfillment.canceled_at &&
+                  !isCanceled ? (
+                    <ul className="space-y-1">
+                      {fulfillment.labels.map((label, labelIndex) => {
+                        const href = safeTrackingUrl(label.tracking_url)
+                        return href || label.tracking_number ? (
+                          <li key={labelIndex} className="text-sm">
+                            {href ? (
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                referrerPolicy="no-referrer"
+                                className="inline-flex min-h-11 max-w-full items-center gap-2 font-medium text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+                              >
+                                <span className="break-all">
+                                  Rastrear envío
+                                  {label.tracking_number
+                                    ? `: ${label.tracking_number}`
+                                    : ""}
+                                </span>
+                                <ExternalLink
+                                  className="size-4 shrink-0"
+                                  aria-hidden="true"
+                                />
+                              </a>
+                            ) : (
+                              <p className="break-all text-muted-foreground">
+                                Seguimiento: {label.tracking_number}
+                              </p>
+                            )}
+                          </li>
+                        ) : null
+                      })}
+                    </ul>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
         ) : null}
       </section>
@@ -202,7 +236,14 @@ function ShippingProgress({ order }: { order: TrackingOrder }) {
   const currentStep = steps.findIndex((step) => !step.complete)
 
   return (
-    <ol className="grid sm:grid-cols-4" aria-label="Progreso del envío">
+    <ol
+      className={`grid ${order.delivery_mode === "pickup" ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}
+      aria-label={
+        order.delivery_mode === "pickup"
+          ? "Progreso de la recogida"
+          : "Progreso del envío"
+      }
+    >
       {steps.map((step, index) => (
         <li
           key={step.label}

@@ -9,7 +9,11 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test --test-concurrency=1 \"src/features/**/*.test.ts\" \"src/features/**/*.test.mjs\"",
+    "test:finance": "tsx --test --test-concurrency=1 \"src/features/commissions/*.test.ts\"",
+    "test:orders": "tsx --test --test-concurrency=1 \"src/features/orders/*.test.mjs\"",
+    "test:account": "tsx --test --test-concurrency=1 src/features/account/profile-completion.test.ts"
   },
   "dependencies": {
     "@usapeek/order-reference": "workspace:*",

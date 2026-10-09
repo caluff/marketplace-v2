@@ -1,4 +1,7 @@
-import { orderCompletionEligibility } from "../completion";
+import {
+  completedOrderDeliveryReady,
+  orderCompletionEligibility,
+} from "../completion";
 
 const item = (
   id = "item_ship",
@@ -38,6 +41,75 @@ const order = (
 });
 
 describe("vendor order completion eligibility", () => {
+  it("reuses the completed pickup proof without inventing shipping or enabling completion again", () => {
+    const completed = {
+      ...order([item()], [fulfillment("ful_pickup", "item_ship", true)]),
+      status: "completed",
+      shipping_methods: [{ shipping_option_id: "option_pickup" }],
+    };
+    expect(completedOrderDeliveryReady(completed, options)).toBe(true);
+    expect(orderCompletionEligibility(completed, options).can_complete).toBe(
+      false,
+    );
+    for (const value of [
+      { ...completed, status: "pending" },
+      { ...completed, items: [item("item_ship", 1)] },
+      {
+        ...completed,
+        fulfillments: [
+          { ...completed.fulfillments[0], canceled_at: "2026-10-08" },
+        ],
+      },
+      { ...completed, fulfillments: [] },
+      {
+        ...completed,
+        items: [
+          { ...item(), offer: { shipping_profile_id: "profile_shipping" } },
+        ],
+      },
+    ]) {
+      expect(
+        completedOrderDeliveryReady(value, [
+          { ...options[0], shipping_profile_id: "profile_pickup" },
+        ]),
+      ).toBe(false);
+    }
+    expect(completedOrderDeliveryReady(completed, [])).toBe(false);
+  });
+
+  it("does not allow completed pickup to hide an undelivered shipment, including for the same item", () => {
+    const mixed = {
+      ...order(
+        [item("item_pickup"), item("item_ship")],
+        [
+          fulfillment("ful_pickup", "item_pickup", true),
+          fulfillment("ful_ship", "item_ship"),
+        ],
+      ),
+      status: "completed",
+    };
+    expect(completedOrderDeliveryReady(mixed, options)).toBe(false);
+    expect(
+      completedOrderDeliveryReady(
+        { ...mixed, items: [item("item_pickup"), item("item_ship", 2, 2)] },
+        options,
+      ),
+    ).toBe(true);
+    expect(
+      completedOrderDeliveryReady(
+        {
+          ...mixed,
+          items: [item()],
+          fulfillments: [
+            fulfillment("ful_pickup", "item_ship", true),
+            fulfillment("ful_ship", "item_ship"),
+          ],
+        },
+        options,
+      ),
+    ).toBe(false);
+  });
+
   it("requires full delivery for shipping, never merely preparation or a partial delivery", () => {
     expect(orderCompletionEligibility(order(), options).can_complete).toBe(
       false,

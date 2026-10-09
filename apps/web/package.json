@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test --test-concurrency=1 \"lib/*.test.mjs\" \"features/**/*.test.mjs\" \"features/**/*.test.ts\"",
+    "test:catalog": "tsx --test --test-concurrency=1 \"features/catalog/*.test.mjs\" \"features/catalog/*.test.ts\"",
+    "test:auth": "tsx --test --test-concurrency=1 \"lib/*.test.mjs\"",
+    "test:orders": "tsx --test --test-concurrency=1 \"features/order-tracking/*.test.mjs\" \"features/cart/*.test.mjs\""
   },
   "dependencies": {
     "@usapeek/order-reference": "workspace:*",

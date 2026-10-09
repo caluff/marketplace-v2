@@ -13,6 +13,7 @@ import {
 import type { readOrderFinance } from "./read";
 import { decimal } from "./policy";
 import { paymentReleaseDelayDaysSchema } from "./contracts";
+import { readCompletedOrderDeliveryReady } from "../vendor-orders/completion";
 
 const ELAPSED_DAY_MS = 24 * 60 * 60 * 1000;
 export const MAX_AUTOMATIC_SETTLEMENTS = 25;
@@ -147,6 +148,21 @@ export async function assertAutomaticSettlementEligible(
       MedusaError.Types.NOT_ALLOWED,
       "El pedido cambió después de registrar su finalización y requiere revisión manual.",
     );
+  const needsPickupProof =
+    parsed.success &&
+    parsed.data.items.some(
+      (item) =>
+        item.requires_shipping &&
+        Math.max(item.detail.shipped_quantity, item.detail.delivered_quantity) <
+          item.quantity,
+    );
+  const pickupReady =
+    needsPickupProof &&
+    (await readCompletedOrderDeliveryReady(
+      container,
+      completion.seller_id,
+      completion.id,
+    ));
   if (
     orders.data.length !== 1 ||
     !parsed.success ||
@@ -161,7 +177,8 @@ export async function assertAutomaticSettlementEligible(
           Math.max(
             item.detail.shipped_quantity,
             item.detail.delivered_quantity,
-          ) < item.quantity),
+          ) < item.quantity &&
+          !pickupReady),
     )
   )
     throw new MedusaError(

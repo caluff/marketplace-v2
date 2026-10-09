@@ -39,6 +39,20 @@ export async function hasPendingSellerOrders(
     if (!sellerLinks.length) return false;
 
     const orderIds = sellerLinks.map((link) => link.order_id);
+    const { data: returns } = await query.graph(
+      {
+        entity: "return",
+        fields: ["id"],
+        filters: {
+          order_id: orderIds,
+          canceled_at: null,
+          status: ["open", "requested", "partially_received"],
+        },
+        pagination: { take: 1 },
+      },
+      { cache: { enable: false } },
+    );
+    if (returns.length) return true;
     const { data: orders } = await query.graph(
       {
         entity: "order",

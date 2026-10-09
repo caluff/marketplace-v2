@@ -31,6 +31,10 @@ import {
   OrderFinanceRegion,
   OrderFinanceSkeleton,
 } from "@/features/orders/finance-region";
+import {
+  OrderReturnsRegion,
+  OrderReturnsSkeleton,
+} from "@/features/orders/return-region";
 
 export const metadata: Metadata = { title: "Detalle de pedido" };
 export default async function OrderPage({
@@ -51,6 +55,9 @@ export default async function OrderPage({
       </Suspense>
       <Suspense fallback={<OrderFinanceSkeleton />}>
         <OrderFinanceRegion id={id} />
+      </Suspense>
+      <Suspense fallback={<OrderReturnsSkeleton />}>
+        <OrderReturnsRegion id={id} />
       </Suspense>
     </div>
   );

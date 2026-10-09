@@ -18,6 +18,7 @@ export default async function vendorSettlementOrderChanged({
 
 export const config: SubscriberConfig = {
   event: [
+    "order.customer_return_requested",
     OrderWorkflowEvents.COMPLETED,
     OrderWorkflowEvents.UPDATED,
     OrderWorkflowEvents.CANCELED,

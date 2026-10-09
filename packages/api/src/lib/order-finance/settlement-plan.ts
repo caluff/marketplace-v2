@@ -196,10 +196,14 @@ export async function prepareOrderSettlement(
     token,
   );
   const original = current.original;
+  const order = current.group.orders.find(
+    (order) => order.id === input.order_id,
+  )!;
   if (
     !original ||
     current.financialProblem ||
     current.hasPendingChanges ||
+    MathBN.lt(order.summary?.pending_difference ?? 0, 0) ||
     current.state?.review_required ||
     (current.state?.active_token && current.state.active_token !== token) ||
     current.operations.some((operation) => operation.state !== "complete") ||

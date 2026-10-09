@@ -47,15 +47,19 @@ const shippingOptionSchema = z.object({
     .nullish(),
 });
 
-export function orderCompletionEligibility(
+function orderDeliveryEligibility(
   value: unknown,
   shippingOptions: unknown,
-): VendorOrderCompletionResponse {
+): Omit<VendorOrderCompletionResponse, "can_complete"> & {
+  status: string | null;
+  is_ready: boolean;
+} {
   const order = orderSchema.safeParse(value);
   const options = z.array(shippingOptionSchema).safeParse(shippingOptions);
   if (!order.success || !options.success)
     return {
-      can_complete: false,
+      status: null,
+      is_ready: false,
       pickup_fulfillment_ids: [],
       preparation_groups: [],
     };
@@ -161,13 +165,33 @@ export function orderCompletionEligibility(
       );
     });
   return {
-    can_complete: order.data.status === "pending" && ready,
+    status: order.data.status,
+    is_ready: ready,
     pickup_fulfillment_ids: pickupIds,
     preparation_groups: [...preparationGroups.values()],
   };
 }
 
-export async function readVendorOrderCompletion(
+export function orderCompletionEligibility(
+  value: unknown,
+  shippingOptions: unknown,
+): VendorOrderCompletionResponse {
+  const { status, is_ready, ...fulfillment } = orderDeliveryEligibility(
+    value,
+    shippingOptions,
+  );
+  return { can_complete: status === "pending" && is_ready, ...fulfillment };
+}
+
+export function completedOrderDeliveryReady(
+  value: unknown,
+  shippingOptions: unknown,
+): boolean {
+  const eligibility = orderDeliveryEligibility(value, shippingOptions);
+  return eligibility.status === "completed" && eligibility.is_ready;
+}
+
+async function readOrderDelivery(
   container: MedusaContainer,
   sellerId: string,
   orderId: string,
@@ -229,5 +253,31 @@ export async function readVendorOrderCompletion(
         )
       ).data
     : [];
+  return { order, options };
+}
+
+export async function readVendorOrderCompletion(
+  container: MedusaContainer,
+  sellerId: string,
+  orderId: string,
+) {
+  const { order, options } = await readOrderDelivery(
+    container,
+    sellerId,
+    orderId,
+  );
   return orderCompletionEligibility(order, options);
+}
+
+export async function readCompletedOrderDeliveryReady(
+  container: MedusaContainer,
+  sellerId: string,
+  orderId: string,
+) {
+  const { order, options } = await readOrderDelivery(
+    container,
+    sellerId,
+    orderId,
+  );
+  return completedOrderDeliveryReady(order, options);
 }

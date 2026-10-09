@@ -2,11 +2,12 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { ArrowLeft, CreditCard, FileText, MapPin, Store } from "lucide-react"
+import { ArrowLeft, FileText, MapPin, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OrderItems } from "@/features/account/components/order-items"
 import { OrderTracking } from "@/features/account/components/order-tracking"
+import { OrderCancellationRegion } from "@/features/account/components/order-cancellation-region"
 import {
   OrderAddress,
   OrderTotals,
@@ -16,7 +17,6 @@ import {
   formatOrderDate,
   formatOrderNumber,
   getOrderStatusLabel,
-  getPaymentStatusLabel,
 } from "@/features/account/order-format"
 
 export const metadata: Metadata = {
@@ -29,7 +29,6 @@ async function OrderContent({ params }: Props) {
   const order = await getAccountOrder(id)
   if (!order) notFound()
   const canceled = order.status === "canceled"
-  const paid = order.payment_status === "captured"
   return (
     <>
       <header className="mb-8 flex flex-wrap items-center justify-between gap-5">
@@ -39,7 +38,7 @@ async function OrderContent({ params }: Props) {
               Pedido {formatOrderNumber(order)}
             </h2>
             <span
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${canceled ? "bg-muted text-muted-foreground" : "bg-secondary text-secondary-foreground"}`}
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${canceled ? "bg-destructive/10 text-destructive" : "bg-secondary text-secondary-foreground"}`}
             >
               <span
                 className="size-1.5 rounded-full bg-current"
@@ -98,20 +97,6 @@ async function OrderContent({ params }: Props) {
             Detalles de tu pedido
           </h2>
           <div className="px-5 sm:px-6">
-            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-4 border-b border-border py-5">
-              <h3 className="text-xs font-semibold">Pago de la compra</h3>
-              <div className="flex items-center gap-3">
-                <CreditCard
-                  className="size-5 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${paid ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}
-                >
-                  {getPaymentStatusLabel(order.payment_status)}
-                </span>
-              </div>
-            </div>
             <section className="grid grid-cols-[7rem_minmax(0,1fr)] items-start gap-4 border-b border-border py-5">
               <h3 className="text-xs font-semibold leading-6">
                 Dirección de envío
@@ -128,8 +113,15 @@ async function OrderContent({ params }: Props) {
             </section>
             <section className="py-5">
               <h3 className="mb-4 text-base font-semibold">Resumen de pago</h3>
-              <OrderTotals order={order} highlighted />
+              <OrderTotals order={order} highlighted showPaymentHistory={false} />
             </section>
+            <div className="flex flex-col items-end pb-3 text-right">
+              <Suspense
+                fallback={<Skeleton className="my-3 h-5 w-28" aria-label="Consultando cancelación" />}
+              >
+                <OrderCancellationRegion orderId={id} />
+              </Suspense>
+            </div>
           </div>
         </aside>
       </div>

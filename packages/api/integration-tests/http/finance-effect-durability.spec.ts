@@ -8,7 +8,17 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils";
-import type { IAuthModuleService } from "@medusajs/framework/types";
+import {
+  createApiKeysWorkflow,
+  createCustomerAccountWorkflow,
+  createSalesChannelsWorkflow,
+  linkSalesChannelsToApiKeyWorkflow,
+} from "@medusajs/core-flows";
+import type {
+  IAuthModuleService,
+  IInventoryService,
+  IOrderModuleService,
+} from "@medusajs/framework/types";
 import {
   ContainerRegistrationKeys,
   generateJwtToken,
@@ -25,9 +35,23 @@ import {
 } from "../../src/lib/order-finance/policy";
 import { readOrderFinance } from "../../src/lib/order-finance/read";
 import { inspectFinanceRecovery } from "../../src/lib/order-finance/recovery-plan";
+import { prepareOrderSettlement } from "../../src/lib/order-finance/settlement-plan";
+import type { CustomerReturnsResponse } from "../../src/lib/order-finance/contracts";
+import type SellerModule from "@mercurjs/core/modules/seller";
+import type RbacModule from "@medusajs/medusa/rbac";
+import {
+  approveSellerWorkflow,
+  createSellerDefaultRolesStep,
+} from "@mercurjs/core/workflows";
+import {
+  createWorkflow,
+  WorkflowResponse,
+} from "@medusajs/framework/workflows-sdk";
+import { MercurModules, SellerRole } from "@mercurjs/types";
 import { providerFinanceFactSchema } from "../../src/lib/order-finance/provider-facts";
 import { operateOrderFinanceWorkflow } from "../../src/workflows/operate-order-finance";
 import { recoverOrderFinanceWorkflow } from "../../src/workflows/recover-order-finance";
+import { guardOrderFinanceWriterWorkflow } from "../../src/workflows/guard-order-finance-writer";
 import {
   inspectOrderFinanceProviderFacts,
   refreshOrderFinanceProviderFactsWorkflow,
@@ -40,6 +64,13 @@ import { configureNativeFinanceDatabaseTls } from "../helpers/native-finance-dat
 
 const enabled =
   process.env.FINANCE_EFFECT_DURABILITY_TESTS === "disposable-local";
+
+const restoreVendorRolesWorkflow = createWorkflow(
+  "durability-fixture-restore-vendor-roles",
+  function () {
+    return new WorkflowResponse(createSellerDefaultRolesStep());
+  },
+);
 
 if (!enabled) {
   describe.skip("Finance effect durability (requires exclusive disposable-local infrastructure)", () => {
@@ -190,6 +221,241 @@ if (!enabled) {
         ).toMatchObject({ captured_total: 30, refunded_total: 0 });
         return value;
       }
+      async function actorToken(
+        actorId: string,
+        actorType: "customer" | "user",
+      ) {
+        const metadata = { [`${actorType}_id`]: actorId };
+        const identity = await getContainer()
+          .resolve<IAuthModuleService>(Modules.AUTH)
+          .createAuthIdentities({
+            app_metadata: metadata,
+            provider_identities: [
+              {
+                provider: "emailpass",
+                entity_id: `${randomUUID()}@example.invalid`,
+              },
+            ],
+          });
+        const { http } = getContainer().resolve(
+          ContainerRegistrationKeys.CONFIG_MODULE,
+        ).projectConfig;
+        return generateJwtToken(
+          {
+            actor_id: actorId,
+            actor_type: actorType,
+            auth_identity_id: identity.id,
+            auth_provider: "emailpass",
+            app_metadata: metadata,
+          },
+          {
+            secret: http.jwtSecret,
+            expiresIn: "10m",
+            jwtOptions: http.jwtOptions,
+          },
+        );
+      }
+      async function storeContext() {
+        const container = getContainer();
+        const identity = await container
+          .resolve<IAuthModuleService>(Modules.AUTH)
+          .createAuthIdentities({
+            provider_identities: [
+              {
+                provider: "google",
+                entity_id: randomUUID(),
+                user_metadata: {
+                  email: `${randomUUID()}@example.invalid`,
+                  email_verified: true,
+                },
+              },
+            ],
+          });
+        const { result: customer } = await createCustomerAccountWorkflow(
+          container,
+        ).run({
+          input: {
+            authIdentityId: identity.id,
+            customerData: {
+              email: identity.provider_identities![0].user_metadata!
+                .email as string,
+            },
+          },
+        });
+        const { http } = container.resolve(
+          ContainerRegistrationKeys.CONFIG_MODULE,
+        ).projectConfig;
+        const token = generateJwtToken(
+          {
+            actor_id: customer.id,
+            actor_type: "customer",
+            auth_identity_id: identity.id,
+            auth_provider: "google",
+            app_metadata: {},
+          },
+          {
+            secret: http.jwtSecret,
+            expiresIn: "10m",
+            jwtOptions: http.jwtOptions,
+          },
+        );
+        const { result: channels } = await createSalesChannelsWorkflow(
+          container,
+        ).run({
+          input: {
+            salesChannelsData: [{ name: `Aftersales fixture ${randomUUID()}` }],
+          },
+        });
+        const { result: keys } = await createApiKeysWorkflow(container).run({
+          input: {
+            api_keys: [
+              {
+                title: "Disposable aftersales fixture",
+                type: "publishable",
+                created_by: "finance-durability-test",
+              },
+            ],
+          },
+        });
+        await linkSalesChannelsToApiKeyWorkflow(container).run({
+          input: { id: keys[0].id, add: [channels[0].id] },
+        });
+        return {
+          customerId: customer.id,
+          key: keys[0].token,
+          headers: {
+            "x-publishable-api-key": keys[0].token,
+            authorization: `Bearer ${token}`,
+          },
+        };
+      }
+      async function assignCustomer(value: Fixture, customerId: string) {
+        // Fixture-only native CRUD attaches an owner to the already-linked sale.
+        await getContainer()
+          .resolve<IOrderModuleService>(Modules.ORDER)
+          .updateOrders(
+            [value.orderId, value.siblingOrderId].map((id) => ({
+              id,
+              customer_id: customerId,
+            })),
+          );
+      }
+      async function vendorContext(sellerId: string) {
+        // The runner clears persisted roles between cases while keeping the
+        // native bootstrap's process cache. Restore its real bindings per fixture.
+        const rbac = getContainer().resolve<
+          InstanceType<typeof RbacModule.service>
+        >(Modules.RBAC);
+        await rbac.__hooks.onApplicationStart();
+        await restoreVendorRolesWorkflow(getContainer()).run({
+          input: undefined,
+        });
+        expect(
+          (await rbac.listRbacPolicies()).some(
+            (policy) => policy.key === "return:read",
+          ),
+        ).toBe(true);
+        const seller = getContainer().resolve<
+          InstanceType<typeof SellerModule.service>
+        >(MercurModules.SELLER);
+        await approveSellerWorkflow(getContainer()).run({
+          input: { seller_id: sellerId },
+        });
+        const member = await seller.createMembers({
+          email: `${randomUUID()}@example.invalid`,
+        });
+        await seller.createSellerMembers({
+          seller_id: sellerId,
+          member_id: member.id,
+          role_id: SellerRole.SELLER_ADMINISTRATION,
+          is_owner: true,
+        });
+        const identity = await getContainer()
+          .resolve<IAuthModuleService>(Modules.AUTH)
+          .createAuthIdentities({
+            app_metadata: {
+              member_id: member.id,
+              roles: [SellerRole.SELLER_ADMINISTRATION],
+            },
+            provider_identities: [
+              { provider: "emailpass", entity_id: member.email },
+            ],
+          });
+        const { http } = getContainer().resolve(
+          ContainerRegistrationKeys.CONFIG_MODULE,
+        ).projectConfig;
+        const token = generateJwtToken(
+          {
+            actor_id: member.id,
+            actor_type: "member",
+            auth_identity_id: identity.id,
+            auth_provider: "emailpass",
+            app_metadata: identity.app_metadata ?? {},
+          },
+          {
+            secret: http.jwtSecret,
+            expiresIn: "10m",
+            jwtOptions: http.jwtOptions,
+          },
+        );
+        return { authorization: `Bearer ${token}`, "x-seller-id": sellerId };
+      }
+      async function returnRows(value: Fixture, withDeleted = false) {
+        const query = getContainer().resolve(ContainerRegistrationKeys.QUERY);
+        return (
+          await query.graph(
+            {
+              entity: "return",
+              fields: [
+                "id",
+                "order_id",
+                "status",
+                "requested_at",
+                "location_id",
+                "metadata",
+                "deleted_at",
+                "items.*",
+              ],
+              filters: { order_id: value.orderId },
+              withDeleted,
+            },
+            { cache: { enable: false } },
+          )
+        ).data;
+      }
+      async function returnChanges(value: Fixture) {
+        return (
+          await getContainer()
+            .resolve(ContainerRegistrationKeys.QUERY)
+            .graph(
+              {
+                entity: "order_change",
+                fields: [
+                  "id",
+                  "status",
+                  "return_id",
+                  "actions.id",
+                  "actions.action",
+                  "actions.details",
+                ],
+                filters: {
+                  order_id: value.orderId,
+                  change_type: "return_request",
+                },
+              },
+              { cache: { enable: false } },
+            )
+        ).data;
+      }
+      function customerReturn(value: Fixture, quantity = 3) {
+        return {
+          request_id: randomUUID(),
+          reason: "wrong_item" as const,
+          note: "Request the native marketplace return",
+          items: [{ id: value.itemId, quantity }],
+          confirm: true as const,
+        };
+      }
       async function recover(request: Input) {
         const inspection = await inspectFinanceRecovery(
           getContainer(),
@@ -339,6 +605,905 @@ if (!enabled) {
         expect(stripe.rejected).toEqual([]);
       });
       afterAll(() => stripe.restore());
+
+      it("aftersales rejects raw Store returns, unauthenticated access, other buyers, unowned orders and injected financial actions over HTTP", async () => {
+        const value = await fixture();
+        const buyer = await storeContext();
+        const stranger = await storeContext();
+        const anonymous = {
+          headers: { "x-publishable-api-key": buyer.key },
+          validateStatus: () => true,
+        };
+        const cancellation = {
+          request_id: randomUUID(),
+          note: "Cancel only my own marketplace order",
+          confirm: true,
+        };
+        const returns = customerReturn(value, 1);
+        const before = await read(value);
+        const requests = stripe.requests.length;
+
+        for (const headers of [
+          anonymous.headers,
+          buyer.headers,
+          stranger.headers,
+        ]) {
+          const response = await api.post(
+            "/store/returns",
+            { order_id: value.orderId, items: returns.items },
+            { headers, validateStatus: () => true },
+          );
+          expect(response.status).toBe(400);
+          expect(response.data.message).toBe(
+            "Solicita la devolución desde tu cuenta, en el detalle de tu pedido.",
+          );
+        }
+        for (const path of ["cancellation", "returns"]) {
+          expect(
+            (await api.get(`/store/orders/${value.orderId}/${path}`, anonymous))
+              .status,
+          ).toBe(401);
+          expect(
+            (
+              await api.post(
+                `/store/orders/${value.orderId}/${path}`,
+                path === "cancellation" ? cancellation : returns,
+                anonymous,
+              )
+            ).status,
+          ).toBe(401);
+          // Authenticated possession of an order ID is insufficient without an owner.
+          expect(
+            (
+              await api.post(
+                `/store/orders/${value.orderId}/${path}`,
+                path === "cancellation" ? cancellation : returns,
+                { headers: buyer.headers, validateStatus: () => true },
+              )
+            ).status,
+          ).toBe(404);
+        }
+        await assignCustomer(value, buyer.customerId);
+        for (const path of ["cancellation", "returns"]) {
+          expect(
+            (
+              await api.get(`/store/orders/${value.orderId}/${path}`, {
+                headers: stranger.headers,
+                validateStatus: () => true,
+              })
+            ).status,
+          ).toBe(404);
+          expect(
+            (
+              await api.post(
+                `/store/orders/${value.orderId}/${path}`,
+                path === "cancellation" ? cancellation : returns,
+                { headers: stranger.headers, validateStatus: () => true },
+              )
+            ).status,
+          ).toBe(404);
+        }
+        for (const action of ["refund", "capture"]) {
+          const response = await api.post(
+            `/store/orders/${value.orderId}/cancellation`,
+            { ...cancellation, action, amount: 1 },
+            { headers: buyer.headers, validateStatus: () => true },
+          );
+          expect(response.status).toBe(400);
+        }
+        expect(
+          (
+            await api.post(
+              `/store/orders/${value.orderId}/returns`,
+              { ...returns, action: "refund", amount: 1 },
+              { headers: buyer.headers, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(400);
+        const own = await api.get(
+          `/store/orders/${value.orderId}/cancellation`,
+          { headers: buyer.headers },
+        );
+        expect(own.data).toEqual({
+          cancellation: { allowed: true, reason: null },
+        });
+        expect(own.headers["cache-control"]).toBe("private, no-store");
+        expect((await read(value)).allocation).toEqual(before.allocation);
+        expect((await read(value)).operations).toEqual([]);
+        expect(await returnRows(value)).toEqual([]);
+        expect(
+          stripe.requests
+            .slice(requests)
+            .filter((row) => row.method === "POST"),
+        ).toEqual([]);
+      });
+
+      it("aftersales lets only the owning buyer cancel their captured store order and replays the UUID without refunding its sibling over HTTP", async () => {
+        const value = await fixture();
+        const buyer = await storeContext();
+        await assignCustomer(value, buyer.customerId);
+        stripe.state.expectedRefundAmount = 7_000;
+        const siblingBefore = (await read(value)).group.orders.find(
+          (order) => order.id === value.siblingOrderId,
+        )!;
+        const body = {
+          request_id: randomUUID(),
+          note: "Cancel my captured store order",
+          confirm: true,
+        };
+        const path = `/store/orders/${value.orderId}/cancellation`;
+        const response = await api.post(path, body, { headers: buyer.headers });
+        expect(response.data).toMatchObject({
+          canceled: true,
+          cancellation: { allowed: false },
+        });
+        const current = await read(value);
+        expect(current.view.finance).toMatchObject({
+          captured_total: 70,
+          refunded_total: 70,
+          refundable_total: 0,
+          history: [
+            {
+              id: `cancel:${value.orderId}:${body.request_id}`,
+              kind: "cancel",
+              amount: 70,
+              status: "complete",
+            },
+          ],
+        });
+        expect(
+          current.group.orders.find((order) => order.id === value.orderId)
+            ?.status,
+        ).toBe("canceled");
+        const siblingAfter = current.group.orders.find(
+          (order) => order.id === value.siblingOrderId,
+        )!;
+        expect(siblingAfter).toMatchObject({
+          status: siblingBefore.status,
+          total: siblingBefore.total,
+          items: siblingBefore.items,
+          fulfillments: siblingBefore.fulfillments,
+          seller: siblingBefore.seller,
+          transactions: siblingBefore.transactions,
+          credit_lines: siblingBefore.credit_lines,
+          payment_collections: siblingBefore.payment_collections,
+        });
+        expect(
+          (await read(value, value.siblingOrderId)).view.finance,
+        ).toMatchObject({
+          captured_total: 30,
+          refunded_total: 0,
+          refundable_total: 30,
+        });
+        expect(stripe.refunds).toHaveLength(1);
+        expect(stripe.refunds[0].amount).toBe(7_000);
+        const posts = stripe.requests.filter(
+          (row) => row.method === "POST",
+        ).length;
+        expect(
+          (await api.post(path, body, { headers: buyer.headers })).data,
+        ).toEqual(response.data);
+        expect(
+          (
+            await api.post(
+              path,
+              { ...body, request_id: randomUUID() },
+              { headers: buyer.headers, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(400);
+        expect(
+          stripe.requests.filter((row) => row.method === "POST"),
+        ).toHaveLength(posts);
+        expect(stripe.refunds).toHaveLength(1);
+      });
+
+      it("customer return preserves a native draft and requested quantities, rejects excess or foreign items and replays its UUID without duplicates over HTTP", async () => {
+        const value = await createFinanceDurabilityFixture(getContainer(), {
+          withPhysicalShipment: true,
+        });
+        const buyer = await storeContext();
+        await assignCustomer(value, buyer.customerId);
+        const path = `/store/orders/${value.orderId}/returns`;
+        const body = customerReturn(value);
+        const posts = stripe.requests.filter(
+          (row) => row.method === "POST",
+        ).length;
+        const initial = await api.get(path, { headers: buyer.headers });
+        expect(initial.data).toMatchObject({
+          eligibility: { allowed: true, reason: null },
+          items: [{ id: value.itemId, available_quantity: 3 }],
+          requests: [],
+        });
+        for (const items of [
+          [{ id: value.itemId, quantity: 4 }],
+          [{ id: value.siblingItemId, quantity: 1 }],
+        ]) {
+          const response = await api.post(
+            path,
+            { ...body, items },
+            { headers: buyer.headers, validateStatus: () => true },
+          );
+          expect(response.status).toBe(400);
+          expect(response.data.message).toBe(
+            "Revisa los artículos y las cantidades disponibles.",
+          );
+          expect(await returnRows(value)).toEqual([]);
+        }
+        const concurrent = await Promise.all([
+          api.post(path, body, {
+            headers: buyer.headers,
+            validateStatus: () => true,
+          }),
+          api.post(path, body, {
+            headers: buyer.headers,
+            validateStatus: () => true,
+          }),
+        ]);
+        expect(concurrent.some((response) => response.status === 200)).toBe(
+          true,
+        );
+        expect(
+          concurrent.every((response) => [200, 409].includes(response.status)),
+        ).toBe(true);
+        const first = concurrent.find((response) => response.status === 200)!;
+        for (const response of concurrent.filter(
+          (response) => response.status === 200,
+        ))
+          expect(response.data).toEqual(first.data);
+        expect(
+          readFinanceExecutionWriters(
+            (await read(value)).state?.observation ?? {},
+          ),
+        ).toEqual([]);
+        expect(first.headers["cache-control"]).toBe("private, no-store");
+        expect(first.data).toMatchObject({
+          eligibility: { allowed: false },
+          requests: [
+            { status: "pending", reason: "wrong_item", note: body.note },
+          ],
+        });
+        const nativeReturns = await returnRows(value);
+        expect(nativeReturns).toHaveLength(1);
+        expect(nativeReturns[0]).toMatchObject({
+          requested_at: null,
+          order_id: value.orderId,
+          metadata: {
+            usapeek_customer_return: {
+              request_id: body.request_id,
+              customer_id: buyer.customerId,
+              items: body.items,
+            },
+          },
+        });
+        const changes = await returnChanges(value);
+        expect(changes).toHaveLength(1);
+        expect(changes[0]).toMatchObject({
+          status: "pending",
+          return_id: nativeReturns[0].id,
+          actions: [
+            {
+              action: "RETURN_ITEM",
+              details: { reference_id: value.itemId, quantity: 3 },
+            },
+          ],
+        });
+        const replay = await api.post(path, body, { headers: buyer.headers });
+        expect(replay.data).toEqual(first.data);
+        expect(await returnRows(value)).toEqual(nativeReturns);
+        expect(await returnChanges(value)).toEqual(changes);
+        const ownerHeaders = await vendorContext(value.sellerId);
+        const otherHeaders = await vendorContext(value.siblingSellerId);
+        const ownQueue = await api.get("/vendor/returns", {
+          headers: ownerHeaders,
+          validateStatus: () => true,
+        });
+        expect({ status: ownQueue.status, body: ownQueue.data }).toMatchObject({
+          status: 200,
+        });
+        expect(
+          ownQueue.data.returns.map((entry: { id: string }) => entry.id),
+        ).toEqual([nativeReturns[0].id]);
+        expect(
+          (await api.get("/vendor/returns", { headers: otherHeaders })).data
+            .returns,
+        ).toEqual([]);
+        expect(
+          (
+            await api.get(`/vendor/returns/${nativeReturns[0].id}`, {
+              headers: otherHeaders,
+              validateStatus: () => true,
+            })
+          ).status,
+        ).toBe(404);
+        expect(
+          (
+            await api.post(
+              `/vendor/returns/${nativeReturns[0].id}/request`,
+              { no_notification: true },
+              { headers: otherHeaders, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(404);
+        expect(
+          (
+            await api.post(
+              path,
+              { ...body, items: [{ id: value.itemId, quantity: 1 }] },
+              { headers: buyer.headers, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(400);
+        expect(
+          (
+            await api.post(
+              path,
+              { ...body, request_id: randomUUID() },
+              { headers: buyer.headers, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(400);
+        expect(await returnRows(value)).toEqual(nativeReturns);
+        expect((await read(value)).operations).toEqual([]);
+        const nativePath = `/vendor/returns/${nativeReturns[0].id}`;
+        for (const metadata of [
+          null,
+          { usapeek_customer_return: null },
+          { usapeek_customer_return: "" },
+          {
+            usapeek_customer_return: {
+              request_id: randomUUID(),
+              customer_id: "forged_customer",
+            },
+          },
+        ]) {
+          const response = await api.post(
+            nativePath,
+            { metadata },
+            {
+              headers: ownerHeaders,
+              validateStatus: () => true,
+            },
+          );
+          expect(response.status).toBe(400);
+          expect(response.data.message).toBe(
+            "La identidad y el motivo originales de la solicitud del comprador no se pueden modificar.",
+          );
+          expect(await returnRows(value)).toEqual(nativeReturns);
+        }
+        const combined = await api.post(
+          nativePath,
+          {
+            location_id: null,
+            metadata: { usapeek_customer_return: null },
+          },
+          { headers: ownerHeaders, validateStatus: () => true },
+        );
+        expect(combined.status).toBe(400);
+        expect(await returnRows(value)).toEqual(nativeReturns);
+        await api.post(
+          nativePath,
+          { metadata: { fixture_marker: "native_merge" } },
+          { headers: ownerHeaders },
+        );
+        const merged = await returnRows(value);
+        expect(merged).toHaveLength(1);
+        expect(merged[0].metadata).toEqual({
+          ...nativeReturns[0].metadata,
+          fixture_marker: "native_merge",
+        });
+        expect(
+          (await api.post(path, body, { headers: buyer.headers })).data,
+        ).toEqual(first.data);
+        expect(await returnRows(value)).toEqual(merged);
+        expect(
+          stripe.requests.filter((row) => row.method === "POST"),
+        ).toHaveLength(posts);
+      });
+
+      it("customer return uses native confirmation and cumulative Mercur reception, restocking only good Offer units over HTTP", async () => {
+        const value = await createFinanceDurabilityFixture(getContainer(), {
+          withPhysicalShipment: true,
+        });
+        const buyer = await storeContext();
+        await assignCustomer(value, buyer.customerId);
+        const request = await api.post(
+          `/store/orders/${value.orderId}/returns`,
+          customerReturn(value),
+          { headers: buyer.headers },
+        );
+        const response = request.data as CustomerReturnsResponse;
+        const returnId = response.requests[0].id;
+        const headers = {
+          authorization: `Bearer ${await actorToken(value.actorId, "user")}`,
+        };
+        const nativePost = (suffix: string, body: object = {}) =>
+          api.post(`/admin/returns/${returnId}${suffix}`, body, { headers });
+        expect((await read(value)).view.finance.refund.allowed).toBe(false);
+        const settlement = () =>
+          prepareOrderSettlement(getContainer(), {
+            order_id: value.orderId,
+            actor_id: value.actorId,
+          });
+        await expect(settlement()).rejects.toThrow(
+          "La liquidación requiere conciliación previa.",
+        );
+        const prematureRefund = await api.post(
+          `/admin/orders/${value.orderId}/finance`,
+          {
+            request_id: randomUUID(),
+            note: "Refund must wait for native reception",
+            confirm: true,
+            action: "refund",
+            amount: 20,
+          },
+          { headers, validateStatus: () => true },
+        );
+        expect(prematureRefund.status).toBe(400);
+        const native = () => returnRows(value).then((rows) => rows[0]);
+        const inventory = getContainer().resolve<IInventoryService>(
+          Modules.INVENTORY,
+        );
+        const stocked = async () => {
+          const levels = await inventory.listInventoryLevels({
+            inventory_item_id: value.inventoryItemId!,
+            location_id: value.locationId!,
+          });
+          expect(levels).toHaveLength(1);
+          return financeAmount(levels[0].stocked_quantity);
+        };
+        const stockBefore = await stocked();
+        expect(stockBefore).toBe(7);
+        const before = await read(value);
+        const siblingBefore = await read(value, value.siblingOrderId);
+        const posts = stripe.requests.filter(
+          (row) => row.method === "POST",
+        ).length;
+        // Request confirmation cannot skip a destination or cross seller warehouses.
+        expect(
+          (
+            await api.post(
+              `/admin/returns/${returnId}/request`,
+              { no_notification: true },
+              { headers, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(400);
+        const foreignWarehouse = await api.post(
+          `/admin/returns/${returnId}`,
+          { location_id: value.siblingLocationId },
+          { headers, validateStatus: () => true },
+        );
+        expect(foreignWarehouse.status).toBe(400);
+        expect(foreignWarehouse.data.message).toBe("inventory_scope_forbidden");
+        await nativePost("", { location_id: value.locationId });
+        await nativePost("/request", { no_notification: true });
+        expect(await native()).toMatchObject({
+          status: "requested",
+          location_id: value.locationId,
+          items: [
+            {
+              item_id: value.itemId,
+              quantity: 3,
+              received_quantity: 0,
+              damaged_quantity: 0,
+            },
+          ],
+        });
+        const approved = await api.get(
+          `/store/orders/${value.orderId}/returns`,
+          { headers: buyer.headers },
+        );
+        expect(approved.data).toMatchObject({
+          items: [{ available_quantity: 0 }],
+          requests: [{ status: "approved" }],
+        });
+        expect(approved.data.requests[0].destination).toContain(
+          "Disposable fixture warehouse",
+        );
+        await nativePost("/receive");
+        await nativePost("/receive-items", {
+          items: [{ id: value.itemId, quantity: 1 }],
+        });
+        await nativePost("/receive/confirm");
+        expect(await native()).toMatchObject({
+          status: "partially_received",
+          items: [
+            {
+              item_id: value.itemId,
+              received_quantity: 1,
+              damaged_quantity: 0,
+            },
+          ],
+        });
+        expect(await stocked()).toBe(stockBefore + 1);
+        expect((await read(value)).view.finance.refund.allowed).toBe(false);
+        await nativePost("/receive");
+        await nativePost("/receive-items", {
+          items: [{ id: value.itemId, quantity: 1 }],
+        });
+        await nativePost("/dismiss-items", {
+          items: [{ id: value.itemId, quantity: 1 }],
+        });
+        await nativePost("/receive/confirm");
+        expect(await native()).toMatchObject({
+          status: "received",
+          items: [
+            {
+              item_id: value.itemId,
+              quantity: 3,
+              received_quantity: 3,
+              damaged_quantity: 1,
+            },
+          ],
+        });
+        expect(await stocked()).toBe(stockBefore + 2);
+        const final = await api.get(`/store/orders/${value.orderId}/returns`, {
+          headers: buyer.headers,
+        });
+        expect(final.data).toMatchObject({
+          eligibility: { allowed: false },
+          items: [{ available_quantity: 0 }],
+          requests: [{ status: "received" }],
+        });
+        expect(
+          (
+            await api.post(
+              `/store/orders/${value.orderId}/returns`,
+              customerReturn(value, 1),
+              { headers: buyer.headers, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(400);
+        const after = await read(value);
+        expect(after.view.finance.refund.allowed).toBe(true);
+        expect(
+          after.group.orders.find((order) => order.id === value.orderId)
+            ?.summary?.pending_difference,
+        ).toBe(-69);
+        await expect(settlement()).rejects.toThrow(
+          "La liquidación requiere conciliación previa.",
+        );
+        const economicRows = (current: typeof after) => {
+          const order = current.group.orders.find(
+            (row) => row.id === value.orderId,
+          )!;
+          return {
+            allocation: current.allocation,
+            transactions: order.transactions,
+            credit_lines: order.credit_lines,
+            payment: order.cart.payment_collection.payments,
+            payment_collections: order.payment_collections,
+          };
+        };
+        expect(economicRows(after)).toEqual(economicRows(before));
+        const siblingAfter = await read(value, value.siblingOrderId);
+        expect(siblingAfter.allocation).toEqual(siblingBefore.allocation);
+        expect(
+          siblingAfter.group.orders.find(
+            (row) => row.id === value.siblingOrderId,
+          ),
+        ).toEqual(
+          siblingBefore.group.orders.find(
+            (row) => row.id === value.siblingOrderId,
+          ),
+        );
+        expect(after.operations).toEqual([]);
+        expect(
+          stripe.requests.filter((row) => row.method === "POST"),
+        ).toHaveLength(posts);
+        stripe.state.expectedRefundAmount = 6_900;
+        const refundBody = {
+          action: "refund",
+          amount: 69,
+          request_id: randomUUID(),
+          note: "Refund the fully received native return",
+          confirm: true,
+        };
+        const refundPath = `/admin/orders/${value.orderId}/finance`;
+        await api.post(refundPath, refundBody, { headers });
+        const refunded = await read(value);
+        expect(refunded.view.finance).toMatchObject({
+          captured_total: 69,
+          refunded_total: 69,
+          refundable_total: 0,
+        });
+        const nativeOrder = refunded.group.orders.find(
+          (order) => order.id === value.orderId,
+        )!;
+        expect(
+          nativeOrder.transactions.filter(
+            (transaction) => transaction.reference === "refund",
+          ),
+        ).toMatchObject([
+          {
+            amount: -69,
+            reference_id:
+              nativeOrder.cart.payment_collection.payments[0].refunds[0].id,
+          },
+        ]);
+        // The native return already reduced the order total; the refund must not
+        // deduct that same amount again with another economic credit line.
+        expect(
+          nativeOrder.credit_lines?.filter(
+            (line) => line.reference === "refund",
+          ) ?? [],
+        ).toEqual([]);
+        expect(nativeOrder.summary?.pending_difference).toBe(0);
+        expect(nativeOrder.payment_collections).toEqual([]);
+        const siblingRefunded = await read(value, value.siblingOrderId);
+        expect(siblingRefunded.view.finance).toMatchObject({
+          captured_total: 31,
+          refunded_total: 0,
+          refundable_total: 31,
+        });
+        expect(
+          siblingRefunded.group.orders.find(
+            (order) => order.id === value.siblingOrderId,
+          )?.transactions,
+        ).toEqual(
+          siblingBefore.group.orders.find(
+            (order) => order.id === value.siblingOrderId,
+          )?.transactions,
+        );
+        expect(stripe.refunds).toHaveLength(1);
+        expect(stripe.refunds[0].amount).toBe(6_900);
+        const refundPosts = stripe.requests.filter(
+          (row) => row.method === "POST",
+        ).length;
+        await api.post(refundPath, refundBody, { headers });
+        expect(
+          stripe.requests.filter((row) => row.method === "POST"),
+        ).toHaveLength(refundPosts);
+        expect(
+          (await read(value)).group.orders.find(
+            (order) => order.id === value.orderId,
+          )?.transactions,
+        ).toEqual(nativeOrder.transactions);
+      });
+
+      it("customer return cancels an approved native return before receipt and restores availability without a new payment or provider effect over HTTP", async () => {
+        const value = await createFinanceDurabilityFixture(getContainer(), {
+          withPhysicalShipment: true,
+        });
+        const buyer = await storeContext();
+        await assignCustomer(value, buyer.customerId);
+        const buyerPath = `/store/orders/${value.orderId}/returns`;
+        const draft = await api.post(buyerPath, customerReturn(value), {
+          headers: buyer.headers,
+        });
+        const returnId = (draft.data as CustomerReturnsResponse).requests[0].id;
+        const headers = await vendorContext(value.sellerId);
+        await api.post(
+          `/vendor/returns/${returnId}`,
+          { location_id: value.locationId },
+          { headers },
+        );
+        await api.post(
+          `/vendor/returns/${returnId}/request`,
+          { no_notification: true },
+          { headers },
+        );
+        expect((await read(value)).view.finance.refund.allowed).toBe(false);
+        expect(
+          (await api.get(buyerPath, { headers: buyer.headers })).data,
+        ).toMatchObject({
+          items: [{ available_quantity: 0 }],
+          requests: [{ status: "approved" }],
+        });
+        const before = await read(value);
+        const posts = stripe.requests.filter(
+          (row) => row.method === "POST",
+        ).length;
+        await api.post(`/vendor/returns/${returnId}/cancel`, {}, { headers });
+        const after = await read(value);
+        expect(after.view.finance.refund.allowed).toBe(true);
+        expect(
+          (await api.get(buyerPath, { headers: buyer.headers })).data,
+        ).toMatchObject({
+          eligibility: { allowed: true, reason: null },
+          items: [{ available_quantity: 3 }],
+          requests: [{ status: "canceled" }],
+        });
+        expect((await returnRows(value))[0].status).toBe("canceled");
+        const economic = (current: typeof after) =>
+          current.group.orders.map((order) => ({
+            id: order.id,
+            transactions: order.transactions,
+            credit_lines: order.credit_lines,
+            payment_collections: order.payment_collections,
+            payment: order.cart.payment_collection.payments,
+          }));
+        expect(economic(after)).toEqual(economic(before));
+        expect(after.operations).toEqual([]);
+        expect(
+          stripe.requests.filter((row) => row.method === "POST"),
+        ).toHaveLength(posts);
+        expect(stripe.refunds).toEqual([]);
+      });
+
+      it("customer return keeps a discarded native draft in buyer history and replays its UUID without recreating it over HTTP", async () => {
+        const value = await createFinanceDurabilityFixture(getContainer(), {
+          withPhysicalShipment: true,
+        });
+        const buyer = await storeContext();
+        await assignCustomer(value, buyer.customerId);
+        const path = `/store/orders/${value.orderId}/returns`;
+        const body = customerReturn(value, 1);
+        const initial = await api.post(path, body, { headers: buyer.headers });
+        const returnId = (initial.data as CustomerReturnsResponse).requests[0]
+          .id;
+        const headers = {
+          authorization: `Bearer ${await actorToken(value.actorId, "user")}`,
+        };
+        const before = await read(value);
+        const posts = stripe.requests.filter(
+          (row) => row.method === "POST",
+        ).length;
+        await api.delete(`/admin/returns/${returnId}/request`, { headers });
+        const discarded = await returnRows(value, true);
+        expect(discarded).toHaveLength(1);
+        expect(discarded[0].id).toBe(returnId);
+        expect(
+          "deleted_at" in discarded[0] && discarded[0].deleted_at,
+        ).toBeTruthy();
+        const history = await api.get(path, { headers: buyer.headers });
+        expect(history.data).toMatchObject({
+          eligibility: { allowed: true, reason: null },
+          items: [{ available_quantity: 3 }],
+          requests: [{ id: returnId, status: "canceled", destination: null }],
+        });
+        const replay = await api.post(path, body, { headers: buyer.headers });
+        expect(replay.data).toEqual(history.data);
+        expect(await returnRows(value, true)).toEqual(discarded);
+        await api.post(
+          path,
+          { ...body, request_id: randomUUID() },
+          { headers: buyer.headers },
+        );
+        const newRows = await returnRows(value, true);
+        expect(newRows).toHaveLength(2);
+        expect(newRows.find((row) => row.id === returnId)).toEqual(
+          discarded[0],
+        );
+        const after = await read(value);
+        for (const order of after.group.orders) {
+          const original = before.group.orders.find(
+            (row) => row.id === order.id,
+          )!;
+          expect(order.transactions).toEqual(original.transactions);
+          expect(order.credit_lines).toEqual(original.credit_lines);
+          expect(order.payment_collections).toEqual([]);
+          expect(order.cart.payment_collection.payments).toEqual(
+            original.cart.payment_collection.payments,
+          );
+        }
+        expect(after.operations).toEqual([]);
+        expect(
+          stripe.requests.filter((row) => row.method === "POST"),
+        ).toHaveLength(posts);
+      });
+
+      it("aftersales cancels an unshipped admin fulfillment through Mercur and restores Offer inventory and reservations without changing finance over HTTP", async () => {
+        const value = await createFinanceDurabilityFixture(getContainer(), {
+          withPhysicalFulfillment: true,
+        });
+        const before = await read(value);
+        const order = before.group.orders.find(
+          (row) => row.id === value.orderId,
+        )!;
+        expect(order.fulfillments).toHaveLength(1);
+        const fulfillmentId = order.fulfillments[0].id;
+        expect(order.fulfillments[0].canceled_at).toBeNull();
+        const { data: nativeFulfillments } = await getContainer()
+          .resolve(ContainerRegistrationKeys.QUERY)
+          .graph(
+            {
+              entity: "fulfillment",
+              fields: ["id", "shipped_at"],
+              filters: { id: fulfillmentId },
+            },
+            { cache: { enable: false } },
+          );
+        expect(nativeFulfillments[0].shipped_at).toBeNull();
+        const inventory = getContainer().resolve<IInventoryService>(
+          Modules.INVENTORY,
+        );
+        const level = async () =>
+          (
+            await inventory.listInventoryLevels({
+              inventory_item_id: value.inventoryItemId!,
+              location_id: value.locationId!,
+            })
+          )[0];
+        expect(financeAmount((await level()).stocked_quantity)).toBe(7);
+        expect(
+          await inventory.listReservationItems({ line_item_id: value.itemId }),
+        ).toEqual([]);
+        const headers = {
+          authorization: `Bearer ${await actorToken(value.actorId, "user")}`,
+        };
+        const posts = stripe.requests.filter(
+          (row) => row.method === "POST",
+        ).length;
+        const path = `/admin/orders/${value.orderId}/fulfillments/${fulfillmentId}/cancel`;
+        await api.post(path, { no_notification: true }, { headers });
+        expect(financeAmount((await level()).stocked_quantity)).toBe(10);
+        const reservations = await inventory.listReservationItems({
+          line_item_id: value.itemId,
+        });
+        expect(reservations).toHaveLength(1);
+        expect(reservations[0]).toMatchObject({
+          inventory_item_id: value.inventoryItemId,
+          location_id: value.locationId,
+          quantity: 3,
+        });
+        const after = await read(value);
+        const changed = after.group.orders.find(
+          (row) => row.id === value.orderId,
+        )!;
+        expect(changed.fulfillments[0].canceled_at).not.toBeNull();
+        expect(changed.items![0].detail.fulfilled_quantity).toBe(0);
+        expect(changed.transactions).toEqual(order.transactions);
+        expect(changed.credit_lines).toEqual(order.credit_lines);
+        expect(changed.payment_collections).toEqual([]);
+        expect(after.allocation).toEqual(before.allocation);
+        expect(after.view.finance).toMatchObject({
+          captured_total: 69,
+          refunded_total: 0,
+          refundable_total: 69,
+        });
+        expect(
+          after.group.orders.find((row) => row.id === value.siblingOrderId),
+        ).toEqual(
+          before.group.orders.find((row) => row.id === value.siblingOrderId),
+        );
+        expect(
+          (
+            await api.post(
+              path,
+              { no_notification: true },
+              { headers, validateStatus: () => true },
+            )
+          ).status,
+        ).toBe(400);
+        expect(financeAmount((await level()).stocked_quantity)).toBe(10);
+        expect(
+          await inventory.listReservationItems({ line_item_id: value.itemId }),
+        ).toEqual(reservations);
+        expect(
+          stripe.requests.filter((row) => row.method === "POST"),
+        ).toHaveLength(posts);
+      });
+
+      it("aftersales blocks native returns before capture and while the shared financial group is fenced over HTTP", async () => {
+        const value = await createFinanceDurabilityFixture(getContainer(), {
+          paymentState: "authorized",
+        });
+        const headers = {
+          authorization: `Bearer ${await actorToken(value.actorId, "user")}`,
+        };
+        const attempt = () =>
+          api.post(
+            "/admin/returns",
+            { order_id: value.orderId },
+            { headers, validateStatus: () => true },
+          );
+        expect((await attempt()).status).toBe(400);
+        expect(await returnRows(value)).toEqual([]);
+        const writer = { group_id: value.groupId, cart_id: value.cartId };
+        const { result: token } = await guardOrderFinanceWriterWorkflow(
+          getContainer(),
+        ).run({ input: { ...writer, action: "claim" } });
+        try {
+          expect((await attempt()).status).toBe(400);
+          expect(await returnRows(value)).toEqual([]);
+        } finally {
+          await guardOrderFinanceWriterWorkflow(getContainer()).run({
+            input: { ...writer, token, action: "finish" },
+          });
+        }
+      });
 
       it("inspects without IO and refreshes persisted provider facts twice without changing economic effects", async () => {
         const value = await fixture();
@@ -620,6 +1785,156 @@ if (!enabled) {
         expect(inspection.plan.actions).toContain("adopt_refund");
         await verifyCompleted(value, request);
       });
+
+      it.each([
+        ["before_cancel", false],
+        ["after_cancel", false],
+        ["after_complete", false],
+        ["after_cancel", true],
+      ] as const)(
+        "recovers zero-amount cancellation after a total refund (%s, paid seller: %s) without another provider effect",
+        async (boundary, withPayout) => {
+          const value = await fixture(withPayout);
+          stripe.state.expectedRefundAmount = 7_000;
+          stripe.state.expectedReversalAmount = 6_440;
+          await operate({ ...input(value), amount: 70 });
+          const refunded = await read(value);
+          expect(refunded.view.finance.cancellation).toMatchObject({
+            allowed: true,
+            refund_amount: 0,
+          });
+          const siblingBefore = refunded.group.orders.find(
+            (order) => order.id === value.siblingOrderId,
+          )!;
+          const orderBefore = refunded.group.orders.find(
+            (order) => order.id === value.orderId,
+          )!;
+          const request = {
+            action: "cancel" as const,
+            order_id: value.orderId,
+            actor_id: value.actorId,
+            request_id: randomUUID(),
+            confirm: true as const,
+            note: "Cancel a fully refunded order without another money movement",
+          };
+          const cancellationId = `cancel:${value.orderId}:${request.request_id}`;
+          const service = journal();
+          const orderModule = getContainer().resolve<IOrderModuleService>(
+            Modules.ORDER,
+          );
+          const finish = service.finishOperation.bind(service);
+          const failure =
+            boundary === "before_cancel"
+              ? jest
+                  .spyOn(orderModule, "cancel")
+                  .mockRejectedValueOnce(
+                    new Error("Injected native cancellation failure"),
+                  )
+              : boundary === "after_complete"
+                ? jest
+                    .spyOn(service, "releaseGroup")
+                    .mockRejectedValueOnce(
+                      new Error("Injected cancellation fence-release failure"),
+                    )
+                : jest
+                    .spyOn(service, "finishOperation")
+                    .mockImplementation(async (...args) => {
+                      if (
+                        args[0] === cancellationId &&
+                        args[2] === "complete"
+                      ) {
+                        throw new Error(
+                          "Injected journal failure after native cancellation",
+                        );
+                      }
+                      return finish(...args);
+                    });
+          const posts = stripe.requests.filter(
+            (row) => row.method === "POST",
+          ).length;
+          try {
+            await expect(
+              operateOrderFinanceWorkflow(getContainer()).run({
+                input: request,
+              }),
+            ).rejects.toMatchObject({ message: expect.any(String) });
+          } finally {
+            failure.mockRestore();
+          }
+          const recovery = {
+            order_id: value.orderId,
+            actor_id: value.actorId,
+            operation_id: cancellationId,
+            reason:
+              "Recover native cancellation after the verified total refund",
+          };
+          const before = await read(value);
+          const operation = before.operations.find(
+            (item) => item.id === cancellationId,
+          )!;
+          expect(operation.state).toBe(
+            boundary === "after_complete" ? "complete" : "uncertain",
+          );
+          expect(before.state?.active_token).toBe(operation.token);
+          const inspected = await inspectFinanceRecovery(
+            getContainer(),
+            recovery,
+          );
+          expect(inspected.prepared.kind).toBe("cancellation");
+          expect(inspected.plan.actions).toEqual(
+            boundary === "before_cancel" ? ["cancel_order"] : [],
+          );
+          const { result } = await recoverOrderFinanceWorkflow(
+            getContainer(),
+          ).run({
+            input: {
+              ...recovery,
+              plan_hash: inspected.plan_hash,
+              release_stopped_writer: false,
+            },
+          });
+          expect(result).toMatchObject({
+            state: "complete",
+            fence_released: true,
+          });
+          const after = await read(value);
+          const orderAfter = after.group.orders.find(
+            (order) => order.id === value.orderId,
+          )!;
+          expect(orderAfter.status).toBe("canceled");
+          expect(orderAfter.transactions).toEqual(orderBefore.transactions);
+          const refundCredits = (order: typeof orderAfter) =>
+            order.credit_lines
+              ?.filter((line) => line.reference === "refund")
+              .map(({ amount, reference, reference_id }) => ({
+                amount,
+                reference,
+                reference_id,
+              }));
+          expect(refundCredits(orderAfter)).toEqual(refundCredits(orderBefore));
+          expect(
+            orderAfter.credit_lines
+              ?.filter((line) => line.reference !== "refund")
+              .every((line) => MathBN.eq(line.amount, 0)),
+          ).toBe(true);
+          expect(orderAfter.payment_collections).toEqual([]);
+          expect(
+            after.group.orders.find(
+              (order) => order.id === value.siblingOrderId,
+            ),
+          ).toEqual(siblingBefore);
+          expect(after.state?.active_token).toBeNull();
+          expect(after.state?.review_required).toBe(false);
+          expect(
+            stripe.requests.filter((row) => row.method === "POST"),
+          ).toHaveLength(posts);
+          expect(stripe.state.refundCreates).toBe(1);
+          expect(stripe.state.reversalCreates).toBe(withPayout ? 1 : 0);
+          expect(
+            after.operations.find((item) => item.id === cancellationId)?.result,
+          ).toEqual(operation.result);
+        },
+      );
 
       it.each(["refund", "reversal"] as const)(
         "recovers the %s effect before the journal checkpoint without repeating it",

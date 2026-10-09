@@ -28,6 +28,7 @@ import {
   canComplete,
   orderDate,
   canDeliver,
+  canCancelFulfillment,
   isOrderId,
   money,
   ORDER_STATUSES,
@@ -396,78 +397,87 @@ function OrderDetails({
               )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Preparación y seguimiento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <OrderLogisticsBadge order={order} />
-              {order.fulfillments?.length ? (
-                order.fulfillments.map((fulfillment) => (
-                  <div
-                    key={fulfillment.id}
-                    className="space-y-3 rounded-lg border border-border p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+          {order.status !== "canceled" ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Preparación y seguimiento</CardTitle>
+              </CardHeader>
+              <CardContent className="divide-y divide-border">
+                {order.fulfillments?.length ? (
+                  order.fulfillments.map((fulfillment, index) => (
+                    <div
+                      key={fulfillment.id}
+                      className="space-y-3 py-4 first:pt-0 last:pb-0"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-medium">
+                          Preparación {index + 1}
+                        </p>
+                        <OrderStatusBadge
+                          status={
+                            fulfillment.canceled_at
+                              ? "canceled"
+                              : fulfillment.delivered_at
+                                ? "delivered"
+                                : fulfillment.shipped_at
+                                  ? "shipped"
+                                  : "fulfilled"
+                          }
+                        />
+                      </div>
                       <p className="break-all text-xs text-muted-foreground">
-                        {fulfillment.id}
+                        Referencia: {fulfillment.id}
                       </p>
-                      <OrderStatusBadge
-                        status={
-                          fulfillment.canceled_at
-                            ? "canceled"
-                            : fulfillment.delivered_at
-                              ? "delivered"
-                              : fulfillment.shipped_at
-                                ? "shipped"
-                                : "fulfilled"
-                        }
-                      />
-                    </div>
-                    {fulfillment.labels?.length ? (
-                      <ul className="space-y-2 text-sm">
-                        {fulfillment.labels.map((label) => {
-                          const url = safeUrl(label.tracking_url);
-                          return (
-                            <li key={label.id}>
-                              {url ? (
-                                <a
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="underline"
-                                >
-                                  {label.tracking_number || "Ver seguimiento"}
-                                </a>
-                              ) : (
-                                label.tracking_number ||
-                                "Sin número de seguimiento"
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Sin seguimiento registrado.
-                      </p>
-                    )}
-                    {canDeliver(order, fulfillment.id) && (
+                      {fulfillment.labels?.length ? (
+                        <ul className="space-y-2 text-sm">
+                          {fulfillment.labels.map((label) => {
+                            const url = safeUrl(label.tracking_url);
+                            return (
+                              <li key={label.id}>
+                                {url ? (
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline"
+                                  >
+                                    {label.tracking_number || "Ver seguimiento"}
+                                  </a>
+                                ) : (
+                                  label.tracking_number ||
+                                  "Sin número de seguimiento"
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Sin seguimiento registrado.
+                        </p>
+                      )}
                       <OrderActionForm
                         id={order.id}
                         operation="deliver"
                         fulfillmentId={fulfillment.id}
+                        allowed={canDeliver(order, fulfillment.id)}
                       />
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No hay preparaciones registradas.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                      <OrderActionForm
+                        id={order.id}
+                        operation="cancel_fulfillment"
+                        fulfillmentId={fulfillment.id}
+                        allowed={canCancelFulfillment(order, fulfillment.id)}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No hay preparaciones registradas.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
         <div className="space-y-4">
           <Card>
@@ -540,25 +550,32 @@ function OrderDetails({
               ))}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Operaciones</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {canComplete(order) ? (
-                <OrderActionForm id={order.id} operation="complete" />
-              ) : order.status === "pending" ? (
-                <p className="text-sm text-muted-foreground">
-                  Completar requiere un pedido pendiente con todos sus artículos
-                  entregados.
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Este pedido está {statusLabel(order.status).toLowerCase()}.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          {order.status !== "canceled" ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Operaciones</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <OrderActionForm
+                  id={order.id}
+                  operation="complete"
+                  allowed={canComplete(order)}
+                />
+                {!canComplete(order) &&
+                  (order.status === "pending" ? (
+                    <p className="text-sm text-muted-foreground">
+                      Completar requiere un pedido pendiente con todos sus
+                      artículos entregados.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Este pedido está {statusLabel(order.status).toLowerCase()}
+                      .
+                    </p>
+                  ))}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </div>
     </div>

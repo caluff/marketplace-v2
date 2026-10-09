@@ -1,6 +1,6 @@
 import type {
+  AuthenticatedMedusaRequest,
   MedusaNextFunction,
-  MedusaRequest,
   MedusaResponse,
   MiddlewareRoute,
 } from "@medusajs/framework/http";
@@ -17,9 +17,12 @@ import type CommerceAutomationService from "../modules/commerce-automation/servi
 import { orderFinanceInputSchema } from "../lib/order-finance/contracts";
 import { z } from "@medusajs/framework/zod";
 import { guardOrderFinanceWriterWorkflow } from "../workflows/guard-order-finance-writer";
+import { validateMarketplaceReturnWorkflow } from "../workflows/validate-marketplace-return";
+import { invalidateOrderNotificationsWorkflow } from "../workflows/invalidate-order-notifications";
+import { invalidateVendorSettlementsWorkflow } from "../workflows/invalidate-vendor-settlements";
 
 export async function guardOrderFinanceWriters(
-  req: MedusaRequest,
+  req: AuthenticatedMedusaRequest,
   res: MedusaResponse,
   next: MedusaNextFunction,
 ) {
@@ -157,10 +160,10 @@ export async function guardOrderFinanceWriters(
         MedusaError.Types.NOT_ALLOWED,
         "El grupo de compra requiere revisión.",
       );
-    if (orderEditMatch) {
+    if (orderEditMatch || (changeMatch && changeMatch[1] !== "returns")) {
       throw new MedusaError(
         MedusaError.Types.NOT_ALLOWED,
-        "La edición de pedidos del marketplace no está habilitada.",
+        "Utiliza una devolución y el reembolso de esta tienda. Las ediciones, reclamaciones y cambios con nuevos cobros todavía no están habilitados para el pago compartido.",
       );
     }
     if (
@@ -195,6 +198,42 @@ export async function guardOrderFinanceWriters(
             "Utiliza el panel financiero del pedido; esta ruta no permite el cobro compartido ni omitir una conciliación pendiente.",
           );
         }
+        if (changeMatch?.[1] === "returns" && orderId) {
+          if (
+            req.method === "POST" &&
+            /\/shipping-method(?:\/[^/]+)?$/.test(route)
+          ) {
+            throw new MedusaError(
+              MedusaError.Types.NOT_ALLOWED,
+              "El transporte de devolución se coordina con la tienda; no se puede añadir otro cobro al pago compartido.",
+            );
+          }
+          const location = z
+            .object({
+              location_id: z.string().optional(),
+              metadata: z.unknown().optional(),
+            })
+            .safeParse(req.body ?? {});
+          if (!location.success)
+            throw new MedusaError(
+              MedusaError.Types.INVALID_DATA,
+              "El almacén de devolución no es válido.",
+            );
+          await validateMarketplaceReturnWorkflow(req.scope).run({
+            input: {
+              order_id: orderId,
+              actor_id: req.auth_context?.actor_id ?? "",
+              ...(route.startsWith("/vendor/")
+                ? { seller_id: req.seller_context?.seller_id ?? "" }
+                : {}),
+              ...(changeMatch[2] ? { return_id: changeMatch[2] } : {}),
+              location_id: location.data.location_id,
+              metadata: location.data.metadata,
+              confirm_request:
+                req.method === "POST" && /\/request$/.test(route),
+            },
+          });
+        }
         const writer = { group_id: groups[0].id as string, cart_id: cartId };
         const { result: token } = await guardOrderFinanceWriterWorkflow(
           req.scope,
@@ -208,6 +247,16 @@ export async function guardOrderFinanceWriters(
             res.off("close", disconnected);
             void guardOrderFinanceWriterWorkflow(req.scope)
               .run({ input: { ...writer, token, action } })
+              .then(async () => {
+                if (changeMatch?.[1] === "returns" && orderId) {
+                  await invalidateOrderNotificationsWorkflow(req.scope).run({
+                    input: { order_ids: [orderId] },
+                  });
+                  await invalidateVendorSettlementsWorkflow(req.scope).run({
+                    input: { order_ids: [orderId] },
+                  });
+                }
+              })
               .then(() => resolve(), reject);
           };
           const finished = () => complete("finish");

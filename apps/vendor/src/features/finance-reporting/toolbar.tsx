@@ -11,8 +11,12 @@ import { FINANCE_PERIODS, financePeriodHref } from "./periods";
 
 export function FinanceReportToolbar({
   period,
+  basePath = "/seller",
+  hideLabel = false,
 }: {
   period: FinanceReportingPeriod;
+  basePath?: "/seller" | "/seller/settlements/paid";
+  hideLabel?: boolean;
 }) {
   const id = useId();
   const router = useRouter();
@@ -23,7 +27,11 @@ export function FinanceReportToolbar({
       <div className="flex min-w-0 items-center gap-3">
         <label
           htmlFor={id}
-          className="sr-only text-sm text-muted-foreground sm:not-sr-only"
+          className={
+            hideLabel
+              ? "sr-only"
+              : "sr-only text-sm text-muted-foreground sm:not-sr-only"
+          }
         >
           Período
         </label>
@@ -40,7 +48,7 @@ export function FinanceReportToolbar({
               );
               if (selected)
                 startTransition(() =>
-                  router.push(financePeriodHref(selected.value), {
+                  router.push(financePeriodHref(selected.value, 1, basePath), {
                     scroll: false,
                   }),
                 );

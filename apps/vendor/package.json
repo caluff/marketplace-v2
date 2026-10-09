@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test --test-concurrency=1 \"src/features/**/*.test.ts\"",
+    "test:catalog": "tsx --test --test-concurrency=1 \"src/features/catalog/*.test.ts\" \"src/features/offers/*.test.ts\"",
+    "test:orders": "tsx --test --test-concurrency=1 \"src/features/orders/*.test.ts\"",
+    "test:account": "tsx --test --test-concurrency=1 src/features/account/profile-completion.test.ts"
   },
   "dependencies": {
     "@usapeek/order-reference": "workspace:*",

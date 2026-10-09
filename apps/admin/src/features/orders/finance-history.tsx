@@ -7,15 +7,14 @@ export function OrderFinanceHistory({
   finance: OrderFinanceResponse["finance"];
 }) {
   return (
-    <section
-      className="space-y-3 border-t pt-5"
-      aria-label="Historial financiero"
-    >
-      <h3 className="text-sm font-semibold">Historial</h3>
+    <section className="space-y-3" aria-label="Historial financiero">
       {finance.history.length ? (
         <ul className="divide-y">
           {finance.history.map((entry) => (
-            <li key={entry.id} className="space-y-1 py-3 text-sm">
+            <li
+              key={entry.id}
+              className="space-y-1 py-3 text-sm first:pt-0 last:pb-0"
+            >
               <div className="flex flex-wrap justify-between gap-2">
                 <span className="font-medium">
                   {

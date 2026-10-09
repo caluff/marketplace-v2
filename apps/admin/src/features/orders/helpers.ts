@@ -146,6 +146,20 @@ export function canDeliver(order: HttpTypes.AdminOrder, id: string) {
     )
   );
 }
+export function canCancelFulfillment(order: HttpTypes.AdminOrder, id: string) {
+  return (
+    order.status === "pending" &&
+    Boolean(
+      order.fulfillments?.some(
+        (fulfillment) =>
+          fulfillment.id === id &&
+          !fulfillment.canceled_at &&
+          !fulfillment.shipped_at &&
+          !fulfillment.delivered_at,
+      ),
+    )
+  );
+}
 export type OrderActionState = {
   status: "idle" | "success" | "error";
   message: string;

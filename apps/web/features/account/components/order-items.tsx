@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ProductThumbnail } from "@/components/ui/product-thumbnail"
 import { formatOrderAmount } from "../order-format"
 import { getOrderItemThumbnail } from "../order-item-image"
+import { getOrderItemQuantities } from "../order-amounts"
 
 export function OrderItems({
   items,
@@ -17,6 +18,7 @@ export function OrderItems({
     <ul className="divide-y divide-border">
       {items.map((item) => {
         const thumbnail = getOrderItemThumbnail(item)
+        const quantities = getOrderItemQuantities(item)
         return (
           <li
             key={item.id}
@@ -54,8 +56,15 @@ export function OrderItems({
                 </p>
               ) : null}
               <p className="mt-2 text-xs text-muted-foreground">
-                Cantidad: {item.quantity}
+                {quantities.returnedQuantity > 0 ? "Cantidad actual" : "Cantidad"}:
+                {" "}{quantities.currentQuantity}
               </p>
+              {quantities.returnedQuantity > 0 ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Comprados: {quantities.orderedQuantity} · Devueltos:{" "}
+                  {quantities.returnedQuantity}
+                </p>
+              ) : null}
             </div>
             {!compact ? (
               <p className="col-start-2 text-sm font-semibold tabular-nums sm:col-start-3 sm:row-start-1 sm:text-right">

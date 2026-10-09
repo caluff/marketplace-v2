@@ -23,6 +23,7 @@ export const financeGroupSchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        customer_id: z.string().nullable().optional(),
         status: z.string(),
         currency_code: z.literal("usd"),
         total: decimal,
@@ -54,8 +55,15 @@ export const financeGroupSchema = z.object({
         items: z
           .array(
             z.object({
+              id: z.string().optional(),
               quantity: decimal,
-              detail: z.object({ fulfilled_quantity: decimal }),
+              detail: z.object({
+                fulfilled_quantity: decimal,
+                shipped_quantity: decimal.optional(),
+                return_requested_quantity: decimal.optional(),
+                return_received_quantity: decimal.optional(),
+                return_dismissed_quantity: decimal.optional(),
+              }),
             }),
           )
           .optional(),
@@ -123,6 +131,7 @@ export const captureEvidenceSchema = z.object({
 export type CaptureEvidence = z.infer<typeof captureEvidenceSchema>;
 export const financeOperationSchema = z.object({
   actor_id: z.string().optional(),
+  customer_id: z.string().optional(),
   execution_owner_id: z.string().optional(),
   execution_host: z.string().optional(),
   execution_pid: z.number().int().positive().optional(),
@@ -205,11 +214,17 @@ export function financeView(input: {
   payoutProblem?: string | null;
   finalCapture?: FinalCapture;
   isOperator?: boolean;
+  customerId?: string;
 }): OrderFinanceResponse {
   const { group, allocation, history } = input;
   const order = group.orders.find((order) => order.id === input.orderId);
   if (!order)
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "Pedido no encontrado.");
+  if (input.customerId !== undefined && order.customer_id !== input.customerId)
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
+      "No encontramos este pedido en tu cuenta.",
+    );
   const collection = order.cart.payment_collection;
   const payment = collection.payments[0];
   const allocated = allocation.orders.find(
@@ -342,6 +357,13 @@ export function financeView(input: {
         )
       : 0;
   let cancellationReason = problem;
+  if (
+    !cancellationReason &&
+    input.customerId !== undefined &&
+    order.fulfillments.length
+  )
+    cancellationReason =
+      "La tienda ya empezó a preparar este pedido. La cancelación desde tu cuenta ya no está disponible.";
   if (!cancellationReason && order.status !== "pending")
     cancellationReason =
       order.status === "canceled"
@@ -354,6 +376,8 @@ export function financeView(input: {
     cancellationReason =
       "Cancela primero las preparaciones del pedido. Si ya se envió, gestiona la devolución antes de cancelar.";
   let refundReason = problem;
+  if (!refundReason && input.customerId !== undefined)
+    refundReason = "Los reembolsos los gestiona la tienda o el operador.";
   if (!refundReason && order.status === "canceled")
     refundReason = "El pedido ya está cancelado.";
   if (!refundReason && !["pending", "completed"].includes(order.status))
