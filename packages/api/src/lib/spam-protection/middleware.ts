@@ -7,6 +7,7 @@ import type {
 import type SpamProtectionService from "../../modules/spam-protection/service";
 import { SPAM_PROTECTION_MODULE } from "../../modules/spam-protection";
 import { spamProtectionBuckets } from "./policy";
+import { submissionNetwork } from "./network";
 
 export async function protectSubmission(
   req: MedusaRequest,
@@ -25,8 +26,7 @@ export async function protectSubmission(
     method: req.method,
     // Mounted middleware strips its matcher from req.path; originalUrl retains it.
     path: req.originalUrl.split("?")[0],
-    // Do not read arbitrary X-Forwarded-For or client-supplied IP headers.
-    ip: req.ip,
+    ip: submissionNetwork(req),
     body: req.body,
     authIdentityId,
   });

@@ -28,7 +28,13 @@ Redis falla, responde `503` y `Retry-After: 30`; no permite continuar sin protec
 Se conservan la autenticación, los validadores y los workflows nativos. El registro
 de vendedores sigue sujeto al flag existente.
 
-La red se obtiene de `req.ip`, según la configuración de proxy de Medusa. El
+La red se obtiene de `req.ip`, según la configuración de proxy de Medusa. En
+producción Railway, cuando están presentes los marcadores de su ingress HTTPS,
+se utiliza su `X-Real-IP` validado como una única dirección IPv4/IPv6, evitando
+fragmentar los contadores entre proxies internos. Fuera de Railway, o con
+encabezados inválidos/duplicados, se conserva `req.ip`. No se confía en
+`X-Forwarded-For`. Los marcadores no autentican llamadas privadas: los servicios
+de la red privada del proyecto deben ser confiables. El
 proxy de despliegue debe sustituir los encabezados de forwarding y ser el único
 punto de entrada público del backend. Las llamadas del SDK desde el servidor web
 comparten su IP de salida, por lo que los límites de red son agregados; los de

@@ -68,7 +68,7 @@ export function spamProtectionBuckets(
     /^\/auth\/google\/(?:complete|one-tap\/transaction)$/.test(path) ||
     /^\/auth\/account\/email-verification\/(?:request|confirm)$/.test(path);
   if (isAuth) {
-    // req.ip is the transport peer selected by Medusa's trusted-proxy policy.
+    // The transport network is selected by the deployment's trusted ingress.
     // Server-side SDK calls can share this network budget across visitors.
     add("auth-network-minute", ip, 120, 60);
     add("auth-network-hour", ip, 600, 3600);
