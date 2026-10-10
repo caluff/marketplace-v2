@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-  title: "Verificar correo | usapeek",
+  title: "Verificar correo",
+  description:
+    "Confirma tu correo electrónico para completar la verificación de tu cuenta y continuar en USAPEEK.",
   robots: { index: false, follow: false },
 }
 export default async function VerifyEmailPage({

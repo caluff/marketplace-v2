@@ -8,7 +8,11 @@ import {
 } from "@/features/customers/customer-list";
 import { getPurchasingCustomers } from "@/features/customers/data";
 
-export const metadata: Metadata = { title: "Clientes | usapeek" };
+export const metadata: Metadata = {
+  title: "Clientes",
+  description:
+    "Consulta los clientes que han comprado en el marketplace y su actividad de compra en USAPEEK Admin.",
+};
 
 export default function CustomersPage({
   searchParams,

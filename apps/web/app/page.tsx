@@ -1,11 +1,18 @@
+import type { Metadata } from "next"
 import { CatalogSection } from "@/components/catalog-section"
 import { Hero } from "@/components/hero"
 import { SiteFooter } from "@/components/site-footer"
 import { parseCatalogPage } from "@/features/catalog/catalog-navigation"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
-import { getStorefrontCatalog, getStorefrontCategories } from "@/lib/medusa"
+import { getStorefrontCatalog } from "@/lib/medusa"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: { absolute: "USAPEEK | Descubre productos de distintas tiendas" },
+  description:
+    "Explora el catálogo de USAPEEK, descubre productos de distintas tiendas y guarda tus favoritos para volver a encontrarlos cuando quieras.",
+}
 
 type HomeProps = {
   searchParams: Promise<{
@@ -25,7 +32,6 @@ export default function Home({ searchParams }: HomeProps) {
     getStorefrontCatalog({ categoryId, page }),
   )
   const customer = getCurrentCustomer()
-  const categories = getStorefrontCategories()
 
   return (
     <>
@@ -38,7 +44,7 @@ export default function Home({ searchParams }: HomeProps) {
           customer={customer}
         />
       </main>
-      <SiteFooter categories={categories} />
+      <SiteFooter />
     </>
   )
 }

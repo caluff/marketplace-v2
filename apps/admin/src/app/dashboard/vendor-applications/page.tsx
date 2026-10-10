@@ -19,7 +19,9 @@ import {
 } from "@/features/vendor-applications/helpers";
 
 export const metadata: Metadata = {
-  title: "Solicitudes de vendedores | usapeek",
+  title: "Solicitudes de vendedores",
+  description:
+    "Consulta las solicitudes de vendedores y revisa su estado de aprobación en USAPEEK Admin.",
 };
 
 export default async function VendorApplicationsPage({

@@ -9,7 +9,10 @@ import {
 } from "@/features/orders/list-components";
 import { orderListInput } from "@/features/orders/parameters";
 
-export const metadata: Metadata = { title: "Pedidos" };
+export const metadata: Metadata = {
+  title: "Pedidos",
+  description: "Consulta, filtra y gestiona los pedidos asignados a tu tienda en USAPEEK.",
+};
 
 export default async function OrdersPage({
   searchParams,

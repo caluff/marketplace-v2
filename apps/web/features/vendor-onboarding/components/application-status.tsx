@@ -28,7 +28,7 @@ export function ApplicationStatus({
       <Card>
         <CardHeader>
           <Store
-            className="size-7 text-brand-accent"
+            className="size-7 text-brand-accent-text"
             strokeWidth={1.5}
             aria-hidden="true"
           />

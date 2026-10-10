@@ -10,7 +10,10 @@ import { getVendorMfa } from "@/lib/auth-sdk";
 import { safeRedirectPath } from "@/lib/auth-utils";
 import { sellerApplicationUrl } from "@/lib/storefront-url";
 
-export const metadata: Metadata = { title: "Acceso de vendedor" };
+export const metadata: Metadata = {
+  title: "Acceso de vendedor",
+  description: "Inicia sesión con tu cuenta autorizada para gestionar tu tienda en USAPEEK.",
+};
 
 export default async function SellerLoginPage({
   searchParams,

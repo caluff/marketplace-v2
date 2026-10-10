@@ -9,7 +9,10 @@ import { sellerWarehouse } from "@/features/inventory/data";
 import { WarehouseCard } from "@/features/inventory/warehouse-card";
 import { InventoryResults } from "@/features/inventory/inventory-results";
 
-export const metadata: Metadata = { title: "Inventario" };
+export const metadata: Metadata = {
+  title: "Inventario",
+  description: "Consulta y administra las existencias de los artículos de inventario vinculados a tu tienda.",
+};
 export default async function InventoryPage({
   searchParams,
 }: {

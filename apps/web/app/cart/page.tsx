@@ -1,16 +1,21 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
 import { ShoppingBag } from "lucide-react"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getStorefrontCategories } from "@/lib/medusa"
 import { getCartAvailability } from "@/features/cart/availability"
 import { getCart } from "@/features/cart/data"
 import { CartItem } from "@/features/cart/components/cart-item"
 import { OrderSummary } from "@/features/cart/components/order-summary"
 
-export const metadata = { title: "Tu carrito | usapeek" }
+export const metadata: Metadata = {
+  title: "Tu carrito",
+  description:
+    "Revisa los productos de tu carrito, ajusta las cantidades y consulta el resumen antes de continuar con tu compra en USAPEEK.",
+  robots: { index: false, follow: false },
+}
 export const dynamic = "force-dynamic"
 
 async function CartContent() {
@@ -73,7 +78,6 @@ async function CartContent() {
 }
 
 export default function CartPage() {
-  const categories = getStorefrontCategories()
   return (
     <>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6 lg:px-10">
@@ -97,7 +101,7 @@ export default function CartPage() {
           <CartContent />
         </Suspense>
       </main>
-      <SiteFooter categories={categories} />
+      <SiteFooter />
     </>
   )
 }

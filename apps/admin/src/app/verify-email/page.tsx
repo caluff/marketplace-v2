@@ -13,7 +13,9 @@ import { getAdminVerificationCode, getCurrentAdmin } from "@/lib/auth-sdk";
 import { safeRedirectPath } from "@/lib/auth-utils";
 
 export const metadata: Metadata = {
-  title: "Verificar correo | usapeek Admin",
+  title: "Verificar correo",
+  description:
+    "Confirma tu dirección de correo con el código de verificación de tu cuenta de operador de USAPEEK.",
   robots: { index: false, follow: false },
 };
 

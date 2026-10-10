@@ -7,6 +7,7 @@ import { safeRedirectPath } from "@/lib/auth-utils";
 
 export const metadata: Metadata = {
   title: "Verificar correo",
+  description: "Confirma tu correo electrónico para completar la verificación de tu cuenta de vendedor.",
   robots: { index: false, follow: false },
 };
 export default async function VerifyVendorEmailPage({

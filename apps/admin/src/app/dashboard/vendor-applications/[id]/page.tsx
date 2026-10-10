@@ -6,7 +6,11 @@ import { ApplicationDetail } from "@/features/vendor-applications/components/app
 import { retrieveVendorApplication } from "@/features/vendor-applications/data";
 import { isApplicationId } from "@/features/vendor-applications/helpers";
 
-export const metadata: Metadata = { title: "Revisar solicitud | usapeek" };
+export const metadata: Metadata = {
+  title: "Revisar solicitud",
+  description:
+    "Revisa una solicitud de vendedor y gestiona su aprobación desde USAPEEK Admin.",
+};
 
 export default async function VendorApplicationPage({
   params,

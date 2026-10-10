@@ -25,6 +25,25 @@ See the [rename record](../docs/operations/usapeek-rename-2026-10-05.md).
 Only API declares `pnpm db:migrate` before deployment. Worker shares the database
 and backend build but has no public domain declared.
 
+Railway terminates TLS at its public edge and redirects HTTP to HTTPS before
+requests reach the services, including static resources and callbacks. The
+three frontend Next.js configurations add
+`Strict-Transport-Security: max-age=31536000` to production responses marked
+`X-Forwarded-Proto: https`, scoped to the current hostname. After a successful
+HTTPS visit, browsers upgrade subsequent requests to HTTPS for one year.
+Development and internal HTTP health checks do not receive HSTS.
+
+Other deployment proxies must enforce HTTP-to-HTTPS redirects at the edge and
+set and overwrite `X-Forwarded-Proto` with the original client protocol. HSTS
+does not secure a client's first HTTP request. In Railway, use HTTPS URLs
+directly for API calls: the edge's 301 can turn a redirected POST into a GET.
+
+Run the routing regression checks with
+`pnpm --filter @usapeek/web exec tsx --test ../../.railway/https.test.mjs`.
+These checks exercise the application configuration; they do not verify deployed
+certificates or the remote edge. See Railway's [edge behavior](https://docs.railway.com/networking/public-networking/specs-and-limits)
+and [health check requirements](https://docs.railway.com/deployments/healthchecks).
+
 PostgreSQL remains external. Redis is provisioned in Railway and API/worker use
 the database helper's private `REDIS_URL`. Backend references also include
 `DATABASE_URL`, signing secrets, CORS, Google and Stripe TEST settings.

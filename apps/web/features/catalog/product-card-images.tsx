@@ -46,7 +46,7 @@ export function ProductCardImages({
       <Link
         href={href}
         aria-label={`Ver ${title}`}
-        className="absolute inset-0 outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40"
+        className="absolute inset-0 outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring"
       >
         {image ? (
           <div

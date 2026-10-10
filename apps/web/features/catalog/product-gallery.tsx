@@ -113,7 +113,7 @@ function ProductImageGallery({
                 }}
                 onClick={() => setActiveIndex(index)}
                 className={cn(
-                  "relative size-14 shrink-0 border bg-background outline-none transition-colors hover:border-foreground focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40",
+                  "relative size-14 shrink-0 border bg-background outline-none transition-colors hover:border-foreground focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring",
                   selectedIndex === index
                     ? "border-primary ring-1 ring-inset ring-primary"
                     : "border-border",

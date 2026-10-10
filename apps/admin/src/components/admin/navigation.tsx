@@ -97,7 +97,7 @@ function NavigationLink({ item }: { item: NavigationItem }) {
         onNavigate={() => setOpenMobile(false)}
       >
         <Icon
-          className={cn(item.current && "text-sidebar-primary")}
+          className={cn(item.current && "text-sidebar-primary-text")}
           strokeWidth={1.8}
           aria-hidden="true"
         />

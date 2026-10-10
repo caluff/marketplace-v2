@@ -6,7 +6,9 @@ import {
 } from "@/features/product-review/components/review-browser";
 
 export const metadata: Metadata = {
-  title: "Revisión del catálogo | usapeek",
+  title: "Revisión del catálogo",
+  description:
+    "Consulta los productos del marketplace y revisa las publicaciones y los cambios pendientes en USAPEEK Admin.",
 };
 
 export default function ProductReviewPage({

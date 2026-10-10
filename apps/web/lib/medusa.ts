@@ -15,6 +15,7 @@ import {
   withTimeout,
 } from "@/lib/catalog-state"
 import { validateStorefrontEnvironment } from "@/lib/storefront-config"
+import { collectSitemapProducts } from "@/features/seo/sitemap"
 
 const STORE_API_TIMEOUT_MS = 8_000
 
@@ -23,6 +24,17 @@ const storefrontConfiguration = validateStorefrontEnvironment({
   NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:
     process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
 })
+
+export async function getStorefrontSitemapProducts() {
+  if (storefrontConfiguration.status !== "valid") {
+    throw new Error("Storefront configuration is required to generate the sitemap")
+  }
+  const config = storefrontConfiguration.config
+  return withTimeout((signal) => {
+    const sdk = createCatalogSdk(config, signal)
+    return collectSitemapProducts((query) => sdk.store.product.list(query))
+  }, STORE_API_TIMEOUT_MS)
+}
 
 export type StorefrontCatalogResult =
   | {

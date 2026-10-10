@@ -253,7 +253,7 @@ async function CatalogContent(props: CatalogSectionProps) {
           <CardHeader className="items-center px-6 py-12 sm:px-12 sm:py-16">
             <PackageOpen
               aria-hidden="true"
-              className="size-12 text-brand-accent"
+              className="size-12 text-brand-accent-text"
               strokeWidth={1.25}
             />
             <CardTitle className="mt-3 text-3xl">
@@ -306,7 +306,7 @@ async function CatalogContent(props: CatalogSectionProps) {
                 <>
                   <Icon
                     aria-hidden="true"
-                    className="size-11 text-brand-accent"
+                    className="size-11 text-brand-accent-text"
                     strokeWidth={1.25}
                   />
                   <CardTitle className="mt-3 text-3xl">

@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { VendorAuthShell } from "@/components/vendor/vendor-auth-shell";
 import { getVendorContext } from "@/lib/auth-sdk";
 
-export const metadata: Metadata = { title: "Estado de la tienda" };
+export const metadata: Metadata = {
+  title: "Estado de la tienda",
+  description: "Revisa el estado de acceso de tu tienda y las opciones disponibles en USAPEEK.",
+};
 const descriptions: Record<string, { title: string; description: string }> = {
   pending_approval: {
     title: "Tienda pendiente de aprobación",

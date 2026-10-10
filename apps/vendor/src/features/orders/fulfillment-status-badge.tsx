@@ -17,7 +17,7 @@ const PRESENTATIONS = {
   shipped: {
     label: "Enviada",
     icon: Truck,
-    className: "border-brand-accent/25 bg-brand-accent/10 text-brand-accent",
+    className: "border-brand-accent/25 bg-brand-accent/10 text-brand-accent-text",
     description: "El envío se registró; la entrega aún no está confirmada.",
   },
   delivered: {

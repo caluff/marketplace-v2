@@ -13,7 +13,7 @@ export async function StoreSetup() {
     return (
       <div className="border-t border-sidebar-border px-4 py-4">
         <p className="text-xs font-semibold">Preparación de la tienda</p>
-        <p role="alert" className="mt-2 text-xs text-muted-foreground">
+        <p role="alert" className="mt-2 text-xs text-sidebar-muted">
           {setup.error}
         </p>
       </div>

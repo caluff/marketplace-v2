@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { VendorAuthShell } from "@/components/vendor/vendor-auth-shell";
 import { sellerApplicationUrl } from "@/lib/storefront-url";
 
-export const metadata: Metadata = { title: "Sin tienda disponible" };
+export const metadata: Metadata = {
+  title: "Sin tienda disponible",
+  description: "Consulta las opciones de acceso cuando tu cuenta no tiene una tienda activa en USAPEEK.",
+};
 export default function NoVendorAccessPage() {
   const applicationUrl = sellerApplicationUrl();
   return (

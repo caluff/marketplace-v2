@@ -112,6 +112,28 @@ Los resultados históricos están fechados en informes y auditoría. No constitu
 
 El cierre de limpieza del 2026-10-03 retiró 185 archivos de tests unitarios y conservó 15 suites de integración, con 113 comprobaciones PASS; lint, tipos, builds y dependencias pares también PASS. Todos los cambios se publicaron en `develop`, commit `e3a28e3`. Son resultados de esa revisión, no garantías permanentes del árbol actual; consultar la [evidencia de limpieza](docs/develpment/evidence/repository-cleanup-20261003.md).
 
+## Sitemap y robots
+
+La tienda publica `/sitemap.xml` con la portada y todos los productos de la Store
+API, leídos por páginas con el SDK existente. Usa el mismo `NEXT_PUBLIC_SITE_URL`
+que los metadatos sociales. `lastmod` proviene de `updated_at` válido; no se
+inventan fechas para la portada. Las búsquedas, legales en revisión, accesos,
+cuenta, carrito, checkout y seguimiento quedan fuera del sitemap.
+
+El sitemap se genera al solicitarlo, sin consultar el backend durante el build
+ni mantener una copia persistente del catálogo. Si falla la API o una página
+queda incompleta, responde con error para que el rastreador reintente; no publica
+un sitemap parcial como si el catálogo estuviera vacío. Un archivo admite hasta
+49.999 productos más la portada; antes de superar el límite de 50.000 URLs del
+protocolo se deben dividir los sitemaps, sin truncar silenciosamente el catálogo.
+
+`/robots.txt` de la tienda permite el rastreo excepto `/api/` y anuncia el sitemap.
+Las páginas públicas con `noindex` permanecen rastreables para que el buscador
+lea esa etiqueta. Admin y vendedores publican `Disallow: /`, además de su
+`noindex` existente. Estas directivas no sustituyen la autenticación.
+
+Pruebas: `pnpm --filter @usapeek/web run test:seo`.
+
 ## Definiciones de infraestructura existentes
 
 [.railway/README.md](.railway/README.md) documenta los cinco servicios, comandos y variables. El worker reutiliza el backend; `pnpm build` compila cada aplicación una vez. Los artefactos backend se preparan con `build:api:deploy` / `build:worker:deploy` y tienen comandos `start:*` independientes.

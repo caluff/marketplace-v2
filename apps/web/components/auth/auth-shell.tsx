@@ -1,4 +1,4 @@
-import { Store } from "lucide-react"
+import { LogoWordmark } from "@/components/brand/logo"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
@@ -25,27 +25,23 @@ export function AuthShell({
 }) {
   return (
     <main className="relative grid flex-1 bg-background font-sans lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
-      <section className="relative hidden overflow-hidden bg-(--auth-sidebar) p-12 text-(--auth-sidebar-foreground) [--auth-sidebar:oklch(0.205_0_0)] [--auth-sidebar-foreground:oklch(0.985_0_0)] lg:flex lg:flex-col lg:justify-between">
+      <section className="relative hidden overflow-hidden bg-(--auth-sidebar) p-12 text-(--auth-sidebar-foreground) [--auth-sidebar:oklch(0.205_0_0)] [--auth-sidebar-foreground:oklch(0.985_0_0)] lg:flex lg:flex-col">
         <div className="absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_20%_20%,color-mix(in_oklab,var(--brand-accent)_28%,transparent),transparent_28rem)]" aria-hidden="true" />
-        <Link href="/" className="relative flex min-h-11 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-brand-accent">
-          <span className="grid size-10 place-items-center rounded-xl bg-brand-accent text-brand-accent-foreground">
-            <Store className="size-5" aria-hidden="true" />
-          </span>
-          <span>
-            <span className="block text-xl">usapeek</span>
-            <span className="block text-xs font-semibold tracking-[0.18em] uppercase text-(--auth-sidebar-foreground)/65">Cuenta de cliente</span>
-          </span>
+        <Link href="/" aria-label="USAPEEK, inicio" className="relative flex min-h-11 w-fit items-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
+          <LogoWordmark width={220} tone="dark" aria-hidden="true" className="h-auto" />
         </Link>
-        <div className="relative max-w-xl">
+        <div className="relative my-auto max-w-xl">
           <p className="mb-5 text-xs font-bold tracking-[0.2em] uppercase text-(--auth-sidebar-foreground)/75">Tu espacio personal</p>
           <p className="text-5xl leading-[1.08] tracking-tight">Tu selección, guardada con criterio.</p>
           <p className="mt-5 max-w-lg text-base leading-7 text-(--auth-sidebar-foreground)/65">Accede a tu perfil sin interrumpir la exploración del catálogo. Comprar como invitado sigue estando disponible.</p>
         </div>
-        <p className="relative text-xs text-(--auth-sidebar-foreground)/65">Tu cuenta, en un solo lugar.</p>
       </section>
       <section className="flex min-w-0 items-center justify-center px-5 pt-20 pb-10 sm:px-10 lg:py-20">
         {variant === "compact" ? (
           <div className="w-full max-w-sm space-y-8">
+            <Link href="/" aria-label="USAPEEK, inicio" className="mx-auto flex min-h-11 w-fit items-center gap-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
+              <LogoWordmark width={140} aria-hidden="true" className="h-auto" />
+            </Link>
             <div className="space-y-2 text-center">
               <p className="sr-only">{eyebrow}</p>
               <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
@@ -56,11 +52,8 @@ export function AuthShell({
         ) : (
         <Card className="w-full max-w-md gap-0 rounded-xl border-border/80 shadow-sm">
           <CardHeader className="gap-1.5 pt-5 pb-4">
-            <Link href="/" className="mb-2 flex min-h-11 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground">
-                <Store className="size-5" aria-hidden="true" />
-              </span>
-              <span className="text-xl">usapeek</span>
+            <Link href="/" aria-label="USAPEEK, inicio" className="mb-2 flex min-h-11 w-fit items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
+              <LogoWordmark width={140} aria-hidden="true" className="h-auto" />
             </Link>
             <p className="sr-only">{eyebrow}</p>
             <CardTitle className="pt-2 text-3xl leading-normal font-normal tracking-tight">

@@ -7,12 +7,11 @@ import {
   SearchResultsSkeleton,
 } from "@/features/search/components/search-results";
 import type { SearchUrlParameters } from "@/features/search/parameters";
-import { getStorefrontCategories } from "@/lib/medusa";
 
 export const metadata: Metadata = {
-  title: "Buscar productos | usapeek",
+  title: "Buscar productos",
   description:
-    "Busca productos y filtra por categoría, tienda y precio en usapeek.",
+    "Busca productos en USAPEEK y filtra el catálogo por categoría, tienda y precio para encontrar lo que necesitas.",
   robots: { index: false, follow: true },
 };
 
@@ -29,7 +28,7 @@ export default function SearchPage({
           <SearchResults searchParams={searchParams} />
         </Suspense>
       </main>
-      <SiteFooter categories={getStorefrontCategories()} />
+      <SiteFooter />
     </>
   );
 }

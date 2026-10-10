@@ -9,7 +9,9 @@ import {
 import { returnQueueInput } from "@/features/orders/return-queue";
 
 export const metadata: Metadata = {
-  title: "Devoluciones pendientes | usapeek Admin",
+  title: "Devoluciones pendientes",
+  description:
+    "Revisa las solicitudes de devolución pendientes y gestiona su resolución en USAPEEK Admin.",
 };
 
 export default async function ReturnsPage({

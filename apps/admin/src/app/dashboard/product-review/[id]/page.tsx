@@ -10,7 +10,9 @@ import { retrieveProductForReview } from "@/features/product-review/data";
 import { isProductReviewId } from "@/features/product-review/helpers";
 
 export const metadata: Metadata = {
-  title: "Revisar producto | usapeek",
+  title: "Revisar producto",
+  description:
+    "Revisa la información de un producto y resuelve sus cambios pendientes en USAPEEK Admin.",
 };
 
 async function ProductContent({ params }: { params: Promise<{ id: string }> }) {

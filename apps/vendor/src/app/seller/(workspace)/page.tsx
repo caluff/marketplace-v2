@@ -1,5 +1,6 @@
 import type { HttpTypes } from "@mercurjs/types";
 import type { VendorFinanceReportingResponse } from "@usapeek/api/finance-contracts";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,12 @@ import {
   resultOf,
   workspace,
 } from "@/features/workspace/data";
+
+export const metadata: Metadata = {
+  title: "Panel de vendedor",
+  description:
+    "Consulta el resumen financiero, los pedidos recientes y la actividad de tu tienda en USAPEEK.",
+};
 
 export default async function DashboardPage({
   searchParams,

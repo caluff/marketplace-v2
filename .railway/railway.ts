@@ -165,6 +165,7 @@ export default defineRailway((ctx) => {
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
         ctx.shared.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
       NEXT_PUBLIC_VENDOR_URL: "https://usapeek-vendor.up.railway.app",
+      NEXT_PUBLIC_SITE_URL: "https://usapeek-web.up.railway.app",
       SERVER_ACTIONS_ALLOWED_ORIGINS: "usapeek-web.up.railway.app",
       NEXT_PUBLIC_PRODUCT_IMAGE_URL: preserve(),
       NEXT_PUBLIC_GOOGLE_CALLBACK_URL:
@@ -210,6 +211,7 @@ export default defineRailway((ctx) => {
       NEXT_PUBLIC_MEDUSA_BACKEND_URL: "https://usapeek-api.up.railway.app",
       NEXT_PUBLIC_GOOGLE_CALLBACK_URL:
         "https://usapeek-admin.up.railway.app/auth/google/callback",
+      NEXT_PUBLIC_SITE_URL: "https://usapeek-admin.up.railway.app",
       SERVER_ACTIONS_ALLOWED_ORIGINS: "usapeek-admin.up.railway.app",
     },
   });
@@ -251,6 +253,7 @@ export default defineRailway((ctx) => {
       NODE_ENV: "production",
       NEXT_PUBLIC_MEDUSA_BACKEND_URL: "https://usapeek-api.up.railway.app",
       NEXT_PUBLIC_STOREFRONT_URL: "https://usapeek-web.up.railway.app",
+      NEXT_PUBLIC_SITE_URL: "https://usapeek-vendor.up.railway.app",
       NEXT_PUBLIC_GOOGLE_CALLBACK_URL:
         "https://usapeek-vendor.up.railway.app/auth/google/callback",
       SERVER_ACTIONS_ALLOWED_ORIGINS: "usapeek-vendor.up.railway.app",

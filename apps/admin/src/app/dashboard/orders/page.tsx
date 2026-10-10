@@ -9,7 +9,11 @@ import {
 } from "@/features/orders/components";
 import { parseOrderFilters } from "@/features/orders/helpers";
 
-export const metadata: Metadata = { title: "Pedidos | usapeek Admin" };
+export const metadata: Metadata = {
+  title: "Pedidos",
+  description:
+    "Consulta y filtra los pedidos del marketplace para gestionar su seguimiento en USAPEEK Admin.",
+};
 export default async function OrdersPage({
   searchParams,
 }: {

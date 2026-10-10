@@ -7,7 +7,10 @@ import {
 } from "@/features/catalog/catalog-list";
 import { catalogListInput } from "@/features/catalog/parameters";
 
-export const metadata: Metadata = { title: "Catálogo" };
+export const metadata: Metadata = {
+  title: "Catálogo",
+  description: "Consulta y gestiona los productos disponibles en el catálogo de tu tienda en USAPEEK.",
+};
 
 export default async function CatalogPage({
   searchParams,

@@ -33,7 +33,7 @@ export function StoreSetupTimeline({ checks }: { checks: SetupCheck[] }) {
         <h2 className="text-xs font-semibold leading-5">
           Preparación de la tienda
         </h2>
-        <span className="shrink-0 text-xs leading-5 tabular-nums text-muted-foreground">
+        <span className="shrink-0 text-xs leading-5 tabular-nums text-sidebar-muted">
           {completedCount} de {checks.length}
         </span>
       </div>
@@ -63,7 +63,7 @@ export function StoreSetupTimeline({ checks }: { checks: SetupCheck[] }) {
                       ? "border-sidebar-primary bg-sidebar-primary text-sidebar-primary-foreground"
                       : isBlocked
                         ? "border-warning bg-sidebar text-warning"
-                        : "border-sidebar-border bg-sidebar text-muted-foreground"
+                        : "border-sidebar-border bg-sidebar text-sidebar-muted"
                   }`}
                 >
                   {isComplete ? (
@@ -78,7 +78,7 @@ export function StoreSetupTimeline({ checks }: { checks: SetupCheck[] }) {
                   <span className="block text-xs font-medium leading-5">
                     {step.label}
                   </span>
-                  <span className="block text-xs leading-4 text-muted-foreground">
+                  <span className="block text-xs leading-4 text-sidebar-muted">
                     {isBlocked
                       ? "Requiere configuración del operador"
                       : isComplete
@@ -86,7 +86,7 @@ export function StoreSetupTimeline({ checks }: { checks: SetupCheck[] }) {
                         : "Pendiente"}
                   </span>
                   {check.reason ? (
-                    <span className="mt-1 block text-xs leading-4 text-muted-foreground">
+                    <span className="mt-1 block text-xs leading-4 text-sidebar-muted">
                       {check.reason === "inventory_not_configured"
                         ? "Vincula artículos y existencias a una ubicación de tu tienda."
                         : check.reason}

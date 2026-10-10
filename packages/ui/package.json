@@ -21,6 +21,7 @@
     "./format-phone-number": "./src/format-phone-number.ts",
     "./input": "./src/input.tsx",
     "./label": "./src/label.tsx",
+    "./logo": "./src/logo.tsx",
     "./native-select": "./src/native-select.tsx",
     "./pagination": "./src/pagination.tsx",
     "./pagination-utils": "./src/pagination-utils.ts",

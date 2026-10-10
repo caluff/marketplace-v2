@@ -7,6 +7,8 @@ import { googleCallbackUrl, googleNextPath } from "@/lib/google-auth"
 
 export const metadata: Metadata = {
   title: "Vincular Google",
+  description:
+    "Confirma el acceso a tu cuenta de USAPEEK para vincularla con Google y utilizar ese método de inicio de sesión.",
   robots: { index: false, follow: false },
 }
 

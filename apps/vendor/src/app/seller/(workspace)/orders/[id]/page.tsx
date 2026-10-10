@@ -36,7 +36,10 @@ import {
   OrderReturnsSkeleton,
 } from "@/features/orders/return-region";
 
-export const metadata: Metadata = { title: "Detalle de pedido" };
+export const metadata: Metadata = {
+  title: "Detalle de pedido",
+  description: "Revisa los artículos, la entrega y las acciones de gestión de un pedido de tu tienda.",
+};
 export default async function OrderPage({
   params,
 }: {

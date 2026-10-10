@@ -20,8 +20,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "usapeek Admin",
-  description: "Panel visual de operaciones para usapeek.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.RAILWAY_PUBLIC_DOMAIN
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        : "http://localhost:7000"),
+  ),
+  title: {
+    default: "USAPEEK Admin",
+    template: "%s | USAPEEK Admin",
+  },
+  applicationName: "USAPEEK Admin",
+  description:
+    "Panel de operaciones de USAPEEK para gestionar el catálogo, las tiendas, los pedidos y la configuración del marketplace.",
+  robots: { index: false, follow: false },
+  openGraph: { type: "website", siteName: "USAPEEK Admin" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

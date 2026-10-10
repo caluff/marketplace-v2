@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import type { HttpTypes } from "@medusajs/types"
 import { Check } from "lucide-react"
 import Link from "next/link"
@@ -16,6 +17,12 @@ import { getReceiptOrders } from "@/features/cart/data"
 import { OrderReceiptTotals } from "@/features/cart/components/order-receipt-totals"
 import { formatMoney } from "@/features/cart/presentation"
 import { OrderFollowUp } from "@/features/checkout/components/order-follow-up"
+
+export const metadata: Metadata = {
+  title: "Confirmación del pedido",
+  description:
+    "Consulta la confirmación de tu compra en USAPEEK, revisa el resumen de tus pedidos y accede a su seguimiento.",
+}
 
 export default function ConfirmationPage() {
   return (

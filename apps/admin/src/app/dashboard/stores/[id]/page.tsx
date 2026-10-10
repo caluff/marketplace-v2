@@ -7,7 +7,9 @@ import { StoreDetailRegion } from "@/features/stores/components";
 import { StoreDetailSkeleton } from "@/features/stores/store-detail";
 
 export const metadata: Metadata = {
-  title: "Detalle de tienda | usapeek Admin",
+  title: "Detalle de tienda",
+  description:
+    "Revisa la información y el estado de una tienda del marketplace en USAPEEK Admin.",
 };
 
 async function StoreContent({ params }: { params: Promise<{ id: string }> }) {

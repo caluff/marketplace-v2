@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Boxes } from "lucide-react";
+import { LogoMark, LogoWordmark } from "@/components/brand/logo";
 
 import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 
@@ -16,13 +16,11 @@ export function Brand() {
         aria-label="usapeek"
         onNavigate={() => setOpenMobile(false)}
       >
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Boxes className="size-[18px]" aria-hidden="true" />
+        <span className="hidden size-8 shrink-0 place-items-center group-data-[collapsible=icon]:grid">
+          <LogoMark width={28} tone="dark" aria-hidden="true" />
         </span>
-        <span className="min-w-0 group-data-[collapsible=icon]:sr-only">
-          <span className="block truncate text-sm font-semibold tracking-[-0.02em]">
-            usapeek
-          </span>
+        <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+          <LogoWordmark width={116} tone="dark" aria-hidden="true" className="h-auto" />
         </span>
       </Link>
     </SidebarMenuButton>

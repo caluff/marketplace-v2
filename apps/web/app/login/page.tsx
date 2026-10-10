@@ -12,7 +12,12 @@ import {
   googleNextPath,
 } from "@/lib/google-auth"
 
-export const metadata: Metadata = { title: "Iniciar sesión | usapeek" }
+export const metadata: Metadata = {
+  title: "Iniciar sesión",
+  description:
+    "Accede a tu cuenta de USAPEEK para consultar tus pedidos, guardar favoritos y gestionar tus datos y direcciones.",
+  robots: { index: false, follow: false },
+}
 
 export default async function LoginPage({
   searchParams,

@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GoogleLoginForm } from "@/components/vendor/google-login-form";
 import { VendorAuthShell } from "@/components/vendor/vendor-auth-shell";
 import { getVendorToken, listVendorMemberships } from "@/lib/auth-sdk";
 import { safeRedirectPath } from "@/lib/auth-utils";
+
+export const metadata: Metadata = {
+  title: "Vincular Google",
+  description:
+    "Conecta tu cuenta de Google con tu cuenta de vendedor de USAPEEK.",
+};
 
 export default async function LinkGooglePage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const next = safeRedirectPath((await searchParams).next, "/seller");

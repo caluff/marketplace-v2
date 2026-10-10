@@ -26,11 +26,20 @@ import {
   validateCredentials,
 } from "@/lib/auth-utils"
 import { completeCustomerMfa } from "@/lib/customer-mfa"
+import {
+  AUTH_RATE_LIMIT_MESSAGE,
+  REGISTRATION_ERROR,
+  authHoneypotResponse,
+  authRateLimitResponse,
+  passwordRecoveryResponse,
+} from "@/lib/auth-form-protection"
 
 const INVALID_CREDENTIALS =
   "No pudimos iniciar sesión con esos datos. Revisa el correo y la contraseña."
-const REGISTRATION_ERROR =
-  "No pudimos completar el registro. Revisa los datos o recupera tu contraseña."
+
+function rateLimitError(error: unknown) {
+  return authRateLimitResponse(error instanceof FetchError ? error.status : undefined)
+}
 
 function customerLoginError(
   error: unknown,
@@ -51,7 +60,7 @@ function customerLoginError(
   return {
     status: "error",
     message: status === 429
-      ? "Demasiados intentos de acceso. Espera unos minutos y vuelve a intentarlo."
+      ? AUTH_RATE_LIMIT_MESSAGE
       : "No pudimos conectar con el servicio de acceso o cargar tu perfil. Inténtalo de nuevo en unos minutos.",
   }
 }
@@ -209,6 +218,9 @@ export async function registerCustomerAction(
   _previous: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  const blocked = authHoneypotResponse(formData, "register")
+  if (blocked) return blocked
+
   const firstName = String(formData.get("firstName") ?? "").trim()
   const lastName = String(formData.get("lastName") ?? "").trim()
   const email = normalizeEmail(formData.get("email"))
@@ -237,6 +249,8 @@ export async function registerCustomerAction(
       password,
     })
   } catch (error) {
+    const rateLimited = rateLimitError(error)
+    if (rateLimited) return rateLimited
     const identityMayExist =
       error instanceof FetchError &&
       (error.status === 400 || error.status === 401 || error.status === 409)
@@ -262,14 +276,15 @@ export async function registerCustomerAction(
       try {
         await existingSdk.store.customer.retrieve()
         hasCustomerProfile = true
-      } catch {
+      } catch (error) {
+        if (rateLimitError(error)) throw error
         registrationToken = existing
       }
       if (hasCustomerProfile) {
         existingCustomerToken = existing
       }
-    } catch {
-      return {
+    } catch (error) {
+      return rateLimitError(error) ?? {
         status: "error",
         message: REGISTRATION_ERROR,
       }
@@ -303,8 +318,8 @@ export async function registerCustomerAction(
       password,
     })
     return completeCustomerLogin(loginResult, email, "/account")
-  } catch {
-    return {
+  } catch (error) {
+    return rateLimitError(error) ?? {
       status: "error",
       message: REGISTRATION_ERROR,
     }
@@ -315,6 +330,9 @@ export async function forgotCustomerPasswordAction(
   _previous: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  const blocked = authHoneypotResponse(formData, "forgot-password")
+  if (blocked) return blocked
+
   const email = normalizeEmail(formData.get("email"))
   if (!/^([^\s@]+)@([^\s@]+)\.([^\s@]+)$/.test(email) || email.length > 254) {
     return {
@@ -336,11 +354,7 @@ export async function forgotCustomerPasswordAction(
     // The response remains identical whether the account exists or delivery fails.
   }
 
-  return {
-    status: "success",
-    message:
-      "Si existe una cuenta con ese correo, recibirás instrucciones para restablecer la contraseña.",
-  }
+  return passwordRecoveryResponse()
 }
 
 export async function resetCustomerPasswordAction(
@@ -383,8 +397,8 @@ export async function resetCustomerPasswordAction(
       status: "success",
       message: "Contraseña actualizada. Ya puedes iniciar sesión.",
     }
-  } catch {
-    return {
+  } catch (error) {
+    return rateLimitError(error) ?? {
       status: "error",
       message: "El enlace no es válido o ya venció. Solicita uno nuevo.",
     }
@@ -416,8 +430,8 @@ export async function confirmCustomerEmailAction(
       status: "success",
       message: "Correo verificado. Inicia sesión para continuar.",
     }
-  } catch {
-    return {
+  } catch (error) {
+    return rateLimitError(error) ?? {
       status: "error",
       message: "El código no es válido o ya venció.",
     }
@@ -438,8 +452,8 @@ export async function resendCustomerVerificationAction(): Promise<AuthActionStat
       metadata: { actor_type: "customer" },
     })
     return { status: "success", message: "Enviamos un nuevo código de verificación." }
-  } catch {
-    return { status: "error", message: "No pudimos enviar otro código ahora." }
+  } catch (error) {
+    return rateLimitError(error) ?? { status: "error", message: "No pudimos enviar otro código ahora." }
   }
 }
 

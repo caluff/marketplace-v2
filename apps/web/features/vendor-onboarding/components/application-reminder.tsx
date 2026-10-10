@@ -88,7 +88,7 @@ export function ApplicationReminder({
         asChild
         variant="ghost"
         className={cn(
-          isPending && "text-warning hover:bg-warning/10 hover:text-warning",
+          isPending && "text-warning-foreground hover:bg-warning/10 hover:text-warning-foreground",
         )}
       >
         <Link href={href}>
@@ -103,7 +103,7 @@ export function ApplicationReminder({
           type="button"
           variant="ghost"
           size="icon"
-          className="text-warning hover:bg-warning/10 hover:text-warning"
+          className="text-warning-foreground hover:bg-warning/10 hover:text-warning-foreground"
           aria-label="Ocultar aviso de solicitud pendiente"
           onClick={dismiss}
         >

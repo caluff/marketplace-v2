@@ -28,7 +28,11 @@ import {
   getShippingStatusLabel,
 } from "@/features/account/order-format"
 
-export const metadata: Metadata = { title: "Mis órdenes | usapeek" }
+export const metadata: Metadata = {
+  title: "Mis pedidos",
+  description:
+    "Consulta el historial de tus pedidos en USAPEEK y accede a su estado, detalle y seguimiento desde tu cuenta.",
+}
 type Props = { searchParams: Promise<{ page?: string | string[] }> }
 
 async function OrderList({ searchParams }: Props) {

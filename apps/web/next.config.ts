@@ -62,6 +62,19 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@usapeek/ui", "@usapeek/order-reference"],
   async headers() {
     return [
+      ...(process.env.NODE_ENV === "production"
+        ? [
+            {
+              source: "/:path*",
+              has: [
+                { type: "header" as const, key: "x-forwarded-proto", value: "https" },
+              ],
+              headers: [
+                { key: "Strict-Transport-Security", value: "max-age=31536000" },
+              ],
+            },
+          ]
+        : []),
       {
         source: "/orders/track",
         headers: [

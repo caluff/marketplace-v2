@@ -6,7 +6,11 @@ import { AccountProfile } from "@/features/account/profile";
 import { AccountAppearance } from "@/features/account/appearance";
 import type { ProfileSearchParams } from "@/features/account/profile-completion";
 
-export const metadata: Metadata = { title: "Configuración" };
+export const metadata: Metadata = {
+  title: "Configuración",
+  description:
+    "Gestiona tu perfil de operador, la verificación del correo y las preferencias de apariencia en USAPEEK Admin.",
+};
 
 export default function AccountSettingsPage({
   searchParams,

@@ -1,4 +1,4 @@
-import { Boxes } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -18,7 +18,7 @@ import { getAdminMfa } from "@/lib/auth-sdk";
 import { safeRedirectPath } from "@/lib/auth-utils";
 
 export const metadata: Metadata = {
-  title: "Acceso | usapeek Admin",
+  title: "Acceso",
   description: "Acceso seguro para operadores del marketplace.",
 };
 
@@ -42,12 +42,7 @@ export default async function LoginPage({
       />
       <div className="relative w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="mb-4 grid size-11 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg">
-            <Boxes className="size-5" aria-hidden="true" />
-          </span>
-          <p className="text-base font-semibold tracking-[-0.02em]">
-            usapeek Admin
-          </p>
+          <Logo width={220} tone="dark" className="mb-4 h-auto" />
           <p className="mt-1 text-xs text-sidebar-muted">
             Espacio de operaciones
           </p>

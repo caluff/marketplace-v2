@@ -24,7 +24,7 @@ export function LegalDocument({
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
       <Link
         href="/"
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-brand-accent/60"
+        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
       >
         <ArrowLeft className="size-4" strokeWidth={1.5} aria-hidden="true" />
         Volver a la tienda
@@ -54,7 +54,7 @@ export function LegalDocument({
             <li key={section.id}>
               <a
                 href={`#${section.id}`}
-                className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-brand-accent/60"
+                className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring"
               >
                 {section.title}
               </a>
@@ -86,7 +86,7 @@ export function LegalDocument({
 
       <Link
         href={relatedDocument.href}
-        className="mt-10 inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-brand-accent/60 sm:mt-12"
+        className="mt-10 inline-flex min-h-11 items-center text-sm font-semibold text-brand-accent-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring sm:mt-12"
       >
         {relatedDocument.label}
       </Link>

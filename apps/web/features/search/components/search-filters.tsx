@@ -492,7 +492,7 @@ function ActiveSearchFilters({
         <button
           type="button"
           onClick={() => onChange(clearSearchFilters(parameters))}
-          className="min-h-11 text-xs text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring lg:min-h-8"
+          className="min-h-11 text-xs text-brand-accent-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring lg:min-h-8"
         >
           Quitar todos
         </button>

@@ -7,6 +7,10 @@
   --app-header-height: 3rem;
   --noise-opacity: 0.024;
   --brand-accent: #7c3aed;
+  /* Text needs a lighter violet on dark surfaces; logo and fills keep the brand color. */
+  --brand-accent-text: #7c3aed;
+  --brand-navy: #0b2135;
+  --brand-logo-ink: var(--brand-navy);
   --brand-accent-foreground: oklch(0.985 0 0);
   --cover-accent-purple: oklch(0.55 0.26 292);
   --cover-accent-cyan: oklch(0.68 0.18 195);
@@ -26,7 +30,7 @@
   --muted-foreground: oklch(0.45 0 0);
   --accent: oklch(0.95 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.52 0.21 27.325);
   --destructive-foreground: oklch(0.985 0 0);
   --success: oklch(0.45 0.13 155);
   --success-foreground: oklch(0.36 0.12 155);
@@ -36,7 +40,7 @@
   --demo: oklch(0.65 0.16 260);
   --demo-foreground: oklch(0.24 0.08 265);
   --border: oklch(0.89 0 0);
-  --input: oklch(0.89 0 0);
+  --input: oklch(0.62 0 0);
   --ring: oklch(0.62 0 0);
   --radius: 0rem;
 
@@ -86,8 +90,9 @@
   --sidebar-accent-foreground: var(--sidebar-foreground);
   --sidebar-border: oklch(1 0 0 / 14%);
   --sidebar-primary: var(--brand-accent);
+  --sidebar-primary-text: #b794f4;
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-ring: var(--brand-accent);
+  --sidebar-ring: var(--sidebar-primary-text);
 
   --motion-fast: 120ms;
   --motion-medium: 180ms;
@@ -103,6 +108,8 @@
 
 .dark {
   color-scheme: dark;
+  --brand-accent-text: #b794f4;
+  --brand-logo-ink: #ffffff;
   --noise-opacity: 0.06;
   --cover-accent-purple: oklch(0.68 0.22 292);
   --cover-accent-cyan: oklch(0.8 0.18 195);
@@ -122,15 +129,15 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
+  --destructive-foreground: oklch(0.145 0 0);
   --success: oklch(0.8 0.16 155);
   --success-foreground: oklch(0.8 0.16 155);
   --warning: oklch(0.83 0.15 80);
   --warning-foreground: oklch(0.83 0.15 80);
   --info: oklch(0.78 0.12 255);
-  --demo-foreground: var(--project-blue);
+  --demo-foreground: var(--info);
   --border: oklch(1 0 0 / 14%);
-  --input: oklch(1 0 0 / 18%);
+  --input: oklch(0.6 0 0);
   --ring: oklch(0.556 0 0);
   --about-highlight: oklch(0.58 0.1 92 / 55%);
   --about-underline: oklch(0.72 0.11 255);
@@ -153,6 +160,8 @@
   --font-heading: var(--font-public-sans), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-geist-mono), "SFMono-Regular", Consolas, monospace;
   --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-text: var(--brand-accent-text);
+  --color-brand-navy: var(--brand-navy);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -224,6 +233,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-text: var(--sidebar-primary-text);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --radius-xs: var(--radius);
@@ -341,7 +351,7 @@ body::after {
   --normal-bg: var(--popover);
   --normal-text: var(--popover-foreground);
   --normal-border: var(--border);
-  --toast-accent: var(--brand-accent);
+  --toast-accent: var(--brand-accent-text);
   gap: 12px;
   padding: 14px 16px;
   padding-inline-end: 52px;

@@ -20,7 +20,9 @@ import {
 } from "@/features/account/order-format"
 
 export const metadata: Metadata = {
-  title: "Detalle de la orden | usapeek",
+  title: "Detalle del pedido",
+  description:
+    "Consulta los productos, importes, estado y opciones disponibles para un pedido asociado a tu cuenta de USAPEEK.",
 }
 type Props = { params: Promise<{ id: string }> }
 

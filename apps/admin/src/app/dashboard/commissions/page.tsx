@@ -13,7 +13,11 @@ import {
   ReleaseSettingsSkeleton,
 } from "@/features/commissions/components/release-settings-panel";
 
-export const metadata: Metadata = { title: "Pagos | usapeek" };
+export const metadata: Metadata = {
+  title: "Pagos",
+  description:
+    "Configura la comisión global, los cobros y las liberaciones del marketplace en USAPEEK Admin.",
+};
 
 export default function CommissionsPage() {
   return (

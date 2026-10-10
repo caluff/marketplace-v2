@@ -7,7 +7,10 @@ import {
   StripeAccountSkeleton,
 } from "@/features/stripe-connect/account-card";
 
-export const metadata: Metadata = { title: "Cobros y Stripe Connect" };
+export const metadata: Metadata = {
+  title: "Configuración de cobros",
+  description: "Revisa la configuración de Stripe Connect de tu tienda en el entorno de pruebas de USAPEEK.",
+};
 
 async function ReturnNotice({
   searchParams,

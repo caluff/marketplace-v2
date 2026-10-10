@@ -5,16 +5,16 @@ import * as React from "react";
 import { cn } from "./utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold outline-none transition-[scale,background-color,color,border-color,box-shadow] duration-150 ease-[var(--ease-out)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:not-disabled:scale-[0.96] motion-reduce:transform-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold outline-none transition-[scale,background-color,color,border-color,box-shadow] duration-150 ease-[var(--ease-out)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:not-disabled:scale-[0.96] motion-reduce:transform-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
         accent:
-          "bg-brand-accent text-brand-accent-foreground shadow-xs hover:bg-brand-accent/88",
+          "bg-brand-accent text-brand-accent-foreground shadow-xs hover:bg-brand-accent/95",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/30",
+          "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive",
         outline:
           "border border-border bg-background text-foreground shadow-xs hover:border-foreground/60 hover:bg-accent hover:text-accent-foreground",
         secondary:

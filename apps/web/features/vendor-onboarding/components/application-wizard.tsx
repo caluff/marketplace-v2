@@ -248,7 +248,7 @@ export function ApplicationWizard({
           <FeedbackToast feedback={UNAVAILABLE_OPTIONS_FEEDBACK} />
           <p
             role="status"
-            className="border border-warning/30 bg-warning/10 p-4 text-sm leading-6 text-warning"
+            className="border border-warning/30 bg-warning/10 p-4 text-sm leading-6 text-warning-foreground"
           >
             Faltan países o monedas habilitadas para completar la solicitud.
             Puedes guardar tu borrador y continuar cuando estén disponibles.

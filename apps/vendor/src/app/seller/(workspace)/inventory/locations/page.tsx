@@ -8,7 +8,10 @@ import {
   InventorySkeleton,
 } from "@/features/inventory/warehouse-card";
 
-export const metadata: Metadata = { title: "Almacén" };
+export const metadata: Metadata = {
+  title: "Almacén",
+  description: "Consulta la información del almacén desde el que opera tu tienda en USAPEEK.",
+};
 export default async function LocationsPage() {
   const { client } = await workspace();
   const warehouse = resultOf(sellerWarehouse(client));

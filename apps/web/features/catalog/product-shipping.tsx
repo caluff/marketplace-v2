@@ -54,7 +54,7 @@ export function ProductShipping({
             <button
               type="button"
               disabled={!offerId}
-              className="inline-flex min-h-11 items-center gap-2 text-left font-semibold text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring disabled:text-muted-foreground disabled:no-underline"
+              className="inline-flex min-h-11 items-center gap-2 text-left font-semibold text-brand-accent-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring disabled:text-muted-foreground disabled:no-underline"
             >
               {offerId
                 ? "Ver tipos de envío"

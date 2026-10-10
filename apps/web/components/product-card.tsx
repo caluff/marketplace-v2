@@ -80,7 +80,7 @@ export function ProductCard({
           <h3 className="mt-2 line-clamp-2 text-xl leading-tight sm:text-2xl">
             <Link
               href={href}
-              className="outline-none hover:text-brand-accent focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="outline-none hover:text-brand-accent-text focus-visible:ring-3 focus-visible:ring-ring"
             >
               {product.title}
             </Link>

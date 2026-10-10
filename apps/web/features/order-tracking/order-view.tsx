@@ -72,7 +72,7 @@ export function TrackingOrderView({
       <section aria-labelledby="tracking-shipping-title" className="space-y-6">
         <div className="flex items-start gap-4 bg-muted/40 p-5 sm:p-6">
           <DeliveryIcon
-            className="mt-0.5 size-6 shrink-0 text-brand-accent"
+            className="mt-0.5 size-6 shrink-0 text-brand-accent-text"
             strokeWidth={1.75}
             aria-hidden="true"
           />
@@ -152,7 +152,7 @@ export function TrackingOrderView({
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 referrerPolicy="no-referrer"
-                                className="inline-flex min-h-11 max-w-full items-center gap-2 font-medium text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+                                className="inline-flex min-h-11 max-w-full items-center gap-2 font-medium text-brand-accent-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
                               >
                                 <span className="break-all">
                                   Rastrear envío
@@ -263,7 +263,7 @@ function ShippingProgress({ order }: { order: TrackingOrder }) {
               step.complete
                 ? "border-success/40 bg-success/15 text-success"
                 : index === currentStep
-                  ? "border-brand-accent bg-brand-accent/10 text-brand-accent ring-4 ring-brand-accent/10"
+                  ? "border-brand-accent bg-brand-accent/10 text-brand-accent-text ring-4 ring-brand-accent/10"
                   : "border-border text-muted-foreground"
             }`}
           >

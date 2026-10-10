@@ -6,7 +6,10 @@ import { AccountProfile } from "@/features/account/profile";
 import { AccountAppearance } from "@/features/account/appearance";
 import type { ProfileSearchParams } from "@/features/account/profile-completion";
 
-export const metadata: Metadata = { title: "Configuración" };
+export const metadata: Metadata = {
+  title: "Configuración de cuenta",
+  description: "Administra tu perfil de vendedor, la verificación de correo y tus preferencias de apariencia.",
+};
 
 export default function AccountSettingsPage({
   searchParams,

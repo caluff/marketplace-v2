@@ -6,6 +6,8 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteHeaderVisibility } from "@/components/site-header-visibility"
 import { Toaster } from "@/components/ui/sonner"
 import { CartSheet } from "@/features/cart/components/cart-sheet"
+import { CookieConsentProvider } from "@/features/cookie-consent/components/cookie-consent-provider"
+import { getSiteUrl } from "@/lib/site-url"
 import "./globals.css"
 
 const publicSans = Public_Sans({
@@ -21,8 +23,12 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "usapeek",
-  description: "Una selección independiente impulsada por Mercur y Medusa.",
+  metadataBase: getSiteUrl(),
+  title: { default: "USAPEEK", template: "%s | USAPEEK" },
+  applicationName: "USAPEEK",
+  description: "Explora productos y descubre tiendas en USAPEEK.",
+  openGraph: { type: "website", siteName: "USAPEEK" },
+  twitter: { card: "summary_large_image" },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -40,12 +46,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           disableTransitionOnChange
           storageKey="usapeek-theme"
         >
-          <SiteHeaderVisibility>
-            <SiteHeader />
-          </SiteHeaderVisibility>
-          {children}
-          <CartSheet />
-          <Toaster />
+          <CookieConsentProvider>
+            <SiteHeaderVisibility>
+              <SiteHeader />
+            </SiteHeaderVisibility>
+            {children}
+            <CartSheet />
+            <Toaster />
+          </CookieConsentProvider>
         </ThemeProvider>
       </body>
     </html>

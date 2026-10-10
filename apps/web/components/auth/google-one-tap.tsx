@@ -10,6 +10,7 @@ import {
   startCustomerOneTapAction,
 } from "@/app/google-one-tap-actions"
 import { installGoogleOneTapDevDiagnostics } from "@/lib/google-one-tap-diagnostics"
+import { useCookieConsent } from "@/features/cookie-consent/components/cookie-consent-provider"
 
 type OneTapConfiguration = NonNullable<
   Awaited<ReturnType<typeof startCustomerOneTapAction>>
@@ -128,5 +129,6 @@ function OneTapPrompt() {
 
 export function GoogleOneTap() {
   const pathname = usePathname()
-  return pathname === "/" ? <OneTapPrompt /> : null
+  const { canUseGoogleOneTap } = useCookieConsent()
+  return pathname === "/" && canUseGoogleOneTap ? <OneTapPrompt /> : null
 }

@@ -9,7 +9,10 @@ import { ProductForm } from "@/features/catalog/product-form";
 import { ProductCommercialConfiguration } from "@/features/catalog/product-commercial-configuration";
 import { ProductOrganizationFields } from "@/features/catalog/product-organization-fields";
 
-export const metadata: Metadata = { title: "Crear producto" };
+export const metadata: Metadata = {
+  title: "Crear producto",
+  description: "Añade un producto al catálogo de tu tienda y configura sus datos, categorías y condiciones de venta.",
+};
 
 export default async function NewProductPage() {
   await workspace();

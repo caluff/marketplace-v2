@@ -110,7 +110,7 @@ export function CartItem({
               <Link
                 href={productHref}
                 aria-label={`Ver ${title}`}
-                className="absolute inset-0 outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="absolute inset-0 outline-none focus-visible:ring-3 focus-visible:ring-ring"
               >
                 <Image
                   src={productImage.source}
@@ -152,7 +152,7 @@ export function CartItem({
                 {productHref ? (
                   <Link
                     href={productHref}
-                    className="outline-none hover:text-brand-accent focus-visible:ring-3 focus-visible:ring-ring/40"
+                    className="outline-none hover:text-brand-accent-text focus-visible:ring-3 focus-visible:ring-ring"
                   >
                     {title}
                   </Link>

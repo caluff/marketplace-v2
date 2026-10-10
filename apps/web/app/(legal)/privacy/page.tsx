@@ -3,7 +3,7 @@ import { LegalDocument } from "../_components/legal-document"
 import { PRIVACY_SECTIONS } from "../_content/privacy"
 
 export const metadata: Metadata = {
-  title: "Política de privacidad | usapeek",
+  title: "Política de privacidad",
   description: "Borrador en revisión de la política de privacidad de usapeek.",
 }
 

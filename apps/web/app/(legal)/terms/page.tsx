@@ -3,7 +3,7 @@ import { LegalDocument } from "../_components/legal-document"
 import { TERMS_SECTIONS } from "../_content/terms"
 
 export const metadata: Metadata = {
-  title: "Términos y condiciones | usapeek",
+  title: "Términos y condiciones",
   description: "Borrador en revisión de los términos y condiciones de usapeek.",
 }
 

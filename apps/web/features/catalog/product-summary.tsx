@@ -13,7 +13,7 @@ export function ProductSummary({
       {category ? (
         <Link
           href={catalogHref({ categoryId: category.id })}
-          className="inline-flex min-h-8 items-center border border-border bg-muted/40 px-2.5 font-sans text-xs font-semibold text-muted-foreground hover:text-brand-accent"
+          className="inline-flex min-h-8 items-center border border-border bg-muted/40 px-2.5 font-sans text-xs font-semibold text-muted-foreground hover:text-brand-accent-text"
         >
           {category.name}
         </Link>

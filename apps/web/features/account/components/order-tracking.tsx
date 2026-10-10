@@ -62,7 +62,7 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
                               href={href}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex min-h-11 items-center gap-2 font-semibold text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+                              className="inline-flex min-h-11 items-center gap-2 font-semibold text-brand-accent-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
                             >
                               Rastrear pedido
                               {order.fulfillments!.length > 1
@@ -108,7 +108,7 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
               </span>
             </span>
             <Dialog>
-              <DialogTrigger className="inline-flex min-h-11 items-center text-xs font-semibold text-brand-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">
+              <DialogTrigger className="inline-flex min-h-11 items-center text-xs font-semibold text-brand-accent-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">
                 Ver detalle
               </DialogTrigger>
               <DialogContent aria-describedby={undefined}>
@@ -141,7 +141,7 @@ export function OrderTracking({ order }: { order: AccountOrder }) {
                   />
                 ) : null}
                 <span
-                  className={`relative grid size-8 shrink-0 place-items-center rounded-full border sm:mx-auto sm:mb-3 ${step.complete ? "border-success bg-success text-white" : index === currentStep ? "border-foreground bg-card text-foreground ring-4 ring-muted" : "border-border bg-card text-muted-foreground"}`}
+                  className={`relative grid size-8 shrink-0 place-items-center rounded-full border sm:mx-auto sm:mb-3 ${step.complete ? "border-success/40 bg-success/15 text-success" : index === currentStep ? "border-foreground bg-card text-foreground ring-4 ring-muted" : "border-border bg-card text-muted-foreground"}`}
                 >
                   {step.complete ? (
                     <Check className="size-4" aria-hidden="true" />

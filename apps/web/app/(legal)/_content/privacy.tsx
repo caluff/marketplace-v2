@@ -101,9 +101,20 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
           pedidos.
         </p>
         <p>
-          La preferencia de tema se conserva en el navegador. Google One Tap
-          puede cargar el componente de Google en la página inicial; los
-          componentes de pago también contactan con su proveedor.
+          La preferencia de tema se conserva en el navegador. El acceso rápido
+          con Google One Tap solo carga el componente de Google en la página
+          inicial después de que lo permitas en las preferencias de cookies.
+          Puedes rechazarlo y seguir utilizando el inicio de sesión habitual.
+          Los componentes de pago también contactan con su proveedor al utilizar
+          el checkout.
+        </p>
+        <p>
+          El banner permite aceptar los servicios opcionales, utilizar solo las
+          cookies necesarias o configurar la elección. Esta preferencia se
+          guarda en el almacenamiento local del navegador durante 180 días;
+          puedes revisarla y cambiarla desde Preferencias de cookies, al final
+          de la página. Si el navegador bloquea el almacenamiento, la elección
+          se aplica únicamente durante la visita actual.
         </p>
         <p>
           La caducidad de una cookie no elimina el pedido ni la cuenta del

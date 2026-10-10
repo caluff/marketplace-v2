@@ -8,7 +8,10 @@ import {
 } from "@/features/orders/return-queue-components";
 import { returnQueueInput } from "@/features/orders/return-queue";
 
-export const metadata: Metadata = { title: "Devoluciones pendientes" };
+export const metadata: Metadata = {
+  title: "Devoluciones pendientes",
+  description: "Revisa y gestiona las solicitudes de devolución pendientes de los pedidos de tu tienda.",
+};
 
 export default async function ReturnsPage({
   searchParams,

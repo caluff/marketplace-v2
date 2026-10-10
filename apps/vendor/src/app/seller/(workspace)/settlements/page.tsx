@@ -8,7 +8,10 @@ import {
   type SettlementSearchParams,
 } from "@/features/settlements/parameters";
 
-export const metadata: Metadata = { title: "Cobros pendientes" };
+export const metadata: Metadata = {
+  title: "Cobros pendientes",
+  description: "Consulta las liquidaciones pendientes de cobro correspondientes a los pedidos de tu tienda.",
+};
 
 export default async function SettlementsPage({
   searchParams,

@@ -7,18 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TrackingAccountAccess } from "@/features/order-tracking/account-access"
 import { TrackingContent } from "@/features/order-tracking/tracking-content"
-import { getStorefrontCategories } from "@/lib/medusa"
 
 export const metadata: Metadata = {
-  title: "Seguimiento de tu pedido | usapeek",
+  title: "Seguimiento de tu pedido",
+  description:
+    "Consulta el estado y el seguimiento de tu pedido de USAPEEK mediante tu enlace privado de acceso.",
   robots: { index: false, follow: false, noarchive: true, nosnippet: true },
   referrer: "no-referrer",
 }
 export const dynamic = "force-dynamic"
 
 export default function OrderTrackingPage() {
-  const categories = getStorefrontCategories()
-
   return (
     <>
       <main className="mx-auto min-h-[60vh] w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
@@ -45,7 +44,7 @@ export default function OrderTrackingPage() {
           <Link href="/search">Seguir explorando</Link>
         </Button>
       </main>
-      <SiteFooter categories={categories} />
+      <SiteFooter />
     </>
   )
 }

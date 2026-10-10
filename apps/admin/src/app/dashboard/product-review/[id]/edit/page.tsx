@@ -13,7 +13,11 @@ import { productUpdatedAt } from "@/features/product-review/management";
 import { readManagedProduct } from "@/features/product-review/management-operations";
 import { ProductEditForm } from "@/features/product-review/components/product-edit-form";
 
-export const metadata: Metadata = { title: "Editar producto | usapeek" };
+export const metadata: Metadata = {
+  title: "Editar producto",
+  description:
+    "Actualiza la información de un producto del catálogo desde USAPEEK Admin.",
+};
 
 async function ProductEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

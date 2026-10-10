@@ -1,3 +1,5 @@
+import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 import { AccountHeading } from "@/features/account/components/account-heading"
 import { AddressManager } from "@/features/account/components/address-manager"
 import { AccountPagination } from "@/features/account/components/pagination"
@@ -6,6 +8,12 @@ import {
   getAccount,
   getPageNumber,
 } from "@/features/account/data"
+
+export const metadata: Metadata = {
+  title: "Mis direcciones",
+  description:
+    "Guarda y administra tus direcciones de entrega en Estados Unidos y elige la dirección predeterminada para tus compras en USAPEEK.",
+}
 
 export default async function AddressesPage({
   searchParams,
@@ -36,4 +44,3 @@ export default async function AddressesPage({
     </>
   )
 }
-import { redirect } from "next/navigation"

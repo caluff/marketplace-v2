@@ -22,7 +22,10 @@ import {
 } from "@/features/inventory/inventory-stock";
 import { resourceId } from "@/features/workspace/validation";
 
-export const metadata: Metadata = { title: "Existencias del producto" };
+export const metadata: Metadata = {
+  title: "Existencias del producto",
+  description: "Revisa las unidades en almacén, reservadas y disponibles para las variantes de un producto de tu tienda.",
+};
 function StockTable({ children }: { children: ReactNode }) {
   return (
     <Table>

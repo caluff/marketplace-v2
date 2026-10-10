@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GoogleLoginForm } from "@/components/admin/google-login-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentAdmin } from "@/lib/auth-sdk";
 import { safeRedirectPath } from "@/lib/auth-utils";
+
+export const metadata: Metadata = {
+  title: "Vincular Google",
+  description:
+    "Vincula Google con tu cuenta de operador para acceder a USAPEEK Admin.",
+};
 
 export default async function LinkGooglePage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const next = safeRedirectPath((await searchParams).next, "/dashboard");

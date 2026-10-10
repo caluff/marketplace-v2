@@ -13,7 +13,9 @@ import {
 import { OrderReturnsRegion } from "@/features/orders/return-region";
 
 export const metadata: Metadata = {
-  title: "Detalle del pedido | usapeek Admin",
+  title: "Detalle del pedido",
+  description:
+    "Revisa el estado de un pedido, su información financiera y sus devoluciones en USAPEEK Admin.",
 };
 export default async function OrderPage({
   params,

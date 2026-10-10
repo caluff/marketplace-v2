@@ -15,7 +15,9 @@ import { vendorPanelUrl } from "@/features/vendor-onboarding/presentation"
 import { getVerificationCode } from "@/lib/auth-sdk"
 
 export const metadata: Metadata = {
-  title: "Vender en usapeek",
+  title: "Solicitud de vendedor",
+  description:
+    "Prepara tu solicitud para vender en USAPEEK, completa los datos de tu negocio y consulta el estado de la revisión.",
   robots: { index: false, follow: false },
 }
 

@@ -30,7 +30,10 @@ import { hasPresentationOptions } from "@/features/catalog/variant-options";
 import { CatalogAutoRefresh } from "@/features/catalog/auto-refresh";
 import { ProductDescription } from "@/features/catalog/product-description";
 
-export const metadata: Metadata = { title: "Detalle de producto" };
+export const metadata: Metadata = {
+  title: "Detalle de producto",
+  description: "Consulta y actualiza la información, las variantes y la configuración de venta de un producto de tu tienda.",
+};
 const loading = (
   <div
     role="status"

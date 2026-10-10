@@ -12,7 +12,11 @@ import {
 import { OverviewReportToolbar } from "@/features/overview/report-toolbar";
 import { parseOverviewReportFilters } from "@/features/overview/report-filters";
 
-export const metadata: Metadata = { title: "Resumen | usapeek Admin" };
+export const metadata: Metadata = {
+  title: "Resumen",
+  description:
+    "Consulta los indicadores de actividad y el informe financiero del marketplace en USAPEEK Admin.",
+};
 
 export default async function DashboardPage({
   searchParams,

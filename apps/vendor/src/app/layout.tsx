@@ -20,8 +20,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "usapeek · Portal vendedor", template: "%s · usapeek" },
-  description: "Portal seguro para la operación de miembros vendedores.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.RAILWAY_PUBLIC_DOMAIN
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        : "http://localhost:7001"),
+  ),
+  title: { default: "USAPEEK Vendedores", template: "%s | USAPEEK Vendedores" },
+  applicationName: "USAPEEK · Portal vendedor",
+  description:
+    "Gestiona el catálogo, los pedidos, el inventario y la configuración de tu tienda en el portal de vendedores de USAPEEK.",
+  robots: { index: false, follow: false },
+  openGraph: { type: "website", siteName: "USAPEEK Vendedores" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

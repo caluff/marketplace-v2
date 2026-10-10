@@ -16,9 +16,19 @@ import {
 import { Button } from "@/components/ui/button"
 import { FeedbackToast } from "@/components/feedback-toast"
 import { INITIAL_AUTH_STATE, type AuthActionState } from "@/lib/auth-utils"
+import { AUTH_HONEYPOT_FIELD } from "@/lib/auth-form-protection"
 
 const EXPIRED_SESSION_FEEDBACK = { status: "warning", message: "Tu sesión venció. Inicia sesión nuevamente." }
 const INVALID_RESET_FEEDBACK: AuthActionState = { status: "error", message: "El enlace no es válido o ya venció. Solicita uno nuevo." }
+
+function AuthHoneypot({ id }: { id: string }) {
+  return (
+    <div className="sr-only" aria-hidden="true">
+      <label htmlFor={id}>Deja este campo vacío</label>
+      <input id={id} name={AUTH_HONEYPOT_FIELD} type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+    </div>
+  )
+}
 
 function FieldError({ message }: { message?: string }) {
   return message ? <p className="font-sans text-xs font-semibold text-destructive">{message}</p> : null
@@ -29,7 +39,7 @@ function Status({ state }: { state: AuthActionState }) {
     <>
       <FeedbackToast feedback={state} />
       {state.status === "external_redirect" && state.externalUrl ? (
-        <a className="mt-3 flex min-h-11 items-center justify-center bg-primary px-4 font-semibold text-primary-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/40" href={state.externalUrl}>Continuar con el proveedor</a>
+        <a className="mt-3 flex min-h-11 items-center justify-center bg-primary px-4 font-semibold text-primary-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring" href={state.externalUrl}>Continuar con el proveedor</a>
       ) : null}
     </>
   )
@@ -55,7 +65,7 @@ function TextField({
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="block font-sans text-sm font-bold">{label}</label>
-      <input id={id} name={name} type={type} autoComplete={autoComplete} placeholder={placeholder} required aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className="min-h-11 w-full border border-border bg-background px-3 font-sans text-base outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/25" />
+      <input id={id} name={name} type={type} autoComplete={autoComplete} placeholder={placeholder} required aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className="min-h-11 w-full border border-input bg-background px-3 font-sans text-base outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring" />
       <div id={`${id}-error`}><FieldError message={error} /></div>
     </div>
   )
@@ -84,8 +94,8 @@ function PasswordField({
         {labelAction}
       </div>
       <div className="relative">
-        <input id={id} name={name} type={visible ? "text" : "password"} autoComplete={autoComplete} required aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className="min-h-11 w-full border border-border bg-background px-3 pr-12 font-sans text-base outline-none focus:border-ring focus:ring-3 focus:ring-ring/25" />
-        <button type="button" onClick={() => setVisible((value) => !value)} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} className="absolute inset-y-0 right-0 grid min-w-11 place-items-center text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/30">
+        <input id={id} name={name} type={visible ? "text" : "password"} autoComplete={autoComplete} required aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} className="min-h-11 w-full border border-input bg-background px-3 pr-12 font-sans text-base outline-none focus:border-ring focus:ring-3 focus:ring-ring" />
+        <button type="button" onClick={() => setVisible((value) => !value)} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} className="absolute inset-y-0 right-0 grid min-w-11 place-items-center text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring">
           {visible ? <EyeOff className="size-5" aria-hidden="true" /> : <Eye className="size-5" aria-hidden="true" />}
         </button>
       </div>
@@ -152,6 +162,7 @@ export function CustomerRegisterForm() {
   const [state, action, pending] = useActionState(registerCustomerAction, INITIAL_AUTH_STATE)
   return (
     <form action={action} className="space-y-5" aria-label="Registro de cliente">
+      <AuthHoneypot id="register-website" />
       <div className="grid gap-5 sm:grid-cols-2">
         <TextField id="register-first-name" name="firstName" label="Nombre" autoComplete="given-name" error={state.fieldErrors?.firstName} />
         <TextField id="register-last-name" name="lastName" label="Apellido" autoComplete="family-name" error={state.fieldErrors?.lastName} />
@@ -169,6 +180,7 @@ export function CustomerForgotPasswordForm() {
   const [state, action, pending] = useActionState(forgotCustomerPasswordAction, INITIAL_AUTH_STATE)
   return (
     <form action={action} className="space-y-5" aria-label="Recuperación de contraseña">
+      <AuthHoneypot id="forgot-website" />
       <TextField id="forgot-email" name="email" label="Correo electrónico" type="email" autoComplete="email" error={state.fieldErrors?.email} />
       <Status state={state} />
       <SubmitButton pending={pending}>Enviar instrucciones</SubmitButton>

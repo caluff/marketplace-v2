@@ -104,7 +104,7 @@ export function SearchInput({ query = "" }: { query?: string }) {
         role="search"
         aria-label="Buscar productos"
         onSubmit={() => setIsOpen(false)}
-        className="flex h-11 items-center border border-border bg-muted/40 transition-colors focus-within:border-brand-accent focus-within:ring-1 focus-within:ring-brand-accent"
+        className="flex h-11 items-center border border-input bg-muted/40 transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring"
       >
         <label htmlFor="store-product-search" className="sr-only">
           Buscar productos

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Heart, PackageOpen } from "lucide-react"
 
 import { ProductCard } from "@/components/product-card"
@@ -12,6 +13,12 @@ import {
 } from "@/features/account/data"
 import { getFavoriteProductIds } from "@/features/account/favorites"
 import { getStorefrontOffers, getStorefrontRegion } from "@/lib/medusa"
+
+export const metadata: Metadata = {
+  title: "Mis favoritos",
+  description:
+    "Vuelve a encontrar los productos que guardaste en USAPEEK, consulta sus ofertas y organiza tus próximas compras.",
+}
 
 export default async function FavoritesPage({
   searchParams,

@@ -45,7 +45,7 @@ export function AccountNav({
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-12 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40",
+                  "flex min-h-12 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring",
                   active
                     ? "border-brand-accent bg-brand-accent/10 font-semibold text-foreground"
                     : "text-muted-foreground",
@@ -87,7 +87,7 @@ export function AccountVendorLink({
       href="/account/sell"
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex min-h-12 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40",
+        "flex min-h-12 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring",
         active
           ? "border-brand-accent bg-brand-accent/10 font-semibold text-foreground"
           : "text-muted-foreground",

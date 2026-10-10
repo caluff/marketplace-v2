@@ -22,7 +22,9 @@ import { getOrderItemQuantities } from "@/features/account/order-amounts"
 import styles from "./invoice.module.css"
 
 export const metadata: Metadata = {
-  title: "Comprobante del pedido | usapeek",
+  title: "Comprobante del pedido",
+  description:
+    "Consulta e imprime el comprobante de tu pedido de USAPEEK con el detalle de productos, importes y direcciones.",
 }
 type Props = { params: Promise<{ id: string }> }
 

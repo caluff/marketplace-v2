@@ -33,7 +33,7 @@ export async function RelatedProducts({
         </h2>
         <Link
           href={href}
-          className="inline-flex min-h-11 items-center gap-2 font-sans text-xs font-semibold text-brand-accent"
+          className="inline-flex min-h-11 items-center gap-2 font-sans text-xs font-semibold text-brand-accent-text"
         >
           Ver catálogo <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
@@ -72,7 +72,7 @@ export async function RelatedProducts({
                   )}
                 </div>
                 <div className="min-w-0 self-center font-sans">
-                  <h3 className="line-clamp-2 text-sm font-semibold group-hover:text-brand-accent">
+                  <h3 className="line-clamp-2 text-sm font-semibold group-hover:text-brand-accent-text">
                     {item.title}
                   </h3>
                   <p className="mt-2 text-sm font-bold">

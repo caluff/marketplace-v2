@@ -17,7 +17,6 @@ import { getProductImageSources } from "@/features/catalog/variant-images"
 import { RelatedProducts } from "@/features/catalog/related-products"
 import { getCurrentCustomer } from "@/lib/auth-sdk"
 import {
-  getStorefrontCategories,
   getStorefrontProduct,
   getStorefrontRegion,
 } from "@/lib/medusa"
@@ -34,11 +33,22 @@ export async function generateMetadata({
     return product
       ? {
           title: product.title,
-          description: product.description?.slice(0, 160) ?? undefined,
+          description: (
+            product.description?.replace(/\s+/g, " ").trim() ||
+            `Consulta las características y ofertas de ${product.title} en USAPEEK.`
+          ).slice(0, 160),
         }
-      : { title: "Producto no encontrado" }
+      : {
+          title: "Producto no encontrado",
+          description:
+            "El producto que buscas no está disponible. Explora el catálogo de USAPEEK para descubrir otras opciones.",
+          robots: { index: false },
+        }
   } catch {
-    return { title: "Producto" }
+    return {
+      title: "Producto",
+      description: "Consulta las características y ofertas de productos en USAPEEK.",
+    }
   }
 }
 
@@ -243,7 +253,6 @@ async function ProductContent({
 }
 
 export default function ProductPage(props: ProductPageProps) {
-  const categories = getStorefrontCategories()
   const regionPromise = getStorefrontRegion()
   void regionPromise.catch(() => undefined)
   return (
@@ -260,7 +269,7 @@ export default function ProductPage(props: ProductPageProps) {
           <ProductContent {...props} regionPromise={regionPromise} />
         </Suspense>
       </main>
-      <SiteFooter categories={categories} />
+      <SiteFooter />
     </>
   )
 }

@@ -183,6 +183,7 @@ module.exports = withMercur({
     seller_registration: false,
   },
   modules: [
+    { resolve: "./src/modules/spam-protection", options: { redisUrl, hashSecret: cookieSecret } },
     { resolve: "./src/modules/order-notifications", options: { redisUrl } },
     ...(googleAuthConfiguration
       ? [{

@@ -36,6 +36,19 @@ function getServerActionAllowedOrigins() {
 const nextConfig: NextConfig = {
   transpilePackages: ["@usapeek/ui", "@usapeek/order-reference"],
   reactStrictMode: true,
+  async headers() {
+    if (process.env.NODE_ENV !== "production") return [];
+
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "header", key: "x-forwarded-proto", value: "https" }],
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
+        ],
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       allowedOrigins: getServerActionAllowedOrigins(),

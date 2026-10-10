@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -20,6 +21,12 @@ import { PaymentReturn } from "@/features/checkout/components/payment-return"
 import { RetryCheckout } from "@/features/checkout/components/retry-checkout"
 import { ShippingStep } from "@/features/checkout/components/shipping-step"
 import { hasEligibleShippingSelection } from "@/features/cart/presentation"
+
+export const metadata: Metadata = {
+  title: "Finalizar compra",
+  description:
+    "Revisa tu carrito, selecciona la dirección y el envío, y completa el pago de tu compra en USAPEEK.",
+}
 
 type CheckoutPageProps = {
   searchParams: Promise<{ step?: string | string[] }>

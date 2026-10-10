@@ -66,7 +66,7 @@ function SheetContent({
         {children}
         <SheetPrimitive.Close
           data-testid={closeTestId}
-          className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground outline-none transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground outline-none transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="size-4" aria-hidden="true" />
           <span className="sr-only">{closeLabel}</span>

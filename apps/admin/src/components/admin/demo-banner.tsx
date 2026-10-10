@@ -18,7 +18,7 @@ export function DemoBanner() {
             Sin conexión al backend
           </Badge>
         </div>
-        <p className="text-xs leading-5 text-demo-foreground/75">
+        <p className="text-xs leading-5 text-demo-foreground">
           Todas las cifras, nombres e identificadores de esta pantalla son
           fixtures sintéticos y no representan operaciones reales.
         </p>

@@ -50,7 +50,7 @@ export function FavoriteButton({
         disabled={pending}
         aria-label={label}
         aria-pressed={saved}
-        className={cn(saved && "text-brand-accent", !compact && "w-full")}
+        className={cn(saved && "text-brand-accent-text", !compact && "w-full")}
       >
         {pending ? (
           <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />

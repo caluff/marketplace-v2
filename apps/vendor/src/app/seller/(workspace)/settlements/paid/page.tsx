@@ -9,7 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PaidSettlementListSkeleton } from "@/features/settlements/paid-view";
 import type { PaidSettlementSearchParams } from "@/features/settlements/paid-parameters";
 
-export const metadata: Metadata = { title: "Cobrados" };
+export const metadata: Metadata = {
+  title: "Cobros realizados",
+  description: "Revisa el historial de liquidaciones cobradas de tu tienda y filtra los resultados por período.",
+};
 
 export default function PaidSettlementsPage({
   searchParams,

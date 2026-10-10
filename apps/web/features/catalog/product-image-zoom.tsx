@@ -89,7 +89,7 @@ export function ProductImageZoom({
           onPointerLeave={() => setZoomedSource(null)}
           onPointerDown={() => setZoomedSource(null)}
           onBlur={() => setZoomedSource(null)}
-          className="absolute inset-0 overflow-hidden cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40"
+          className="absolute inset-0 overflow-hidden cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring"
         >
           <div
             className="absolute inset-0 flex flex-col transition-transform duration-[var(--motion-medium)] ease-[var(--ease-out)] motion-reduce:transition-none"

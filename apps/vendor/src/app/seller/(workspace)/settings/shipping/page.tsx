@@ -3,7 +3,10 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShippingSettings } from "@/features/shipping/shipping-settings";
 
-export const metadata: Metadata = { title: "Envíos" };
+export const metadata: Metadata = {
+  title: "Envíos",
+  description: "Administra las opciones y la configuración de envíos de tu tienda en USAPEEK.",
+};
 
 export default function ShippingPage() {
   return (

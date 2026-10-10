@@ -15,7 +15,10 @@ import {
 } from "@/features/workspace/actions";
 import { resultOf, workspace } from "@/features/workspace/data";
 
-export const metadata: Metadata = { title: "Ajustes" };
+export const metadata: Metadata = {
+  title: "Ajustes de tienda",
+  description: "Actualiza el perfil público, la dirección comercial y la información de la empresa de tu tienda.",
+};
 type SettingsSection = "profile" | "address" | "company";
 export default async function SettingsPage({
   searchParams,

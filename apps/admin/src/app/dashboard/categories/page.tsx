@@ -6,7 +6,11 @@ import {
 } from "@/features/categories/components/category-browser";
 import { CreateCategoryForm } from "@/features/categories/components/create-category-form";
 
-export const metadata: Metadata = { title: "Categorías | usapeek" };
+export const metadata: Metadata = {
+  title: "Categorías",
+  description:
+    "Organiza las categorías del catálogo y gestiona su estructura en USAPEEK Admin.",
+};
 
 export default function CategoriesPage({
   searchParams,

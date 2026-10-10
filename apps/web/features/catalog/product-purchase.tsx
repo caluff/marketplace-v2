@@ -178,7 +178,7 @@ export function ProductPurchase({
                 <span className="text-sm text-muted-foreground line-through">
                   {formatPrice(price.originalAmount)}
                 </span>
-                <span className="bg-brand-accent/10 px-2 py-1 text-xs font-bold text-brand-accent">
+                <span className="bg-brand-accent/10 px-2 py-1 text-xs font-bold text-brand-accent-text">
                   −{discount}%
                 </span>
               </>
@@ -205,9 +205,9 @@ export function ProductPurchase({
                     setOfferId("")
                   }}
                   className={cn(
-                    "min-h-11 border px-3 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50",
+                    "min-h-11 border px-3 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring disabled:opacity-50",
                     variantId === variant.id
-                      ? "border-brand-accent bg-brand-accent/5 text-brand-accent"
+                      ? "border-brand-accent bg-brand-accent/5 text-brand-accent-text"
                       : "border-border hover:border-foreground",
                   )}
                 >
@@ -263,7 +263,7 @@ export function ProductPurchase({
         ) : null}
         <a
           href="#product-details"
-          className="mt-5 inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-brand-accent"
+          className="mt-5 inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-brand-accent-text"
         >
           Ver ficha técnica{" "}
           <ArrowRight className="size-3.5" aria-hidden="true" />
@@ -332,7 +332,7 @@ export function ProductPurchase({
             value="buy"
             variant="outline"
             disabled={!available || !hasRegion || isPending}
-            className="h-11 w-full border-brand-accent/20 bg-brand-accent/5 text-sm text-brand-accent"
+            className="h-11 w-full border-brand-accent/20 bg-brand-accent/5 text-sm text-brand-accent-text"
           >
             Comprar ahora
           </Button>

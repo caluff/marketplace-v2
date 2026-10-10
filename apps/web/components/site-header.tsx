@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Suspense } from "react"
 
 import { HeaderSearch } from "@/components/header-search"
+import { LogoWordmark } from "@/components/brand/logo"
 import { CatalogMenu } from "@/components/catalog-menu"
 import { ModeToggle } from "@/components/mode-toggle"
 import { GoogleOneTap } from "@/components/auth/google-one-tap"
@@ -92,10 +93,10 @@ export function SiteHeader() {
       <div className="mx-auto grid w-full max-w-[90rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 px-4 py-2 sm:gap-x-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-6 lg:px-10 lg:py-3">
         <Link
           href="/"
-          aria-label="usapeek, inicio"
-          className="inline-flex min-h-11 min-w-0 items-center font-sans text-xs leading-5 font-black tracking-[0.14em] uppercase outline-none focus-visible:ring-3 focus-visible:ring-ring/40 sm:text-sm sm:tracking-[0.18em]"
+          aria-label="USAPEEK, inicio"
+          className="inline-flex min-h-11 w-fit min-w-0 items-center rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring"
         >
-          usapeek
+          <LogoWordmark width={126} aria-hidden="true" className="h-auto w-[88px] min-[360px]:w-[104px] sm:w-[126px]" />
         </Link>
 
         <div className="col-span-2 row-start-2 flex min-w-0 items-center gap-2 pb-1 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:pb-0">

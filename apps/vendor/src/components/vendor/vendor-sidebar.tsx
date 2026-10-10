@@ -9,7 +9,6 @@ import {
   PackageSearch,
   Settings2,
   ShoppingBag,
-  Store,
   Wallet,
 } from "lucide-react";
 
@@ -31,6 +30,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { vendorRoutes, type VendorRouteId } from "@/lib/vendor-routes";
+import { LogoMark } from "@/components/brand/logo";
 import { VendorUserMenu } from "./vendor-user-menu";
 import { PendingOrderIndicator } from "@/features/orders/pending-order-indicator";
 
@@ -95,8 +95,8 @@ export function VendorSidebar({
               className="h-11"
             >
               <Link href="/seller" onNavigate={() => setOpenMobile(false)}>
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Store className="size-4" aria-hidden="true" />
+                <span className="grid size-8 shrink-0 place-items-center">
+                  <LogoMark width={28} tone="dark" aria-hidden="true" />
                 </span>
                 <span className="min-w-0 group-data-[collapsible=icon]:sr-only">
                   <span className="block truncate font-display text-base font-semibold">
